@@ -1,9 +1,0 @@
-
-
-(gdb) handle SIGUSR1 nostop noprint
-(gdb) handle SIGUSR2 nostop noprint
-(gdb) run
-disp:1> (load "./gc6.lisp")
-# 若崩溃，立即执行：
-(gdb) bt full
-(gdb) thread apply all bt full

@@ -1,1 +1,0 @@
-Hello, non-blocking world!
