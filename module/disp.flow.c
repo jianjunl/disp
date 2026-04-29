@@ -213,6 +213,7 @@ static disp_val* repeat_builtin(disp_val *expr) {
 void disp_init_module(void) {
     DEF("define"  , MKB(define_builtin , "<#define>" ), 1);
     DEF("set!"    , MKB(setq_builtin   , "<#set!>"   ), 1);
+    DEF("setq"    , MKB(setq_builtin   , "<#set!>"   ), 1);
     DEF("if"      , MKB(if_builtin     , "<#if>"     ), 1);
     DEF("cond"    , MKB(cond_builtin   , "<#cond>"   ), 1);
     DEF("while"   , MKB(while_builtin  , "<#while>"  ), 1);

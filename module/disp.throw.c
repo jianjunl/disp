@@ -1,5 +1,6 @@
 
 #define _POSIX_C_SOURCE 200809L
+
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -17,59 +18,60 @@
 #define FRAME_BLOCK  1
 #define FRAME_UNWIND 2   // unwind-protect 的清理帧
 
+/* -------------------------------------------------------------------------
+ * 帧类型不变，但不再内嵌 jmp_buf，改用 TRY/CATCH 实现跳转
+ * ------------------------------------------------------------------------- */
 typedef struct frame {
     int type;
-    gc_jmp_buf_t env;
-    disp_val *tag;          // catch 的 tag 或 block 的名字（符号）
-    disp_val *result;       // 传递给 throw/return-from 的值
+    disp_val *tag;          // catch 的标签 / block 的名字 (符号)
+    disp_val *result;       // 传递给 throw / return-from 的值
     disp_val *cleanup;      // unwind-protect 的清理表达式列表
     struct frame *prev;
 } frame_t;
 
+/* 所有帧都挂在这个线程局部链表上 */
 _Thread_local frame_t *current_frame = NULL;
 
-static void run_cleanups(frame_t *from, frame_t *to) {
-    for (frame_t *f = from; f != to; f = f->prev) {
-        if (f->type == FRAME_UNWIND && f->cleanup) {
-            disp_val *cleanup = f->cleanup;
-            while (cleanup && T(cleanup) == DISP_CONS) {
-                disp_eval(disp_car(cleanup));
-                cleanup = disp_cdr(cleanup);
-            }
-        }
-    }
-}
+/* -------------------------------------------------------------------------
+ * 用于从 throw / return-from 定位目标帧的线程局部变量
+ * ------------------------------------------------------------------------- */
+_Thread_local frame_t * volatile target_frame = NULL;   // 目标帧地址
+_Thread_local int throw_code;                            // 配合 THROW 的返回值
 
+/* -------------------------------------------------------------------------
+ * 原始 run_cleanups 不再需要，清理由 unwind 帧的 CATCH 分支自动完成
+ * ------------------------------------------------------------------------- */
+
+/* -------------------------------------------------------------------------
+ * throw 系统调用
+ * ------------------------------------------------------------------------- */
 __attribute__((optimize("O0")))
 static disp_val* throw_syscall(disp_val **args, int count) {
     if (count < 1) ERET(NIL, "throw expects at least one argument");
     disp_val *tag = args[0];
     disp_val *value = (count >= 2) ? args[1] : NIL;
-    
-    frame_t *target = NULL;
+
+    /* 查找匹配的 catch 帧 */
     for (frame_t *f = current_frame; f; f = f->prev) {
         if (f->type == FRAME_CATCH && f->tag == tag) {
-            target = f;
-            break;
+            f->result = value;
+            target_frame = f;
+            THROW(1);
+            /* NOTREACHED */
         }
     }
-    if (!target) ERET(NIL, "throw: no matching catch frame for tag");
-    
-    // 执行从 current_frame 到 target->prev 之间的所有清理帧
-    run_cleanups(current_frame, target->prev);
-    
-    target->result = value;
-    gc_longjmp(&target->env, 1);
-    return NIL;
+    ERET(NIL, "throw: no matching catch frame for tag");
 }
 
-/* (error message ...) -> 抛出 'error 标签 */
+/* -------------------------------------------------------------------------
+ * error 系统调用 (标签固定为 'error)
+ * ------------------------------------------------------------------------- */
 static disp_val* error_syscall(disp_val **args, int count) {
     if (count < 1) ERET(NIL, "error: expects at least one argument");
-    
+
     disp_val *throw_args[2];
     throw_args[0] = disp_intern_symbol("error");
-    
+
     if (count == 1) {
         throw_args[1] = args[0];
     } else {
@@ -80,35 +82,52 @@ static disp_val* error_syscall(disp_val **args, int count) {
         }
         throw_args[1] = lst;
     }
-    
+
     return throw_syscall(throw_args, 2);
 }
 
+/* -------------------------------------------------------------------------
+ * return-from 系统调用
+ * ------------------------------------------------------------------------- */
 __attribute__((optimize("O0")))
 static disp_val* return_from_syscall(disp_val **args, int count) {
     if (count < 1) ERET(NIL, "return-from expects at least one argument");
     disp_val *name = args[0];
     if (T(name) != DISP_SYMBOL) ERET(NIL, "return-from: name must be a symbol");
     disp_val *value = (count >= 2) ? args[1] : NIL;
-    
-    frame_t *target = NULL;
+
     for (frame_t *f = current_frame; f; f = f->prev) {
         if (f->type == FRAME_BLOCK && f->tag == name) {
-            target = f;
-            break;
+            f->result = value;
+            target_frame = f;
+            THROW(2);
+            /* NOTREACHED */
         }
     }
-    if (!target) ERET(NIL, "return-from: no matching block named");
-    
-    // 执行从 current_frame 到 target->prev 之间的所有清理帧
-    run_cleanups(current_frame, target->prev);
-    
-    target->result = value;
-    gc_longjmp(&target->env, 1);
-    return NIL;
+    ERET(NIL, "return-from: no matching block named");
 }
 
-// --- catch ---
+/* -------------------------------------------------------------------------
+ * return 系统调用 (寻找最近名为 NIL 的 block)
+ * ------------------------------------------------------------------------- */
+__attribute__((optimize("O0")))
+static disp_val* return_syscall(disp_val **args, int count) {
+    disp_val *value = (count >= 1) ? args[0] : NIL;
+
+    for (frame_t *f = current_frame; f; f = f->prev) {
+        if (f->type == FRAME_BLOCK && f->tag == NIL) {
+            f->result = value;
+            target_frame = f;
+            THROW(2);
+            /* NOTREACHED */
+        }
+    }
+    ERET(NIL, "return: no matching nil block");
+}
+
+/* -------------------------------------------------------------------------
+ * catch 内置特殊形式
+ * ------------------------------------------------------------------------- */
 __attribute__((optimize("O0")))
 static disp_val* catch_builtin(disp_val *expr) {
     disp_val *rest = disp_cdr(expr);
@@ -116,7 +135,7 @@ static disp_val* catch_builtin(disp_val *expr) {
     disp_val *tag = disp_eval(disp_car(rest));
     disp_val *body = disp_cdr(rest);
     if (!body) ERET(NIL, "catch: missing body");
-    
+
     frame_t frame;
     frame.type = FRAME_CATCH;
     frame.tag = tag;
@@ -124,8 +143,8 @@ static disp_val* catch_builtin(disp_val *expr) {
     frame.cleanup = NIL;
     frame.prev = current_frame;
     current_frame = &frame;
-    
-    if (gc_setjmp(&frame.env) == 0) {
+
+    TRY {
         disp_val *last = NIL;
         while (body && T(body) == DISP_CONS) {
             last = disp_eval(disp_car(body));
@@ -133,27 +152,39 @@ static disp_val* catch_builtin(disp_val *expr) {
         }
         current_frame = frame.prev;
         return last;
-    } else {
-        disp_val *thrown = frame.result;
-        current_frame = frame.prev;
-        return thrown;
     }
+    CATCH {
+        /* 如果是针对本帧的 throw 异常，则由本帧处理 */
+        if (THROWN == 1 && current_frame == &frame && &frame == target_frame) {
+            disp_val *thrown = frame.result;
+            current_frame = frame.prev;
+            return thrown;
+        }
+        /* 否则传播异常：先弹出自身（如果是 unwind 帧则执行清理，这里不是） */
+        current_frame = frame.prev;
+        THROW(THROWN);
+    }
+    END_TRY;
+    return TRUE;
 }
 
+/* -------------------------------------------------------------------------
+ * block 内置特殊形式
+ * ------------------------------------------------------------------------- */
 __attribute__((optimize("O0")))
 static disp_val* block_builtin(disp_val *expr) {
     disp_val *rest = disp_cdr(expr);
     if (!rest || T(rest) != DISP_CONS) ERET(NIL, "block: missing name");
     disp_val *name = disp_car(rest);
-    // Convert the symbol "nil" to the NIL constant
+    /* 把符号 "nil" 转换为常量 NIL */
     if (T(name) == DISP_SYMBOL && strcmp(disp_get_symbol_name(name), "nil") == 0) {
         name = NIL;
     }
-    if (T(name) != DISP_SYMBOL && name != NIL) 
+    if (T(name) != DISP_SYMBOL && name != NIL)
         ERET(NIL, "block: name must be a symbol or nil");
     disp_val *body = disp_cdr(rest);
     if (!body) ERET(NIL, "block: missing body");
-    
+
     frame_t frame;
     frame.type = FRAME_BLOCK;
     frame.tag = name;
@@ -161,8 +192,8 @@ static disp_val* block_builtin(disp_val *expr) {
     frame.cleanup = NIL;
     frame.prev = current_frame;
     current_frame = &frame;
-    
-    if (gc_setjmp(&frame.env) == 0) {
+
+    TRY {
         disp_val *last = NIL;
         while (body && T(body) == DISP_CONS) {
             last = disp_eval(disp_car(body));
@@ -170,70 +201,78 @@ static disp_val* block_builtin(disp_val *expr) {
         }
         current_frame = frame.prev;
         return last;
-    } else {
-        disp_val *returned = frame.result;
-        current_frame = frame.prev;
-        return returned;
     }
-}
-
-__attribute__((optimize("O0")))
-static disp_val* return_syscall(disp_val **args, int count) {
-    // (return [value]) -> 从最近的 nil 块返回
-    disp_val *value = (count >= 1) ? args[0] : NIL;
-    
-    frame_t *target = NULL;
-    for (frame_t *f = current_frame; f; f = f->prev) {
-        if (f->type == FRAME_BLOCK && f->tag == NIL) {
-            target = f;
-            break;
+    CATCH {
+        /* 如果是针对本帧的 return-from / return 异常 */
+        if (THROWN == 2 && current_frame == &frame && &frame == target_frame) {
+            disp_val *returned = frame.result;
+            current_frame = frame.prev;
+            return returned;
         }
+        /* 传播：弹出自身，如果是 unwind 帧会执行清理 */
+        current_frame = frame.prev;
+        THROW(THROWN);
     }
-    if (!target) ERET(NIL, "return: no matching nil block");
-    
-    // 执行清理帧
-    run_cleanups(current_frame, target->prev);
-    
-    target->result = value;
-    gc_longjmp(&target->env, 1);
-    return NIL;
+    END_TRY;
+    return TRUE;
 }
 
+/* -------------------------------------------------------------------------
+ * unwind-protect 内置特殊形式
+ * ------------------------------------------------------------------------- */
 static disp_val* unwind_protect_builtin(disp_val *expr) {
-    // 语法: (unwind-protect protected-form cleanup-form ...)
     disp_val *rest = disp_cdr(expr);
     if (!rest || T(rest) != DISP_CONS) ERET(NIL, "unwind-protect: missing protected form");
     disp_val *protected_form = disp_car(rest);
     disp_val *cleanup_forms = disp_cdr(rest);
     if (!cleanup_forms) ERET(NIL, "unwind-protect: missing cleanup forms");
-    
-    // 创建一个清理帧，但不设置 setjmp。清理帧的作用仅仅是在非本地退出时被 run_cleanups 执行。
-    // 我们将清理表达式列表存储在一个特殊帧中，并将它推入帧栈。
+
     frame_t frame;
     frame.type = FRAME_UNWIND;
     frame.tag = NIL;
     frame.result = NIL;
-    frame.cleanup = cleanup_forms;   // 保存清理表达式列表
+    frame.cleanup = cleanup_forms;   /* 保存清理表达式列表 */
     frame.prev = current_frame;
     current_frame = &frame;
-    
-    // 执行受保护形式
-    disp_val *result = disp_eval(protected_form);
-    
-    // 正常退出：先执行清理，然后返回结果
-    // 注意：正常退出时也要执行清理（与 Common Lisp 一致）
-    while (cleanup_forms && T(cleanup_forms) == DISP_CONS) {
-        disp_eval(disp_car(cleanup_forms));
-        cleanup_forms = disp_cdr(cleanup_forms);
+
+    TRY {
+        disp_val *result = disp_eval(protected_form);
+        /* 正常路径：先执行清理，再弹帧并返回 */
+        disp_val *cl = cleanup_forms;
+        while (cl && T(cl) == DISP_CONS) {
+            disp_eval(disp_car(cl));
+            cl = disp_cdr(cl);
+        }
+        current_frame = frame.prev;
+        return result;
     }
-    // 弹出清理帧
-    current_frame = frame.prev;
-    return result;
+    CATCH {
+        /* 异常路径：执行清理，然后继续传播 */
+        disp_val *cl = frame.cleanup;
+        while (cl && T(cl) == DISP_CONS) {
+            disp_eval(disp_car(cl));
+            cl = disp_cdr(cl);
+        }
+        current_frame = frame.prev;
+        THROW(THROWN);
+    }
+    END_TRY;
+    return TRUE;
 }
 
-/* Initialisation function called when the shared library is loaded */
+/* -------------------------------------------------------------------------
+ * 模块初始化
+ * ------------------------------------------------------------------------- */
 void disp_init_module(void) {
+    /* 将帧栈指针注册为 GC 根 */
     gc_add_root(&current_frame);
+    /* 异常目标帧指针也需要作为根（否则其引用的帧可能被 GC 回收） */
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdiscarded-qualifiers"
+    gc_add_root(&target_frame);
+#pragma GCC diagnostic pop
+
+    /* 注册内置函数，final = 1 */
     DEF("catch"         , MKB(catch_builtin         , "<#catch>"        ) , 1);
     DEF("throw"         , MKF(throw_syscall         , "<throw>"         ) , 1);
     DEF("error"         , MKF(error_syscall         , "<error>"         ) , 1);

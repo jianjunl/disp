@@ -31,8 +31,9 @@ LIB_OBJS := $(LIB_SRCS:.c=.o)
 MAIN_SRC := main.c
 MAIN_OBJ := main.o
 
-MODULES := disp.data.so disp.lamb.so disp.closure.so \
-           disp.flow.so disp.loop.so \
+MODULES := disp.data.so disp.quote.so \
+           disp.lamb.so disp.closure.so \
+           disp.flow.so disp.loop.so disp.throw.so \
            disp.math.so disp.string.so \
            disp.file.so disp.os.so \
            disp.coro.so disp.coro.chan.so disp.coro.poll.so \

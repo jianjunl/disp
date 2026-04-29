@@ -138,218 +138,6 @@ static disp_val* eval_syscall(disp_val **args, int count) {
     return disp_eval(args[0]);
 }
 
-static disp_val* append(disp_val *a, disp_val *b) {
-    if (!a || a == NIL) return b;
-    if (T(a) != DISP_CONS) ERET(NIL, "append: first argument must be a list");
-    return disp_make_cons(disp_car(a), append(disp_cdr(a), b));
-}
-
-static disp_val* append_builtin(disp_val *expr) {
-    disp_val *a = disp_cdr(expr);
-    if (!a || a == NIL) return NIL;
-    disp_val *b = disp_cdr(a);
-   a = disp_car(a);
-    return append(a, b);
-}
-
-static disp_val* append_syscall(disp_val **args, int count) {
-    if (count == 0) return NIL;
-    // 结果列表的头和尾
-    disp_val *result = NIL;
-    disp_val *tail = NIL;
-    for (int i = 0; i < count; i++) {
-        disp_val *lst = args[i];
-        // 检查类型
-        if (lst != NIL && T(lst) != DISP_CONS) {
-            ERET(NIL, "append: argument %d is not a list", i);
-        }
-        // 遍历 lst，将其元素复制到结果末尾
-        for (disp_val *p = lst; p != NIL && T(p) == DISP_CONS; p = disp_cdr(p)) {
-            disp_val *new_cons = disp_make_cons(disp_car(p), NIL);
-            if (result == NIL) {
-                result = new_cons;
-                tail = new_cons;
-            } else {
-                disp_set_cdr(tail, new_cons);
-                tail = new_cons;
-            }
-        }
-    }
-    return result ? result : NIL;
-}
-
-// --- quote ---
-// 特殊处理 quote
-static disp_val* quote_builtin(disp_val *expr) {
-    // 返回第二个元素，不求值
-    disp_val *quoted = disp_cdr(expr);
-    if (quoted && T(quoted) == DISP_CONS) {
-        return disp_car(quoted);
-    } else {
-        ERET(NIL, "quote: missing argument");
-    }
-}
-
-/*
-*/
-
-
-/* * Helper: Checks if a list starts with a specific symbol (e.g., "unquote")
- */
-static int is_tag(disp_val *expr, disp_val *tag) {
-    if (!expr || expr == NIL || T(expr) != DISP_CONS) 
-        return 0;
-    disp_val *head = disp_car(expr);
-    // Ensure the head is a symbol and matches the tag
-    return (head && T(head) == DISP_SYMBOL && head == tag);
-}
-
-static disp_val* unquote(disp_val *expr) {
-    while (is_tag(expr, UNQUOTE)) {
-        expr = disp_car(disp_cdr(expr));
-    }
-    return expr;
-}
-
-static int is_prim(disp_val *expr) {
-    if (!expr || T(expr) == DISP_CONS || T(expr) != DISP_SYMBOL) return 0;
-    return 
-        expr == NIL ||
-        T(expr) == DISP_BYTE   ||
-        T(expr) == DISP_SHORT  ||
-        T(expr) == DISP_INT    ||
-        T(expr) == DISP_LONG   ||
-        T(expr) == DISP_FLOAT  ||
-        T(expr) == DISP_DOUBLE ||
-        T(expr) == DISP_STRING;
-}
-
-static disp_val * SPLICE_MARK;
-static disp_val *expand_list(disp_val *list, int level);
-
-/*
- * The main expansion engine
- */
-static disp_val* qq_expand(disp_val* expr, int level) {
-    //if (expr == NIL) return disp_make_cons(QUOTE, disp_make_cons(NIL, NIL));
-    if(is_prim(expr)) return expr;
-
-    // If it's a basic atom, return it quoted so it evaluates to itself
-    if (T(expr) != DISP_CONS) {
-        return disp_make_cons(QUOTE, disp_make_cons(expr, NIL));
-    }
-    
-    if (is_tag(expr, QUASIQUOTE)) {
-        disp_val* inner = disp_car(disp_cdr(expr));
-        return disp_make_cons(LIST, 
-            disp_make_cons(disp_make_cons(QUOTE, disp_make_cons(QUASIQUOTE, NIL)),
-            disp_make_cons(qq_expand(inner, level + 1), NIL)));
-    }
-    else if (is_tag(expr, UNQUOTE)) {
-        disp_val* inner = disp_car(disp_cdr(expr));
-        if (level == 1) {
-            // Level 1: This is the level we are currently expanding.
-            // Return the expression directly to be evaluated.
-            return inner; 
-        } else if (is_tag(inner, UNQUOTE)) {
-            return unquote(inner); 
-        } else {
-            // Level > 1: This belongs to a deeper quasiquote.
-            // We expand the inner part, then wrap it back in UNQUOTE.
-            // FIX: We need to make sure the result is treated as a list 
-            // construction so that it produces (unquote 5) instead of (unquote (quote 5)).
-            return disp_make_cons(LIST, 
-                disp_make_cons(disp_make_cons(QUOTE, disp_make_cons(UNQUOTE, NIL)),
-                disp_make_cons(qq_expand(inner, level - 1), NIL)));
-        }
-    }    
-    
-    if (is_tag(expr, UNQUOTE_SPLICING)) {
-        disp_val* inner = disp_car(disp_cdr(expr));
-        if (level == 1) {
-            // Return a special marker for expand_list to handle
-            return disp_make_cons(SPLICE_MARK, disp_make_cons(inner, NIL));
-        } else {
-            return disp_make_cons(LIST, 
-                disp_make_cons(disp_make_cons(QUOTE, disp_make_cons(UNQUOTE_SPLICING, NIL)),
-                disp_make_cons(qq_expand(inner, level - 1), NIL)));
-        }
-    }
-    
-    return expand_list(expr, level);
-}
-
-/*
- * Expands elements within a list, handling unquote-splicing
- */
-static disp_val* expand_list(disp_val* list, int level) {
-    if (list == NIL) return disp_make_cons(QUOTE, disp_make_cons(NIL, NIL));
-
-    disp_val* head = disp_car(list);
-    disp_val* expanded_head = qq_expand(head, level);
-    disp_val* tail = expand_list(disp_cdr(list), level);
-
-    // Check for the (SPLICE_MARK inner)
-    if (T(expanded_head) == DISP_CONS && disp_car(expanded_head) == SPLICE_MARK) {
-        disp_val* inner = disp_car(disp_cdr(expanded_head));
-        // Result: (APPEND inner tail)
-        return disp_make_cons(APPEND,
-                 disp_make_cons(inner,
-                   disp_make_cons(tail, NIL)));
-    } else {
-        // Result: (CONS expanded_head tail)
-        return disp_make_cons(CONS,
-                 disp_make_cons(expanded_head,
-                   disp_make_cons(tail, NIL)));
-    }
-}
-
-/*
- *Level Management: The level ensures that nested backticks only unquote at the appropriate depth
- */
-static disp_val* quasiquote_builtin(disp_val *expr) {
-    disp_val *cdr = disp_cdr(expr);
-    if (!cdr || T(cdr) != DISP_CONS) return NIL;
-    
-    disp_val *tmpl = disp_car(cdr);
-    
-    // 1. Generate the construction code (e.g., (CONS 1 (CONS 5 ...)))
-    disp_val *expanded_code = qq_expand(tmpl, 1);
-    
-    // 2. Evaluate that code to get the final list
-    return disp_eval(expanded_code);
-}
-
-/*
- * (unquote x) -> evaluates x and returns the result
- */
-static disp_val* unquote_builtin(disp_val *expr) {
-    disp_val *cdr = disp_cdr(expr);
-    if (!cdr) ERET(NIL, "unquote: expects one argument");
-    if (T(cdr) != DISP_CONS) return disp_eval(cdr);
-    if (disp_cdr(cdr) != NIL)
-        ERET(NIL, "unquote: expects exactly one argument");
-    return disp_eval(disp_car(cdr));
-}
-
-/*
- * (unquote-splice x) -> evaluates x, which MUST result in a list
- */
-static disp_val* unquote_splicing_builtin(disp_val *expr) {
-    // expr contains the expression to unquote-splicing
-    disp_val *cdr = disp_cdr(expr);
-    if (!cdr || T(cdr) != DISP_CONS)
-        ERET(NIL, "unquote-splicing: expects cons argument");
-
-    disp_val *result = disp_eval(cdr);
-
-    // Requirement: result of splicing must be a list
-    if (T(result) != DISP_CONS)
-        ERET(NIL, "unquote-splicing: expects cons result");
-
-    return result;
-}
-
 /* ----- 类型谓词 ----- */
 static disp_val* nullp_syscall(disp_val **args, int count) {
     if (count != 1) ERET(NIL, "null?: expects one argument");
@@ -468,10 +256,65 @@ static disp_val* set_cdr_syscall(disp_val **args, int count) {
     return args[1];
 }
 
+/*
+ * 通用值相等比较（equal）
+ * 递归比较内容，支持 NIL、数值、字符串、符号、cons。
+ * 为防止循环结构，设置递归深度上限。
+ */
+static disp_val* equal_syscall(disp_val **args, int count) {
+    if (count != 2) {
+        ERET(NIL, "equal: expected two arguments");
+    }
+
+    disp_val *a = args[0];
+    disp_val *b = args[1];
+
+    /* 递归深度保护（简单实现，避免无限循环） */
+    static _Thread_local int depth = 0;
+    if (depth > 1000) ERET(NIL, "equal: exceeded recursion depth");
+
+    /* 比较 NIL */
+    if (a == NIL && b == NIL) return TRUE;
+    if (a == NIL || b == NIL) return NIL;
+
+    /* 类型不同，快速失败 */
+    if (T(a) != T(b)) return NIL;
+
+    switch (T(a)) {
+        case DISP_BYTE:   return (disp_get_byte(a)   == disp_get_byte(b))   ? TRUE : NIL;
+        case DISP_SHORT:  return (disp_get_short(a)  == disp_get_short(b))  ? TRUE : NIL;
+        case DISP_INT:    return (disp_get_int(a)    == disp_get_int(b))    ? TRUE : NIL;
+        case DISP_LONG:   return (disp_get_long(a)   == disp_get_long(b))   ? TRUE : NIL;
+        case DISP_FLOAT:  return (disp_get_float(a)  == disp_get_float(b))  ? TRUE : NIL;
+        case DISP_DOUBLE: return (disp_get_double(a) == disp_get_double(b)) ? TRUE : NIL;
+        case DISP_STRING: {
+            const char *sa = disp_get_str(a);
+            const char *sb = disp_get_str(b);
+            if (!sa || !sb) return NIL;
+            return (strcmp(sa, sb) == 0) ? TRUE : NIL;
+        }
+        case DISP_SYMBOL: {
+            const char *na = disp_get_symbol_name(a);
+            const char *nb = disp_get_symbol_name(b);
+            if (!na || !nb) return NIL;
+            return (strcmp(na, nb) == 0) ? TRUE : NIL;
+        }
+        case DISP_CONS: {
+            depth++;
+            disp_val *car_eq = equal_syscall((disp_val*[]){disp_car(a), disp_car(b)}, 2);
+            if (car_eq == NIL) { depth--; return NIL; }
+            disp_val *cdr_eq = equal_syscall((disp_val*[]){disp_cdr(a), disp_cdr(b)}, 2);
+            depth--;
+            return cdr_eq;
+        }
+        default:
+            /* 其他类型（如闭包、文件等）不提供值比较，返回 NIL */
+            return NIL;
+    }
+}
+
 /* Initialisation function called when the shared library is loaded */
 void disp_init_module(void) {
-
-    SPLICE_MARK = disp_intern_symbol("splice-mark");
 
     DEF("cons"    , MKF(cons_syscall   , "<cons>"    ), 1);
     DEF("car"     , MKF(car_syscall    , "<car>"     ), 1);
@@ -483,12 +326,6 @@ void disp_init_module(void) {
     DEF(">"       , MKF(gt_syscall     , "<gt>"      ), 1);
     DEF("="       , MKF(eq_syscall     , "<eq>"      ), 1);
     DEF("eval"    , MKF(eval_syscall   , "<eval>"    ), 1);
-    DEF("append"  , MKF(append_syscall , "<append>"  ), 1);
-    DEF("append0" , MKB(append_builtin , "<#append>" ), 1);
-    DEF("quote"   , MKB(quote_builtin  , "<#quote>"  ), 1);
-    DEF("quasiquote"       , MKB(quasiquote_builtin        , "<#quasiquote>"      ), 1);
-    DEF("unquote"          , MKB(unquote_builtin           , "<#unquote>"         ), 1);
-    DEF("unquote-splicing" , MKB(unquote_splicing_builtin  , "<#unquote-splicing>"), 1);
     DEF("null?"   , MKF(nullp_syscall  , "<null?>"   ), 1);
     DEF("symbol?" , MKF(symbolp_syscall, "<symbol?>" ), 1);
     DEF("string?" , MKF(stringp_syscall, "<string?>" ), 1);
@@ -504,4 +341,5 @@ void disp_init_module(void) {
     DEF("number?" , MKF(numberp_syscall  , "<number?>"  ), 1);
     DEF("set-car!", MKF(set_car_syscall, "<set-car!>"), 1);
     DEF("set-cdr!", MKF(set_cdr_syscall, "<set-cdr!>"), 1);
+    DEF("equal"   , MKF(equal_syscall  , "<equal>"   ), 1);
 }
