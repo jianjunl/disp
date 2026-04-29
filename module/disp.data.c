@@ -12,7 +12,7 @@
 #endif
 #include "../disp.h"
 
-/* List primitives */
+// List primitives
 static disp_val* cons_syscall(disp_val **args, int count) {
     if (count != 2) {
         ERET(NIL, "cons expects two arguments");
