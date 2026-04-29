@@ -1,0 +1,17 @@
+The difference you're seeing comes down to a classic "Lisp implementation detail" regarding how deeply a nested unquote should be expanded.The short answer is: Your current output is actually more technically consistent for a "template-style" expander, but it isn't "correct" according to standard Common Lisp or Scheme behavior.Which is "Right"?The standard behavior for (a (b ,(+ 1 2) ,,x))is indeed(a (quasiquote (b (unquote (+ 1 2)) 5)))`.In a nested quasiquote, the number of commas (unquotes) tells the interpreter which "level" of backtick the expression belongs to.,(+ 1 2) has one comma, so it is "protected" by the second backtick. It stays as a literal (unquote ...) to be evaluated later.,,x has two commas, so it matches the first (outer) backtick. It should be evaluated immediately and replaced with its value (5).The FixThe issue in the code provided earlier is that when level > 1, we were quoting the result of the expansion, which wraps the value in an extra layer. To get 5 instead of (unquote 5), we need to treat the "fully unquoted" value as a raw constant if it's being spliced into a deeper level.Update the UNQUOTE case in your qq_expand function:Celse if (is_tag(expr, UNQUOTE)) {
+    disp_val* inner = disp_car(disp_cdr(expr));
+    if (level == 1) {
+        // Level 1: This is the level we are currently expanding.
+        // Return the expression directly to be evaluated.
+        return inner; 
+    } else {
+        // Level > 1: This belongs to a deeper quasiquote.
+        // We expand the inner part, then wrap it back in UNQUOTE.
+        // FIX: We need to make sure the result is treated as a list 
+        // construction so that it produces (unquote 5) instead of (unquote (quote 5)).
+        return disp_make_cons(LIST, 
+            disp_make_cons(disp_make_cons(QUOTE, disp_make_cons(UNQUOTE, NIL)),
+            disp_make_cons(qq_expand(inner, level - 1), NIL)));
+    }
+}
+Why your result happenedIn your current output: (unquote 5).When your code ran qq_expand on ,x at level 2, it saw level > 1, decremented the level to 1, and called qq_expand(x, 1). Because x is an atom, your code returned (quote 5). Then it wrapped that in unquote, resulting in (unquote (quote 5)) or just (unquote 5) depending on how your printer handles quotes.How to visualize the LevelsThink of Quasiquote levels like an onion:LevelSyntaxActionLevel 1,xEvaluates x and puts the value in the code.Level 2,,xThe outer backtick sees the first ,, reaches inside, sees the second ,, and evaluates x immediately.Nested,(+ 1 2)The outer backtick sees only one ,. It treats the whole thing as a literal list starting with the symbol unquote.Summary for your fix:To get exactly 5 instead of (unquote 5), ensure that your recursive call to qq_expand(inner, level - 1) isn't accidentally re-quoting values that were already meant to be evaluated. If level - 1 reaches the "eval zone" (level 0 or 1 depending on your starting index), it should return the raw value 5, which then gets embedded into the list structure.

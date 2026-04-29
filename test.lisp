@@ -1,0 +1,11 @@
+
+(gc)
+(gc)
+(gc)
+(gc)
+(gc)
+(gc)
+(gc)
+(gc)
+(gc)
+(println "GC done")

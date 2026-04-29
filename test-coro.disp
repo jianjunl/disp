@@ -1,0 +1,7 @@
+#(load "disp.coro.so")
+(define ch (make-channel 2))
+(define producer (lambda () (let ((i 0)) (while #t (send ch i) (begin (println "produced:")(println i)) (set! i (+ i 1)) (sleep-ms 1000)))))
+(define consumer (lambda () (while #t (begin (println "consumed:")(println (recv ch))))))
+(go producer)
+(go consumer)
+(event-loop)
