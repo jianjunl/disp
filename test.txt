@@ -1,0 +1,97 @@
+我对disp代码做了修改：
+第一，新的Makefile.mk产生libdisp.a,disp.static和libdisp.so,disp.shared,disp
+disp.h作为libdisp的api接口，main.c是入口和使用libdisp的示例，使用了disp_repl
+bin,lib,share/disp/module安装到/usr/local下，不在当地。
+Makefile.mk 不够专业，欢迎修改意见。
+第二，使用了disp_allinone_union.h以及一些c宏限制，保证disp.h是唯一api,而disp.coro.h,disp.thread.ho
+只在局部共享。分散union的好处是内存使用合理，不会因为一个结构过大而使所有disp_union都跟着变那么大。
+统一大联合体和分散联合体两种模式,切换方便，只需在disp.h中取消/保留#include "disp_allinone_union.h"行即可。
+目前所有测试未发现这两种模式有区别。
+第三，load.c增加了识别*.disp，原来的disp.lisp改为init.disp/init.lisp, 而且增加了很多cddddr那样的东西。
+第四，对反引号，我自己凑出了如下测试结果，代码见disp.data.c，如果没有明显逻辑错误，就想先这样。
+[root@PKGS /home/lfs/disp]# disp
+disp Lisp (type :quit to exit)
+disp:1> ;; 简单 unquote
+(define x 5)
+x
+disp:2> `(1 ,x 2)          ; 应返回 (1 5 2)
+(1 5 2)
+disp:3> 
+;; 嵌套 quasiquote
+`(a `(b ,(+ 1 2) ,,x))   ; 应返回 (a (quasiquote (b (unquote (+ 1 2)) 5)))
+(a (quasiquote (b (unquote (+ 1 2)) 5)))
+disp:6> 
+;; 多层 unquote（需确保 x 在正确层级求值）
+(let ((x 10)) `(outer ,x `(inner ,,x)))  ; 外层 x=10，内层 x 应在外层环境中求值（10）
+(outer 10 (quasiquote (inner 10)))
+disp:9> 
+`(1 ,(+ 2 3) 4)          ; => (1 5 4)
+(1 5 4)
+disp:11> `(1 ,@(list 2 3) 4)      ; => (1 2 3 4)
+(1 2 3 4)
+disp:12> (let ((x 10)) `(,x ,x))  ; => (10 10)
+(10 10)
+disp:13> `(a `(b ,(+ 1 2) ,,x))   ; => (a (quasiquote (b (unquote (+ 1 2)) 5))) （假设 x=5）
+(a (quasiquote (b (unquote (+ 1 2)) 5)))
+disp:14> 
+
+第五，在disp.coro.c的event_loop_add_fd函数改了
+    if (epoll_ctl(epfd, EPOLL_CTL_ADD, fd, &ev) == -1) {
+        if (errno == EEXIST) {
+            // The fd is already there, so modify it instead
+            epoll_ctl(epfd, EPOLL_CTL_MOD, fd, &ev);
+        } else {
+            // Handle other actual errors (e.g., ENOMEM, EBADF)
+            perror("epoll_ctl ADD");
+        }
+    }
+消除了epoll_ctl ADD错误信息：
+[root@PKGS /home/lfs/disp]# disp ./socket.disp
+"Echo server listening on port " 8999
+"Accepted from " "192.168.31.7:52896"
+"Received: " "asdfasdfsadgasg"
+"Received: " "fas"
+"Received: " "gsdfgsdfg"
+
+[alex@pkgLinux ~]$ telnet 192.168.31.140 8999
+Trying 192.168.31.140...
+Connected to 192.168.31.140.
+Escape character is '^]'.
+asdfasdfsadgasg
+asdfasdfsadgasg
+fas
+fas
+gsdfgsdfg
+gsdfgsdfg
+
+Connection closed by foreign host.
+disp.thread (gc.disp)也工作正常
+[root@PKGS /home/lfs/disp]# disp ./gc.disp
+;; Auto GC thread started (every 5 sec). Use (stop-gc-thread) to stop.
+disp Lisp (type :quit to exit)
+disp:1> ;; GC thread started, interval = 5 seconds
+;; GC thread started, interval = 5 seconds
+;; [GC] performed.
+;; [GC] performed.
+;; [GC] performed.
+;; [GC] performed.
+q
+
+最后，最关键的是gc
+symbol.c的sweep函数增加了
+            if (T(curr) == DISP_SYMBOL)
+                curr->dtor(curr);
+symbol.c的destroy函数增加了
+            disp_val *v = V(curr);
+            if (v && v != NIL)
+                v->dtor(v);
+            break;
+感觉不太合适，如果多个symbol指向同一个disp_val就麻烦了。
+eval.c里的bind_params和restore_bindings并没有释放符号来激活gc，所有其实没有任何disp_val被destroy
+全局符号肯定不能释放，局部变量只有lambda/macro/let的参数，还缺个var，请给补做一下。
+我总觉得disp_var里mark只为mark/sweep算法用，好像缺个符号对value的reference count,
+请给把gc好好设计重构一下吧。
+
+我曾经在disp_coro_t里增加了disp_coro_t *next指针，并吧disp.coro*.c里所有的(disp_val*)v->next全换成了v->data->coro->next,
+socket.disp也能工作，后来觉得这或破坏gc，又都改回去了，不知道我的担心和理解对不对。
+

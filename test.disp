@@ -1,0 +1,72 @@
+(load "disp.lisp")
+#| 这是多行注释
+   可以跨行
+    嵌套注释 #
+   结束 |# '(1 2 3)   # 括号不会被解析
+'(1 2 3)
+
+(define my-coro (lambda ()
+  (print "coroutine start")
+  (yield)
+  (print "coroutine resume")
+  "done"))
+(define co (make-coroutine my-coro))
+(resume co)   ; 应输出 "coroutine start"
+(resume co)   ; 应输出 "coroutine resume" 并返回 "done"
+
+
+;; 定义一个生成器风格的协程，每次 yield 返回一个值，并接收外部参数
+(define generator (lambda ()
+  (let ((x 0))
+    (while true
+      (set! x (yield x))   ; yield 返回当前 x，并等待外部传入新值
+      (print "received: ")
+      (println x)))))
+
+(define g (make-coroutine generator))
+
+;; 第一次恢复，协程启动，执行到第一个 yield，返回初始值 0
+(resume g)           ; => 0
+
+;; 第二次恢复，传入参数 100，yield 表达式得到 100，赋值给 x，循环继续，再次 yield 返回 100
+(resume g 100)       ; 打印 "received: 100"，返回 100
+
+;; 第三次恢复，传入 200，同理
+(resume g 200)       ; 打印 "received: 200"，返回 200
+
+;; 测试最终返回值（协程正常结束）
+(define simple (lambda () "done"))
+(define s (make-coroutine simple))
+(resume s)           ; 协程立即结束，返回 "done"
+(resume s)           ; 再次恢复，返回 "done"（已结束）
+
+ (define f (fopen "test.txt" "w"))
+;f
+(fclose f)
+;true
+(fclose f)   ; 第二次调用，不会崩溃，返回 true
+;true
+(catch 'error
+    (unwind-protect
+        (let ((f (fopen "test.txt" "w")))
+          (if (eq? f nil) (throw 'error "open failed"))
+          (fwrite f "Hello, World!\n")
+          (throw 'error "oops"))
+      (fclose f)))
+;"oops"
+f
+#<file (closed)>   ; 如果打印函数能显示状态更好
+
+;; block / return-from
+#|
+(block nil
+  (println "before return")
+  (return "exited")
+  (println "after return"))
+(block outer
+  (dolist (x '(1 2 3 4))
+    (if (= x 3) (return-from outer 'found))
+    (printf "x=%d\n" x))
+  'not-found)
+|#
+;; 输出 x=1 x=2 然后返回 found

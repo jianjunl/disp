@@ -1,0 +1,57 @@
+;; 加载基础库
+(load "disp.data.so")   ;; 提供 list, cons, car, cdr, append, eq? 等
+(load "disp.flow.so")   ;; 提供 define-macro, block, return, if, begin 等
+(load "disp.lisp")
+
+;; 手动定义 append（如果 disp.data.so 中没有）
+(define append
+  (lambda (a b)
+    (if (eq? a nil) b
+        (cons (car a) (append (cdr a) b)))))
+
+;; 定义 go 宏
+(define-macro go(expr)
+  (list 'go-func (list 'lambda '() expr)))
+
+;; 定义 while 宏
+(define-macro (while test . body)
+  (list 'block nil
+        (list 'let 'loop '()
+              (list 'if test
+                    (cons 'begin (append body (list '(loop))))
+                    '(return)))))
+
+;; 定义 break 宏
+(define-macro (break) '(return))
+
+;; 处理客户端连接
+(define (handle-client client-sock)
+  (let ((client (car client-sock))
+        (addr (cdr client-sock)))
+    (println "Accepted from " addr)
+    (while true
+      (let ((data (recv-socket client 1024)))
+        (if (eq? data nil)
+            (begin
+              (println "Client " addr " disconnected")
+              (close-socket client)
+              (break))
+            (begin
+              (println "Received: " data)
+              (send-socket client data)))))))
+
+;; 服务器主循环
+(define (server port)
+  (let ((listen-sock (make-socket)))
+    (bind-socket listen-sock port)
+    (listen-socket listen-sock 10)
+    (println "Echo server listening on port " port)
+    (while true
+      (let ((client (accept-socket listen-sock)))
+        (go (handle-client client))))))
+
+;; 启动服务器
+(go (server 8999))
+
+;; 启动事件循环
+(event-loop)

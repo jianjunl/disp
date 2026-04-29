@@ -1,0 +1,62 @@
+;; gc.lisp - 后台线程定期触发 GC，使用通道确保可靠循环
+;;
+;; 用法: (load "gc.lisp")
+;;       (start-gc-thread 5.0)
+;;       (stop-gc-thread)
+
+(define null? (lambda (x) (eq? x nil)))
+(define fprintln (lambda (f s) (fprintf f "%s\n" s)))
+
+;; 全局控制
+(define *gc-chan* nil)       ; 用于向 GC 线程发送“继续/停止”信号的通道
+(define *gc-thread* nil)
+(define *gc-auto-started* nil)
+
+;; 停止后台 GC 线程
+(define (stop-gc-thread)
+  (if (not (null? *gc-chan*))
+      (begin
+        (fprintln stderr ";; Sending stop signal to GC thread...")
+        (send *gc-chan* 'stop)        ; 发送停止符号
+        (thread-join *gc-thread*)
+        (set! *gc-chan* nil)
+        (set! *gc-thread* nil)
+        (fprintln stderr ";; GC thread stopped."))
+      (fprintln stderr ";; No GC thread running."))
+  #t)
+
+;; 启动后台 GC 线程，interval 单位为秒
+(define (start-gc-thread interval)
+  (if (not (number? interval))
+      (begin (fprintln stderr "start-gc-thread: interval must be a number") nil)
+      (begin
+        (if (not (null? *gc-thread*)) (stop-gc-thread))
+        (set! *gc-chan* (make-channel 0))   ; 无缓冲通道，用于精确控制
+        (set! *gc-thread*
+              (make-thread
+               (lambda ()
+                 (fprintln stderr (string ";; GC thread started, interval = "
+                                          (number->string interval)
+                                          " seconds"))
+                 (let loop ()
+                   (let ((msg (recv *gc-chan*)))  ; 阻塞等待信号
+                     (if (eq? msg 'stop)
+                         (fprintln stderr ";; GC thread exiting...")
+                         (begin
+                           ;; 任何非 'stop 的消息都触发 GC
+                           (gc)
+                           (fprintln stderr ";; [GC] performed.")
+                           ;; 设置定时器，interval 秒后向通道发送 'tick
+                           (thread-sleep interval)
+                           (send *gc-chan* 'tick)
+                           (loop))))))))
+        ;; 启动循环：发送第一个 tick
+        (send *gc-chan* 'tick)
+        *gc-thread*)))
+
+;; 自动启动
+(if (not *gc-auto-started*)
+    (begin
+      (set! *gc-auto-started* #t)
+      (start-gc-thread 5.0)
+      (fprintln stderr ";; Auto GC thread started (every 5 sec). Use (stop-gc-thread) to stop.")))
