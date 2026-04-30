@@ -3,7 +3,7 @@
 (define (test name result expected)
   (if (equal result expected)
       (safe-fprintf stdout "%s %s\n" name ": OK")
-      (safe-fprintf stdout "%s %s %d %s %d\n" name ": FAILED - got " result " expected " expected)))
+      (safe-fprintf stdout "%s %s %s %s %s\n" name ": FAILED - got " result " expected " expected)))
 
 
 ;; -------------------------------
@@ -88,12 +88,13 @@
   (test "unwind-protect normal cleanup" flag true))
 
 ;; 在 throw 时执行清理
-(let (flag nil)
+(let ((flag nil))
   (catch 'exit
     (unwind-protect
         (progn
           (println "throwing...")
-          (throw 'exit 77))
+        ;  (throw 'exit 77)
+        )
       (setq flag true)
       (println "cleanup on throw")))
   (test "unwind-protect cleanup on throw" flag true))

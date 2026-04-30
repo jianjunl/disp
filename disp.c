@@ -133,7 +133,7 @@ void disp_init_globals() {
     gc_add_root(&UNQUOTE_SPLICING);
     disp_load("disp.lamb.so");
     LAMBDA  = disp_find_symbol("lambda");
-    disp_load("disp.closure.so");
+    disp_load("disp.leta.so");
     LETA    = disp_find_symbol("let*");
     LETRECA = disp_find_symbol("letrec*");
     disp_load("disp.flow.so");

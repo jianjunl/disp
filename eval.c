@@ -20,7 +20,7 @@
 typedef struct {
     char *name;
     disp_val *old_value;
-    int existed;
+    int existed;   /* 1 if the symbol existed before binding */
 } saved_binding;
 
 static saved_binding* bind_params(disp_val *params, disp_val **args, int arg_count) {
@@ -70,6 +70,10 @@ static saved_binding* bind_params(disp_val *params, disp_val **args, int arg_cou
         saved[i].name = gc_strdup(name);
         saved[i].existed = (old_sym != NULL);
         saved[i].old_value = saved[i].existed ? disp_get_symbol_value(old_sym) : NIL;
+        /* 将旧值注册为 GC 精确根，防止被回收 */
+        if (saved[i].existed && saved[i].old_value != NULL) {
+            gc_add_root(&saved[i].old_value);
+        }
         disp_define_symbol(name, args[i], 0);
         i++;
         p = disp_cdr(p);
@@ -87,7 +91,11 @@ static saved_binding* bind_params(disp_val *params, disp_val **args, int arg_cou
         saved[i].name = gc_strdup(rest_name);
         saved[i].existed = (old_rest_sym != NULL);
         saved[i].old_value = saved[i].existed ? disp_get_symbol_value(old_rest_sym) : NIL;
+        if (saved[i].existed && saved[i].old_value != NULL) {
+            gc_add_root(&saved[i].old_value);
+        }
         disp_define_symbol(rest_name, rest_list, 0);
+        // i++;  // not needed because we return total_bindings
     }
 
     return saved;
@@ -95,6 +103,10 @@ static saved_binding* bind_params(disp_val *params, disp_val **args, int arg_cou
 
 static void restore_bindings(saved_binding *saved, int count) {
     for (int i = 0; i < count; i++) {
+        /* 移除旧值的根保护 */
+        if (saved[i].existed && saved[i].old_value != NULL) {
+            gc_remove_root(&saved[i].old_value);
+        }
         if (saved[i].existed)
             disp_define_symbol(saved[i].name, saved[i].old_value, 0);
         else
@@ -128,6 +140,7 @@ disp_val* disp_apply_closure(disp_val *closure, disp_val **args, int arg_count) 
     // 计算参数个数（用于恢复）
     int param_count = 0;
     for (disp_val *p = params; p && T(p) == DISP_CONS; p = disp_cdr(p)) param_count++;
+    if (params != NIL && T(params) != DISP_CONS) param_count++; // rest param case
     disp_val *result = disp_eval_body(body);
     restore_bindings(saved, param_count);
     return result;

@@ -118,7 +118,7 @@ static disp_val* let_builtin(disp_val *expr) {
         }
     }
     
-    // 原 let 逻辑保持不变...
+    // 原 let 逻辑
     disp_val *bindings = disp_car(rest);
     disp_val *body = disp_cdr(rest);
     if (!body) ERET(NIL, "let: missing body");
@@ -148,20 +148,17 @@ static disp_val* let_builtin(disp_val *expr) {
         b = disp_cdr(b);
     }
 
-    // 2. 保存旧值（如果需要恢复，但 let 是局部作用域，我们用占位 + 恢复的方式）
-    // 先保存旧值
+    // 2. 保存旧值，并注册为 GC 精确根，防止被回收
     disp_val **old_vals = gc_malloc(var_count * sizeof(disp_val*));
     for (int j = 0; j < var_count; j++) {
         disp_val *old_sym = disp_find_symbol(var_names[j]);
         old_vals[j] = old_sym ? disp_get_symbol_value(old_sym) : NULL;
+        if (old_vals[j] != NULL) {
+            gc_add_root(&old_vals[j]);
+        }
     }
 
     // 3. 求值并绑定（let 同时求值再赋值，let* 顺序求值并立即赋值）
-// 原代码
-//if (disp_car(expr) == LETA) {
-// 改为
-//disp_val *car_expr = disp_car(expr);
-//if (car_expr != NIL && T(car_expr) == DISP_SYMBOL && strcmp(disp_get_symbol_name(car_expr), "let*") == 0) {
     if (disp_car(expr) == LETA) {
         // let*: 顺序求值，每个 expr 可以引用之前绑定的变量
         for (int j = 0; j < var_count; j++) {
@@ -171,11 +168,17 @@ static disp_val* let_builtin(disp_val *expr) {
     } else { // let
         // let: 先全部求值，再统一赋值（expr 中不能引用同批次的变量）
         disp_val **values = gc_malloc(var_count * sizeof(disp_val*));
+        // 注册临时值，防止在赋值前被 GC 回收
         for (int j = 0; j < var_count; j++) {
             values[j] = disp_eval(expr_vals[j]);
+            gc_add_root(&values[j]);
         }
         for (int j = 0; j < var_count; j++) {
             disp_define_symbol(var_names[j], values[j], 0);
+        }
+        // 解除注册，现在值已由符号表持有
+        for (int j = 0; j < var_count; j++) {
+            gc_remove_root(&values[j]);
         }
         gc_free(values);
     }
@@ -185,10 +188,12 @@ static disp_val* let_builtin(disp_val *expr) {
 
     // 5. 恢复旧值
     for (int j = 0; j < var_count; j++) {
-        if (old_vals[j] != NULL)
-            disp_define_symbol(var_names[j], old_vals[j], 0);
-        else
-            disp_define_symbol(var_names[j], NIL, 0);
+        disp_val *restore = old_vals[j];
+        disp_define_symbol(var_names[j], restore ? restore : NIL, 0);
+        // 移除旧值的根注册
+        if (restore != NULL) {
+            gc_remove_root(&old_vals[j]);
+        }
         gc_free(var_names[j]);
     }
     gc_free(var_names);
@@ -208,14 +213,12 @@ static disp_val* letrec_builtin(disp_val *expr) {
     if (T(first) == DISP_SYMBOL) {
         disp_val *second_rest = disp_cdr(rest);
         if (second_rest && T(second_rest) == DISP_CONS) {
-            // 命名 letrec 也可用相同机制，复用 letf（将 let 改为 letrec 即可）
-            // 或者单独实现 letrecf，但这里为了简单，调用 letf 并将生成的 letrec 改为 letrec
-            // 注意：letf 内部使用 LETRECA，所以命名 letrec 也可以直接使用 letf
+            // 命名 letrec 也复用 letf（内部使用 letrec* 生成递归调用）
             return letf(expr);
         }
     }
     
-    // 原 letrec 逻辑...
+    // 原 letrec 逻辑
     disp_val *bindings = disp_car(rest);
     disp_val *body = disp_cdr(rest);
     if (!body) ERET(NIL, "letrec: missing body");
@@ -245,17 +248,22 @@ static disp_val* letrec_builtin(disp_val *expr) {
         b = disp_cdr(b);
     }
 
-    // 2. 创建所有变量并赋初始值为 NIL（占位）
+    // 2. 保存旧值（必须！否则会破坏外部绑定）
+    disp_val **old_vals = gc_malloc(var_count * sizeof(disp_val*));
+    for (int j = 0; j < var_count; j++) {
+        disp_val *old_sym = disp_find_symbol(var_names[j]);
+        old_vals[j] = old_sym ? disp_get_symbol_value(old_sym) : NULL;
+        if (old_vals[j] != NULL) {
+            gc_add_root(&old_vals[j]);
+        }
+    }
+
+    // 3. 创建所有变量并赋初始值为 NIL（占位）
     for (int j = 0; j < var_count; j++) {
         disp_define_symbol(var_names[j], NIL, 0);
     }
 
-    // 3. 如果是 letrec*，顺序求值并赋值；如果是 letrec，先全部求值再赋值
-// 原代码
-//if (disp_car(expr) == LETRECA) {
-// 改为
-//disp_val *car_expr = disp_car(expr);
-//if (car_expr != NIL && T(car_expr) == DISP_SYMBOL && strcmp(disp_get_symbol_name(car_expr), "letrec*") == 0) {
+    // 4. 如果是 letrec*，顺序求值并赋值；如果是 letrec，先全部求值再赋值
     if (disp_car(expr) == LETRECA) {
         // 顺序求值并立即赋值
         for (int j = 0; j < var_count; j++) {
@@ -267,24 +275,34 @@ static disp_val* letrec_builtin(disp_val *expr) {
         disp_val **values = gc_malloc(var_count * sizeof(disp_val*));
         for (int j = 0; j < var_count; j++) {
             values[j] = disp_eval(expr_vals[j]);
+            gc_add_root(&values[j]);
         }
         // 再赋值
         for (int j = 0; j < var_count; j++) {
             disp_define_symbol(var_names[j], values[j], 0);
         }
+        // 解除值保护
+        for (int j = 0; j < var_count; j++) {
+            gc_remove_root(&values[j]);
+        }
         gc_free(values);
     }
 
-    // 4. 执行 body
+    // 5. 执行 body
     disp_val *result = disp_eval_body(body);
 
-    // 5. 清理临时变量（可选：恢复旧值或直接设为 NIL）
+    // 6. 恢复旧值（而不是简单设为 NIL）
     for (int j = 0; j < var_count; j++) {
-        disp_define_symbol(var_names[j], NIL, 0);
+        disp_val *restore = old_vals[j];
+        disp_define_symbol(var_names[j], restore ? restore : NIL, 0);
+        if (restore != NULL) {
+            gc_remove_root(&old_vals[j]);
+        }
         gc_free(var_names[j]);
     }
     gc_free(var_names);
     gc_free(expr_vals);
+    gc_free(old_vals);
 
     return result;
 }
