@@ -101,46 +101,6 @@ static disp_val* error_syscall(disp_val **args, int count) {
 }
 
 /* -------------------------------------------------------------------------
- * return-from 系统调用
- * ------------------------------------------------------------------------- */
-__attribute__((optimize("O0")))
-static disp_val* return_from_syscall(disp_val **args, int count) {
-    if (count < 1) ERET(NIL, "return-from expects at least one argument");
-    disp_val *name = args[0];
-    if (T(name) != DISP_SYMBOL) ERET(NIL, "return-from: name must be a symbol");
-    disp_val *value = (count >= 2) ? args[1] : NIL;
-
-    for (frame_t *f = current_frame; f; f = f->prev) {
-        if (f->type == FRAME_BLOCK && f->tag == name) {
-            f->result = value;
-            target_frame = f;
-            THROW(2);
-            // NOTREACHED
-        }
-    }
-    ERET(NIL, "return-from: no matching block named");
-}
-
-/* -------------------------------------------------------------------------
- * return 系统调用 (寻找最近名为 NIL 的 block)
- * ------------------------------------------------------------------------- */
-
-__attribute__((optimize("O0")))
-static disp_val* return_syscall(disp_val **args, int count) {
-    disp_val *value = (count >= 1) ? args[0] : NIL;
-
-    for (frame_t *f = current_frame; f; f = f->prev) {
-        if (f->type == FRAME_BLOCK && f->tag == NIL) {
-            f->result = value;
-            target_frame = f;
-            THROW(2);
-            // NOTREACHED
-        }
-    }
-    ERET(NIL, "return: no matching nil block");
-}
-
-/* -------------------------------------------------------------------------
  * catch 内置特殊形式
  * ------------------------------------------------------------------------- */
 __attribute__((optimize("O0")))
@@ -277,118 +237,6 @@ static disp_val* unwind_protect_builtin(disp_val *expr) {
     return NIL;
 }
 
-/*
-__attribute__((optimize("O0")))
-static disp_val* return_from_builtin(disp_val *expr) {
-    // 语法: (return-from name [value])
-    disp_val *rest = disp_cdr(expr);
-    if (!rest || T(rest) != DISP_CONS)
-        ERET(NIL, "return-from: missing name");
-    disp_val *name = disp_car(rest);          // 未经求值的符号
-    if (T(name) != DISP_SYMBOL)
-        ERET(NIL, "return-from: name must be a symbol");
-
-    disp_val *value_rest = disp_cdr(rest);
-    disp_val *value = (value_rest && T(value_rest) == DISP_CONS)
-                      ? disp_eval(disp_car(value_rest))
-                      : NIL;
-
-    // 查找匹配的 block 帧
-    frame_t *target = NULL;
-    for (frame_t *f = current_frame; f; f = f->prev) {
-        if (f->type == FRAME_BLOCK && f->tag == name) {
-            target = f;
-            break;
-        }
-    }
-    if (!target) ERET(NIL, "return-from: no matching block named");
-
-    // 执行清理（unwind-protect 会由 TRY/CATCH 自动处理）
-    run_cleanups(current_frame, target->prev);   // 如果仍保留了 run_cleanups，可调用
-    target->result = value;
-    THROW(2);
-    return NIL;
-}
-
-// --- return 改为 builtin ---
-__attribute__((optimize("O0")))
-static disp_val* return_builtin(disp_val *expr) {
-    // 语法: (return [value])
-    disp_val *rest = disp_cdr(expr);
-    disp_val *value = (rest && T(rest) == DISP_CONS)
-                      ? disp_eval(disp_car(rest))
-                      : NIL;
-
-    // 找最近名为 NIL 的 block
-    frame_t *target = NULL;
-    for (frame_t *f = current_frame; f; f = f->prev) {
-        if (f->type == FRAME_BLOCK && f->tag == NIL) {
-            target = f;
-            break;
-        }
-    }
-    if (!target) ERET(NIL, "return: no matching nil block");
-
-    run_cleanups(current_frame, target->prev);
-    target->result = value;
-    THROW(2);
-    return NIL;
-}
-*/
-
-/*
-__attribute__((optimize("O0")))
-static disp_val* return_from_builtin(disp_val *expr) {
-    disp_val *rest = disp_cdr(expr);
-    if (!rest || T(rest) != DISP_CONS)
-        ERET(NIL, "return-from: missing name");
-    disp_val *name = disp_car(rest);   // 未求值符号
-    if (T(name) != DISP_SYMBOL)
-        ERET(NIL, "return-from: name must be a symbol");
-
-    disp_val *value_rest = disp_cdr(rest);
-    disp_val *value = (value_rest && T(value_rest) == DISP_CONS)
-                      ? disp_eval(disp_car(value_rest))
-                      : NIL;
-
-    frame_t *target = NULL;
-    for (frame_t *f = current_frame; f; f = f->prev) {
-        if (f->type == FRAME_BLOCK && f->tag == name) {
-            target = f;
-            break;
-        }
-    }
-    if (!target) ERET(NIL, "return-from: no matching block named");
-
-    target->result = value;
-    target_frame = target;
-    THROW(2);
-    return NIL;   // never reached
-}
-
-__attribute__((optimize("O0")))
-static disp_val* return_builtin(disp_val *expr) {
-    disp_val *rest = disp_cdr(expr);
-    disp_val *value = (rest && T(rest) == DISP_CONS)
-                      ? disp_eval(disp_car(rest))
-                      : NIL;
-
-    frame_t *target = NULL;
-    for (frame_t *f = current_frame; f; f = f->prev) {
-        if (f->type == FRAME_BLOCK && f->tag == NIL) {
-            target = f;
-            break;
-        }
-    }
-    if (!target) ERET(NIL, "return: no matching nil block");
-
-    target->result = value;
-    target_frame = target;
-    THROW(2);
-    return NIL;
-}
-*/
-
 __attribute__((optimize("O0")))
 static disp_val* return_from_builtin(disp_val *expr) {
     disp_val *rest = disp_cdr(expr);
@@ -458,8 +306,6 @@ void disp_init_module(void) {
     DEF("error"         , MKF(error_syscall         , "<error>"         ) , 1);
     DEF("raise"         , MKF(error_syscall         , "<raise>"         ) , 1);
     DEF("block"         , MKB(block_builtin         , "<#block>"        ) , 1);
-    //DEF("return-from"   , MKF(return_from_syscall   , "<return-from>"   ) , 1);
-    //DEF("return"        , MKF(return_syscall        , "<return>"        ) , 1);
     DEF("return-from"   , MKB(return_from_builtin   , "<#return-from>"  ) , 1);  // 改 MKB
     DEF("return"        , MKB(return_builtin        , "<#return>"       ) , 1);  // 改 MKB
     DEF("unwind-protect", MKB(unwind_protect_builtin, "<#unwind-protect>"), 1);
