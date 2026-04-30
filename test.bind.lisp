@@ -5,6 +5,8 @@
 (define define-macro3 (macro (name args . body) (let ((macro-body (if (null? (cdr body)) (car body) (cons 'begin body)))) (list 'define name (list 'macro args macro-body)))))
 (define define-macro4 (macro (name args . body) (cons 'define (cons name (cons (cons 'macro (cons args body)) '())))))
 (define define-macro5 (macro (name args . body) (eval (list 'define name (cons 'macro (cons args body))))))
+(define define-macro0 (macro (name args . body)
+  (list 'define name (list 'macro args (cons 'begin body)))))
 
 ;; test.bind.lisp - 测试局部绑定及 GC 下的旧值保护
 ;; 辅助函数
@@ -79,7 +81,8 @@
 ;; ------------------------------------------------------------------
 (setq *tracker* nil)
 
-(define-macro test-macro (name)
+(define-macro0 test-macro (name)
+;(define-macro test-macro (name)
 ;(define-macro1 test-macro (name)
 ;(define-macro2 test-macro (name)
 ;(define-macro3 test-macro (name)

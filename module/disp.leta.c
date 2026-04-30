@@ -102,6 +102,7 @@ static disp_val* letf(disp_val *expr) {
     return disp_eval(letrec_expr);
 }
 
+/*
 // --- let/let* ---
 static disp_val* let_builtin(disp_val *expr) {
     // 语法: (let ((var1 expr1) ...) body ...)  或 (let name ((var init) ...) body ...)
@@ -305,6 +306,209 @@ static disp_val* letrec_builtin(disp_val *expr) {
     gc_free(old_vals);
 
     return result;
+}
+*/
+
+static disp_val* let_builtin(disp_val *expr) {
+    disp_val *rest = disp_cdr(expr);
+    if (!rest || T(rest) != DISP_CONS) ERET(NIL, "let: missing binding list");
+
+    disp_val *first = disp_car(rest);
+    if (T(first) == DISP_SYMBOL) {
+        disp_val *second_rest = disp_cdr(rest);
+        if (second_rest && T(second_rest) == DISP_CONS)
+            return letf(expr);
+    }
+
+    disp_val *bindings = disp_car(rest);
+    disp_val *body = disp_cdr(rest);
+    if (!body) ERET(NIL, "let: missing body");
+
+    int var_count = 0;
+    for (disp_val *b = bindings; b && T(b) == DISP_CONS; b = disp_cdr(b)) var_count++;
+    if (var_count == 0) return disp_eval_body(body);
+
+    char **var_names = gc_malloc(var_count * sizeof(char*));
+    disp_val **expr_vals = gc_malloc(var_count * sizeof(disp_val*));
+    int i = 0;
+    disp_val *b = bindings;
+    while (b && T(b) == DISP_CONS) {
+        disp_val *pair = disp_car(b);
+        if (T(pair) != DISP_CONS || T(disp_car(pair)) != DISP_SYMBOL) {
+            gc_free(var_names); gc_free(expr_vals);
+            ERET(NIL, "let: malformed binding (var expr)");
+        }
+        disp_val *var_sym = disp_car(pair);
+        var_names[i] = gc_strdup(disp_get_symbol_name(var_sym));
+        expr_vals[i] = disp_car(disp_cdr(pair));
+        i++;
+        b = disp_cdr(b);
+    }
+
+    // 保存旧值
+    disp_val **old_vals = gc_malloc(var_count * sizeof(disp_val*));
+    for (int j = 0; j < var_count; j++) {
+        disp_val *old_sym = disp_find_symbol(var_names[j]);
+        old_vals[j] = old_sym ? disp_get_symbol_value(old_sym) : NULL;
+        if (old_vals[j] != NULL) gc_add_root(&old_vals[j]);
+    }
+
+    // 求值并绑定
+    if (disp_car(expr) == LETA) {   // let*
+        for (int j = 0; j < var_count; j++) {
+            disp_val *val = disp_eval(expr_vals[j]);
+            disp_define_symbol(var_names[j], val, 0);
+        }
+    } else {
+        disp_val **values = gc_malloc(var_count * sizeof(disp_val*));
+        for (int j = 0; j < var_count; j++) {
+            values[j] = disp_eval(expr_vals[j]);
+            gc_add_root(&values[j]);
+        }
+        for (int j = 0; j < var_count; j++) {
+            disp_define_symbol(var_names[j], values[j], 0);
+        }
+        for (int j = 0; j < var_count; j++) gc_remove_root(&values[j]);
+        gc_free(values);
+    }
+
+    // 执行 body（异常安全版本）
+    disp_val *result = NIL;
+    volatile int normal_exit = 0;
+    TRY {
+        result = disp_eval_body(body);
+        normal_exit = 1;
+    } CATCH {
+        // 异常路径：恢复绑定，释放资源，然后继续传播
+        for (int j = 0; j < var_count; j++) {
+            disp_val *restore = old_vals[j];
+            disp_define_symbol(var_names[j], restore ? restore : NIL, 0);
+            if (restore != NULL) gc_remove_root(&old_vals[j]);
+            gc_free(var_names[j]);
+        }
+        gc_free(var_names);
+        gc_free(expr_vals);
+        gc_free(old_vals);
+        THROW(THROWN);
+    }
+    END_TRY;
+
+    // 正常路径：恢复绑定，释放资源
+    if (normal_exit) {
+        for (int j = 0; j < var_count; j++) {
+            disp_val *restore = old_vals[j];
+            disp_define_symbol(var_names[j], restore ? restore : NIL, 0);
+            if (restore != NULL) gc_remove_root(&old_vals[j]);
+            gc_free(var_names[j]);
+        }
+        gc_free(var_names);
+        gc_free(expr_vals);
+        gc_free(old_vals);
+        return result;
+    }
+    return NIL;   // 不会执行到
+}
+
+static disp_val* letrec_builtin(disp_val *expr) {
+    disp_val *rest = disp_cdr(expr);
+    if (!rest || T(rest) != DISP_CONS) ERET(NIL, "letrec: missing binding list");
+
+    disp_val *first = disp_car(rest);
+    if (T(first) == DISP_SYMBOL) {
+        disp_val *second_rest = disp_cdr(rest);
+        if (second_rest && T(second_rest) == DISP_CONS)
+            return letf(expr);
+    }
+
+    disp_val *bindings = disp_car(rest);
+    disp_val *body = disp_cdr(rest);
+    if (!body) ERET(NIL, "letrec: missing body");
+
+    int var_count = 0;
+    for (disp_val *b = bindings; b && T(b) == DISP_CONS; b = disp_cdr(b)) var_count++;
+    if (var_count == 0) return disp_eval_body(body);
+
+    char **var_names = gc_malloc(var_count * sizeof(char*));
+    disp_val **expr_vals = gc_malloc(var_count * sizeof(disp_val*));
+    int i = 0;
+    disp_val *b = bindings;
+    while (b && T(b) == DISP_CONS) {
+        disp_val *pair = disp_car(b);
+        if (T(pair) != DISP_CONS || T(disp_car(pair)) != DISP_SYMBOL) {
+            gc_free(var_names); gc_free(expr_vals);
+            ERET(NIL, "letrec: malformed binding (var expr)");
+        }
+        disp_val *var_sym = disp_car(pair);
+        var_names[i] = gc_strdup(disp_get_symbol_name(var_sym));
+        expr_vals[i] = disp_car(disp_cdr(pair));
+        i++;
+        b = disp_cdr(b);
+    }
+
+    // 保存旧值
+    disp_val **old_vals = gc_malloc(var_count * sizeof(disp_val*));
+    for (int j = 0; j < var_count; j++) {
+        disp_val *old_sym = disp_find_symbol(var_names[j]);
+        old_vals[j] = old_sym ? disp_get_symbol_value(old_sym) : NULL;
+        if (old_vals[j] != NULL) gc_add_root(&old_vals[j]);
+    }
+
+    // 占位赋 NIL
+    for (int j = 0; j < var_count; j++)
+        disp_define_symbol(var_names[j], NIL, 0);
+
+    // 求值并赋值
+    if (disp_car(expr) == LETRECA) {   // letrec*
+        for (int j = 0; j < var_count; j++) {
+            disp_val *val = disp_eval(expr_vals[j]);
+            disp_define_symbol(var_names[j], val, 0);
+        }
+    } else {
+        disp_val **values = gc_malloc(var_count * sizeof(disp_val*));
+        for (int j = 0; j < var_count; j++) {
+            values[j] = disp_eval(expr_vals[j]);
+            gc_add_root(&values[j]);
+        }
+        for (int j = 0; j < var_count; j++) {
+            disp_define_symbol(var_names[j], values[j], 0);
+        }
+        for (int j = 0; j < var_count; j++) gc_remove_root(&values[j]);
+        gc_free(values);
+    }
+
+    // 执行 body（异常安全）
+    disp_val *result = NIL;
+    volatile int normal_exit = 0;
+    TRY {
+        result = disp_eval_body(body);
+        normal_exit = 1;
+    } CATCH {
+        for (int j = 0; j < var_count; j++) {
+            disp_val *restore = old_vals[j];
+            disp_define_symbol(var_names[j], restore ? restore : NIL, 0);
+            if (restore != NULL) gc_remove_root(&old_vals[j]);
+            gc_free(var_names[j]);
+        }
+        gc_free(var_names);
+        gc_free(expr_vals);
+        gc_free(old_vals);
+        THROW(THROWN);
+    }
+    END_TRY;
+
+    if (normal_exit) {
+        for (int j = 0; j < var_count; j++) {
+            disp_val *restore = old_vals[j];
+            disp_define_symbol(var_names[j], restore ? restore : NIL, 0);
+            if (restore != NULL) gc_remove_root(&old_vals[j]);
+            gc_free(var_names[j]);
+        }
+        gc_free(var_names);
+        gc_free(expr_vals);
+        gc_free(old_vals);
+        return result;
+    }
+    return NIL;
 }
 
 /* Initialisation function called when the shared library is loaded */

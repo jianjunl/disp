@@ -17,7 +17,7 @@
 (test "catch without throw"
       (catch 'bar
         (println "no throw")
-        99)
+        42)
       99)
 
 ;; -------------------------------

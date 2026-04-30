@@ -87,6 +87,9 @@ static saved_binding* bind_params(disp_val *params, disp_val **args, int arg_cou
         for (int j = arg_count - 1; j >= fixed_count; j--) {
             rest_list = disp_make_cons(args[j], rest_list);
         }
+        // 临时保护 rest_list，防止在绑定前被 GC 回收
+        gc_add_root(&rest_list);
+
         disp_val *old_rest_sym = disp_find_symbol(rest_name);
         saved[i].name = gc_strdup(rest_name);
         saved[i].existed = (old_rest_sym != NULL);
@@ -95,7 +98,8 @@ static saved_binding* bind_params(disp_val *params, disp_val **args, int arg_cou
             gc_add_root(&saved[i].old_value);
         }
         disp_define_symbol(rest_name, rest_list, 0);
-        // i++;  // not needed because we return total_bindings
+        // 绑定完成，rest_list 现在由符号表持有，可解除保护
+        gc_remove_root(&rest_list);
     }
 
     return saved;
@@ -181,13 +185,21 @@ static disp_val* expand_macro(disp_val *macro, disp_val *expr) {
     // Collect all argument forms into an array
     disp_val **arg_forms = gc_malloc(arg_count * sizeof(disp_val*));
     int i = 0;
-    for (disp_val *a = args; a && T(a) == DISP_CONS; a = disp_cdr(a))
-        arg_forms[i++] = disp_car(a);
+    for (disp_val *a = args; a && T(a) == DISP_CONS; a = disp_cdr(a)) {
+        arg_forms[i] = disp_car(a);
+        // 临时保护表达式节点，防止 GC 回收
+        gc_add_root(&arg_forms[i]);
+        i++;
+    }
 
     // Bind parameters (including rest)
     saved_binding *saved = bind_params(params, arg_forms, arg_count);
-    gc_free(arg_forms);
-    if (!saved) return NIL;
+    if (!saved) {
+        // 出错时移除保护
+        for (int idx = 0; idx < i; idx++) gc_remove_root(&arg_forms[idx]);
+        gc_free(arg_forms);
+        return NIL;
+    }
 
     // Expand the macro body
     disp_val *expansion = disp_eval_body(body);
@@ -195,6 +207,11 @@ static disp_val* expand_macro(disp_val *macro, disp_val *expr) {
     // Restore bindings (total = fixed parameters + optional rest)
     int total_bindings = fixed_count + (has_rest ? 1 : 0);
     restore_bindings(saved, total_bindings);
+    // 移除表达式保护
+    for (int idx = 0; idx < arg_count; idx++) {
+        gc_remove_root(&arg_forms[idx]);
+    }
+    gc_free(arg_forms);
     return expansion;
 }
 
