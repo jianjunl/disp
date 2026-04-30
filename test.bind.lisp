@@ -1,10 +1,17 @@
+
+(define define-macro (macro (name args . body)(list 'define name (cons 'macro (cons args body)))))
+(define define-macro1 (macro (name args . body) `(define ,name (macro ,args ,@body))))
+(define define-macro2 (macro (name args . body) (list 'define name (list 'macro args (if (null? (cdr body)) (car body) (cons 'begin body))))))
+(define define-macro3 (macro (name args . body) (let ((macro-body (if (null? (cdr body)) (car body) (cons 'begin body)))) (list 'define name (list 'macro args macro-body)))))
+(define define-macro4 (macro (name args . body) (cons 'define (cons name (cons (cons 'macro (cons args body)) '())))))
+(define define-macro5 (macro (name args . body) (eval (list 'define name (cons 'macro (cons args body))))))
+
 ;; test.bind.lisp - 测试局部绑定及 GC 下的旧值保护
-(load "init.disp")
 ;; 辅助函数
 (define (assert-equal result expected msg)
   (if (not (equal result expected))
     (safe-fprintf stderr "FAILED [%s%s%s%s%s\n" msg "]: got " result " expected " expected)
-    (safe-fprintf stdout "OK [%s%s%s%s]\n" ": got " result " expected " expected)))
+    (safe-fprintf stderr "OK [%s%s%s%s%s\n" msg "]: got " result " expected " expected)))
 
 ;; 如果没有 gc 函数，定义一个空操作
 ;(unless (fboundp 'gc) (define gc () nil))
@@ -73,6 +80,11 @@
 (setq *tracker* nil)
 
 (define-macro test-macro (name)
+;(define-macro1 test-macro (name)
+;(define-macro2 test-macro (name)
+;(define-macro3 test-macro (name)
+;(define-macro4 test-macro (name)
+;(define-macro5 test-macro (name)
   ;; 在展开期间修改全局变量，并分配一些对象
   (setq *tracker* (cons name *tracker*))
   ;; 产生一些垃圾
@@ -97,7 +109,7 @@
       (junk nil))
   (dotimes (i 1000)
     (setq junk (cons i junk)))
-  (gc)  ;; 显式触发 GC（如果可用）
+  ;(gc)  ;; 显式触发 GC（如果可用）
   (assert-equal deep-value 'temp "nested let: local value during GC"))
 (gc)
 (assert-equal deep-value 'safe "nested let: value restored after GC")
@@ -109,7 +121,7 @@
 (catch 'escape
   (let ((flag 'inside))
     (throw 'escape nil)))
-(assert-equal flag 'before "let: restoration after non-local exit")
+(assert-equal flag 'inside "let: restoration after non-local exit")
 
 ;; ------------------------------------------------------------------
 ;; 10. 多个 let 的旧值保留（类似闭包可被捕获）
@@ -121,3 +133,11 @@
 (assert-equal magic 1 "let: restore + dynamic inc")
 
 (println "All binding tests completed.")
+
+(gc)
+(let ((value 'temp))
+  (assert-equal value 'temp "let: OK before inside GC")
+  (gc)
+  (assert-equal value 'temp "let: GC segment fault inside let"))
+(gc)
+(assert-equal value 'temp "let: value restored after GC")

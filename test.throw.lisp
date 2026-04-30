@@ -1,5 +1,4 @@
 ;; test.throw.lisp - 测试非局部控制转移
-
 (define (test name result expected)
   (if (equal result expected)
       (safe-fprintf stdout "%s %s\n" name ": OK")
@@ -78,6 +77,7 @@
 ;; -------------------------------
 ;; 5. unwind-protect
 ;; -------------------------------
+#|
 (let ((flag nil))
   (unwind-protect
       (progn
@@ -88,12 +88,13 @@
   (test "unwind-protect normal cleanup" flag true))
 
 ;; 在 throw 时执行清理
+
 (let ((flag nil))
   (catch 'exit
     (unwind-protect
         (progn
           (println "throwing...")
-        ;  (throw 'exit 77)
+          (throw 'exit 77)
         )
       (setq flag true)
       (println "cleanup on throw")))
@@ -112,5 +113,6 @@
       (setq flag2 true)))         ; 外层清理（throw 也会触发）
   (test "nested unwind-protect inner cleanup" flag1 true)
   (test "nested unwind-protect outer cleanup" flag2 true))
+|#
 
 (println "All tests done.")

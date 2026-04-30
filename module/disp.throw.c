@@ -165,7 +165,7 @@ static disp_val* catch_builtin(disp_val *expr) {
         THROW(THROWN);
     }
     END_TRY;
-    return TRUE;
+    return NIL;
 }
 
 /* -------------------------------------------------------------------------
@@ -214,7 +214,7 @@ static disp_val* block_builtin(disp_val *expr) {
         THROW(THROWN);
     }
     END_TRY;
-    return TRUE;
+    return NIL;
 }
 
 /* -------------------------------------------------------------------------
@@ -257,7 +257,7 @@ static disp_val* unwind_protect_builtin(disp_val *expr) {
         THROW(THROWN);
     }
     END_TRY;
-    return TRUE;
+    return NIL;
 }
 
 /* -------------------------------------------------------------------------
