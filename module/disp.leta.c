@@ -117,17 +117,33 @@ static disp_val* let_builtin(disp_val *expr) {
     disp_val *body = disp_cdr(rest);
     if (!body) ERET(NIL, "let: missing body");
 
+    // === GC 根保护：防止 body 和 bindings 在 body 执行期间被回收 ===
+    gc_add_root(&rest);         // rest 链包含 bindings 和 body，保护整个尾部
+    // 如果 bindings 和 body 是分开的，也可以分别保护
+    // gc_add_root(&bindings);
+    // gc_add_root(&body);
+
     int var_count = 0;
     for (disp_val *b = bindings; b && T(b) == DISP_CONS; b = disp_cdr(b)) var_count++;
-    if (var_count == 0) return disp_eval_body(body);
+    if (var_count == 0) {
+        gc_remove_root(&rest);
+        return disp_eval_body(body);
+    }
 
     char **var_names = gc_malloc(var_count * sizeof(char*));
     disp_val **expr_vals = gc_malloc(var_count * sizeof(disp_val*));
+    // 保护动态数组
+    gc_add_root(&var_names);
+    gc_add_root(&expr_vals);
+
     int i = 0;
     disp_val *b = bindings;
     while (b && T(b) == DISP_CONS) {
         disp_val *pair = disp_car(b);
         if (T(pair) != DISP_CONS || T(disp_car(pair)) != DISP_SYMBOL) {
+            gc_remove_root(&expr_vals);
+            gc_remove_root(&var_names);
+            gc_remove_root(&rest);
             gc_free(var_names); gc_free(expr_vals);
             ERET(NIL, "let: malformed binding (var expr)");
         }
@@ -138,12 +154,12 @@ static disp_val* let_builtin(disp_val *expr) {
         b = disp_cdr(b);
     }
 
-    // 保存旧值
     disp_val **old_vals = gc_malloc(var_count * sizeof(disp_val*));
+    gc_add_root(&old_vals);
     for (int j = 0; j < var_count; j++) {
         disp_val *old_sym = disp_find_symbol(var_names[j]);
         old_vals[j] = old_sym ? disp_get_symbol_value(old_sym) : NULL;
-        if (old_vals[j] != NULL) gc_add_root(&old_vals[j]);
+        if (old_vals[j] != NULL) gc_add_root(&old_vals[j]);   // 旧值本身保护
     }
 
     // 求值并绑定
@@ -154,6 +170,7 @@ static disp_val* let_builtin(disp_val *expr) {
         }
     } else {
         disp_val **values = gc_malloc(var_count * sizeof(disp_val*));
+        gc_add_root(&values);
         for (int j = 0; j < var_count; j++) {
             values[j] = disp_eval(expr_vals[j]);
             gc_add_root(&values[j]);
@@ -162,6 +179,7 @@ static disp_val* let_builtin(disp_val *expr) {
             disp_define_symbol(var_names[j], values[j], 0);
         }
         for (int j = 0; j < var_count; j++) gc_remove_root(&values[j]);
+        gc_remove_root(&values);
         gc_free(values);
     }
 
@@ -179,6 +197,10 @@ static disp_val* let_builtin(disp_val *expr) {
             if (restore != NULL) gc_remove_root(&old_vals[j]);
             gc_free(var_names[j]);
         }
+        gc_remove_root(&old_vals);
+        gc_remove_root(&expr_vals);
+        gc_remove_root(&var_names);
+        gc_remove_root(&rest);
         gc_free(var_names);
         gc_free(expr_vals);
         gc_free(old_vals);
@@ -186,7 +208,7 @@ static disp_val* let_builtin(disp_val *expr) {
     }
     END_TRY;
 
-    // 正常路径：恢复绑定，释放资源
+    // 正常路径
     if (normal_exit) {
         for (int j = 0; j < var_count; j++) {
             disp_val *restore = old_vals[j];
@@ -194,12 +216,16 @@ static disp_val* let_builtin(disp_val *expr) {
             if (restore != NULL) gc_remove_root(&old_vals[j]);
             gc_free(var_names[j]);
         }
+        gc_remove_root(&old_vals);
+        gc_remove_root(&expr_vals);
+        gc_remove_root(&var_names);
+        gc_remove_root(&rest);
         gc_free(var_names);
         gc_free(expr_vals);
         gc_free(old_vals);
         return result;
     }
-    return NIL;   // 不会执行到
+    return NIL;
 }
 
 static disp_val* letrec_builtin(disp_val *expr) {
