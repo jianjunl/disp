@@ -13,7 +13,7 @@ endif
 
 # 子目录
 GC_DIR      = gc
-MOD_DIR     = module
+MOD_DIR     = modules
 
 CFLAGS += -g -std=c11 -pthread -fPIC -Wall -Wextra -I$(GC_DIR) -I$(MOD_DIR)
 LDFLAGS += -pthread -ldl -rdynamic
