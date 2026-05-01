@@ -64,13 +64,13 @@ static void remove_from_queue(disp_val **head, disp_val *coro) {
     while (cur) {
         if (cur == coro) {
             if (prev)
-                prev->next = cur->next;
+                prev->data->coro->next = cur->data->coro->next;
             else
-                *head = cur->next;
+                *head = cur->data->coro->next;
             break;
         }
         prev = cur;
-        cur = cur->next;
+        cur = cur->data->coro->next;
     }
 }
 
@@ -82,7 +82,7 @@ static int try_recv_locked(disp_channel_t *c, disp_val **value) {
         // 无缓冲通道：优先检查是否有等待的发送者，其次检查 direct_value（由已唤醒的发送者留下）
         if (WAIT_SEND(c)) {
             disp_val *waiter = WAIT_SEND(c);
-            SET_WAIT_SEND(c, waiter->next);
+            SET_WAIT_SEND(c, waiter->data->coro->next);
             *value = DIRECT(c);
             SET_DIRECT(c, NIL);
             scheduler_add(waiter);
@@ -105,7 +105,7 @@ static int try_recv_locked(disp_channel_t *c, disp_val **value) {
             SIZE_DEC(c);
             if (WAIT_SEND(c)) {
                 disp_val *waiter = WAIT_SEND(c);
-                SET_WAIT_SEND(c, waiter->next);
+                SET_WAIT_SEND(c, waiter->data->coro->next);
                 scheduler_add(waiter);
             }
             return 1;
@@ -122,7 +122,7 @@ static int try_send_locked(disp_channel_t *c, disp_val *val) {
     if (CAP(c) == 0) {
         if (WAIT_RECV(c)) {
             disp_val *waiter = WAIT_RECV(c);
-            SET_WAIT_RECV(c, waiter->next);
+            SET_WAIT_RECV(c, waiter->data->coro->next);
             SET_DIRECT(c, val);
             scheduler_add(waiter);
             return 1;
@@ -136,7 +136,7 @@ static int try_send_locked(disp_channel_t *c, disp_val *val) {
             SIZE_INC(c);
             if (WAIT_RECV(c)) {
                 disp_val *waiter = WAIT_RECV(c);
-                SET_WAIT_RECV(c, waiter->next);
+                SET_WAIT_RECV(c, waiter->data->coro->next);
                 scheduler_add(waiter);
             }
             return 1;
@@ -239,10 +239,10 @@ static void register_case(case_info_t *info, disp_val *current) {
     disp_channel_t *c = CHAN(info->channel);
     gc_pthread_mutex_lock(LOCK(c));
     if (info->type == CASE_RECV) {
-        current->next = WAIT_RECV(c);
+        current->data->coro->next = WAIT_RECV(c);
         SET_WAIT_RECV(c, current);
     } else if (info->type == CASE_SEND) {
-        current->next = WAIT_SEND(c);
+        current->data->coro->next = WAIT_SEND(c);
         SET_WAIT_SEND(c, current);
     }
     gc_pthread_mutex_unlock(LOCK(c));

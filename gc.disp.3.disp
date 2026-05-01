@@ -1,10 +1,10 @@
 ;; gc.lisp - 后台线程定期触发 GC，用于调试
 ;;
 ;; 用法: (load "gc.lisp")
-;;       (start-gc-thread 5.0)   ; 每 5 秒 GC 一次
+;;       (start-gc-thread 1.0)   ; 每 1 秒 GC 一次
 ;;       (stop-gc-thread)        ; 停止后台 GC 线程
 ;;
-;; 加载脚本后会自动以默认间隔 (5 秒) 启动 GC 线程。
+;; 加载脚本后会自动以默认间隔 (1 秒) 启动 GC 线程。
 
 ;; 辅助函数：向 stderr 打印并换行
 (define null? (lambda (x) (eq? x nil)))
@@ -15,7 +15,7 @@
 (define *gc-running* #t)          ; 是否继续运行
 (define *gc-mutex* (make-mutex))  ; 保护 *gc-running* 的互斥锁
 (define *gc-auto-started* nil)    ; 是否已自动启动
-(define *gc-interval* 5.0)        ; 当前 GC 间隔（秒）
+(define *gc-interval* 1.0)        ; 当前 GC 间隔（秒）
 
 ;; 停止后台 GC 线程
 (define (stop-gc-thread)
@@ -74,8 +74,8 @@
 (if (not *gc-auto-started*)
     (begin
       (set! *gc-auto-started* #t)
-      (start-gc-thread 5.0)
-      (fprintln stderr ";; Auto GC thread started (every 5 sec). Use (stop-gc-thread) to stop.")))
+      (start-gc-thread 1.0)
+      (fprintln stderr ";; Auto GC thread started (every 1 sec). Use (stop-gc-thread) to stop.")))
 
 
 ;; ======================== 附加工具函数 ========================

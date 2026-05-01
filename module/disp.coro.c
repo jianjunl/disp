@@ -81,10 +81,10 @@ static disp_val* yield_syscall(disp_val **args, int count) {
         if (ready_head == NULL) {
             ready_head = ready_tail = current_coro;
         } else {
-            ready_tail->next = current_coro;
+            ready_tail->data->coro->next = current_coro;
             ready_tail = current_coro;
         }
-        current_coro->next = NULL;
+        current_coro->data->coro->next = NULL;
     }
     current_coro = NULL;
     swapcontext(&c->ctx, &main_ctx);
@@ -133,10 +133,10 @@ void scheduler_add(disp_val *coro) {
     if (ready_head == NULL) {
         ready_head = ready_tail = coro;
     } else {
-        ready_tail->next = coro;
+        ready_tail->data->coro->next = coro;
         ready_tail = coro;
     }
-    coro->next = NULL;
+    coro->data->coro->next = NULL;
 }
 
 void scheduler_yield(void) {
@@ -224,7 +224,7 @@ void event_loop_run(void) {
                 INFO("event_loop_run: non-coroutine in ready queue! flag=%d\n", T(next));
                 exit(1);
             }
-            ready_head = ready_head->next;
+            ready_head = ready_head->data->coro->next;
             if (ready_head == NULL) ready_tail = NULL;
             if (next != current_coro) {
                 disp_coro_t *c = next->data->coro;

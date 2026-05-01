@@ -69,7 +69,7 @@ static disp_val* channel_send_syscall(disp_val **args, int count) {
             // 无缓冲通道：直接与等待的接收者握手
             if (ch->wait_recv) {
                 disp_val *waiter = ch->wait_recv;
-                ch->wait_recv = waiter->next;
+                ch->wait_recv = waiter->data->coro->next;
                 // 将值传递给接收者（存入 direct_value）
                 ch->direct_value = value;
                 scheduler_add(waiter);
@@ -78,7 +78,7 @@ static disp_val* channel_send_syscall(disp_val **args, int count) {
             }
             // 没有等待的接收者，挂起发送者
             disp_val *current = disp_get_current_coro();
-            current->next = ch->wait_send;
+            current->data->coro->next = ch->wait_send;
             ch->wait_send = current;
             gc_pthread_mutex_unlock(ch->lock);
             scheduler_suspend();
@@ -92,14 +92,14 @@ static disp_val* channel_send_syscall(disp_val **args, int count) {
                 ch->size++;
                 if (ch->wait_recv) {
                     disp_val *waiter = ch->wait_recv;
-                    ch->wait_recv = waiter->next;
+                    ch->wait_recv = waiter->data->coro->next;
                     scheduler_add(waiter);
                 }
                 gc_pthread_mutex_unlock(ch->lock);
                 return value;
             } else {
                 disp_val *current = disp_get_current_coro();
-                current->next = ch->wait_send;
+                current->data->coro->next = ch->wait_send;
                 ch->wait_send = current;
                 gc_pthread_mutex_unlock(ch->lock);
                 scheduler_suspend();
@@ -123,7 +123,7 @@ static disp_val* channel_recv_syscall(disp_val **args, int count) {
             // 无缓冲通道：直接与等待的发送者握手
             if (ch->wait_send) {
                 disp_val *waiter = ch->wait_send;
-                ch->wait_send = waiter->next;
+                ch->wait_send = waiter->data->coro->next;
                 disp_val *value = ch->direct_value;
                 ch->direct_value = NIL;
                 scheduler_add(waiter);
@@ -132,7 +132,7 @@ static disp_val* channel_recv_syscall(disp_val **args, int count) {
             }
             // 没有等待的发送者，挂起接收者
             disp_val *current = disp_get_current_coro();
-            current->next = ch->wait_recv;
+            current->data->coro->next = ch->wait_recv;
             ch->wait_recv = current;
             gc_pthread_mutex_unlock(ch->lock);
             scheduler_suspend();
@@ -150,7 +150,7 @@ static disp_val* channel_recv_syscall(disp_val **args, int count) {
                 ch->size--;
                 if (ch->wait_send) {
                     disp_val *waiter = ch->wait_send;
-                    ch->wait_send = waiter->next;
+                    ch->wait_send = waiter->data->coro->next;
                     scheduler_add(waiter);
                 }
                 gc_pthread_mutex_unlock(ch->lock);
@@ -160,7 +160,7 @@ static disp_val* channel_recv_syscall(disp_val **args, int count) {
                 return NIL;
             } else {
                 disp_val *current = disp_get_current_coro();
-                current->next = ch->wait_recv;
+                current->data->coro->next = ch->wait_recv;
                 ch->wait_recv = current;
                 gc_pthread_mutex_unlock(ch->lock);
                 scheduler_suspend();
@@ -184,7 +184,7 @@ static disp_val* channel_recv2_syscall(disp_val **args, int count) {
         if (ch->cap == 0) {
             if (ch->wait_send) {
                 disp_val *waiter = ch->wait_send;
-                ch->wait_send = waiter->next;
+                ch->wait_send = waiter->data->coro->next;
                 disp_val *value = ch->direct_value;
                 ch->direct_value = NIL;
                 scheduler_add(waiter);
@@ -192,7 +192,7 @@ static disp_val* channel_recv2_syscall(disp_val **args, int count) {
                 return disp_make_cons(value, NIL);
             }
             disp_val *current = disp_get_current_coro();
-            current->next = ch->wait_recv;
+            current->data->coro->next = ch->wait_recv;
             ch->wait_recv = current;
             gc_pthread_mutex_unlock(ch->lock);
             scheduler_suspend();
@@ -208,7 +208,7 @@ static disp_val* channel_recv2_syscall(disp_val **args, int count) {
                 ch->size--;
                 if (ch->wait_send) {
                     disp_val *waiter = ch->wait_send;
-                    ch->wait_send = waiter->next;
+                    ch->wait_send = waiter->data->coro->next;
                     scheduler_add(waiter);
                 }
                 gc_pthread_mutex_unlock(ch->lock);
@@ -218,7 +218,7 @@ static disp_val* channel_recv2_syscall(disp_val **args, int count) {
                 return disp_make_cons(NIL, TRUE);
             } else {
                 disp_val *current = disp_get_current_coro();
-                current->next = ch->wait_recv;
+                current->data->coro->next = ch->wait_recv;
                 ch->wait_recv = current;
                 gc_pthread_mutex_unlock(ch->lock);
                 scheduler_suspend();
@@ -240,13 +240,13 @@ static disp_val* close_channel_syscall(disp_val **args, int count) {
     // 唤醒所有等待接收的协程
     while (ch->wait_recv) {
         disp_val *waiter = ch->wait_recv;
-        ch->wait_recv = waiter->next;
+        ch->wait_recv = waiter->data->coro->next;
         scheduler_add(waiter);
     }
     // 唤醒所有等待发送的协程（它们会检测到 closed 并报错）
     while (ch->wait_send) {
         disp_val *waiter = ch->wait_send;
-        ch->wait_send = waiter->next;
+        ch->wait_send = waiter->data->coro->next;
         scheduler_add(waiter);
     }
     gc_pthread_mutex_unlock(ch->lock);

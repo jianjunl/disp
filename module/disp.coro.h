@@ -36,6 +36,7 @@ typedef struct disp_coro_t {
     // select 扩展
     void *select_data;     // 用于 select 的临时数据（保留）
     void *stack;           // 独立栈指针，用于释放
+    disp_val *next;
 } disp_coro_t;
 
 // 通道对象结构（通过 disp_val 的 union 存储）

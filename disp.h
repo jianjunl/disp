@@ -34,22 +34,14 @@ typedef enum {
 /* Opaque types */
 typedef union disp_data disp_data;
 
-typedef struct disp_val disp_val;
-struct disp_val {
+typedef struct disp_val {
     disp_flag_t flag;
     disp_data *data;
-    //unsigned int mark;            /* GC mark bit */
-    //void (*dtor)(disp_val *);
-    struct disp_val *next;        /* linked list of all objects */
-};
+} disp_val;
 
 /* Function pointer type for built‑in functions */
 typedef disp_val* (*disp_syscall_t)(disp_val** args, int arg_count);
 typedef disp_val* (*disp_builtin_t)(disp_val* arg);
-
-/* 前置声明协程和通道结构体 */
-typedef struct disp_coro_t disp_coro_t;
-typedef struct disp_channel_t disp_channel_t;
 
 /* all-in-one union for testing */
 #define DISP_H_DISP_ALLINONE_UNION_H
@@ -150,6 +142,7 @@ disp_val* disp_make_macro(disp_val *params, disp_val *body);
 disp_val* disp_get_closure_params(disp_val *closure);
 disp_val* disp_get_closure_body(disp_val *closure);
 disp_val* disp_apply_closure(disp_val *closure, disp_val **args, int arg_count);
+disp_val* disp_expand_macro(disp_val *macro, disp_val *expr);
 
 // disp_info_t 定义
 typedef struct disp_info {
