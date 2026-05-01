@@ -79,7 +79,7 @@
   ;; 在展开期间修改全局变量，并分配一些对象
   (setq *tracker* (cons name *tracker*))
   ;; 产生一些垃圾
-  ;(progn (gc) nil)   ; 如果 gc 可用则触发
+  (progn (gc) nil)   ; 如果 gc 可用则触发
   `',name)
 
 (setq x 'original)
@@ -109,13 +109,13 @@
 ;; ------------------------------------------------------------------
 ;; 9. let 内部错误（throw）时的恢复
 ;; ------------------------------------------------------------------
-#|
+;#|
 (setq flag 'before)
 (catch 'escape
   (let ((flag 'inside))
     (throw 'escape nil)))
-(assert-equal flag 'inside "let: restoration after non-local exit")
-|#
+(assert-equal flag 'before "let: restoration after non-local exit")
+;|#
 
 ;; ------------------------------------------------------------------
 ;; 10. 多个 let 的旧值保留（类似闭包可被捕获）

@@ -203,6 +203,8 @@ static disp_val* expand_macro(disp_val *macro, disp_val *expr) {
 
     // Expand the macro body
     disp_val *expansion = disp_eval_body(body);
+    // 保护展开结果
+    gc_add_root(&expansion);
 
     // Restore bindings (total = fixed parameters + optional rest)
     int total_bindings = fixed_count + (has_rest ? 1 : 0);
@@ -217,7 +219,7 @@ static disp_val* expand_macro(disp_val *macro, disp_val *expr) {
 
 disp_val* disp_eval(disp_val *expr) {
     if (!expr) return NIL;
-    //expr = disp_qq_expand(expr);
+    gc_add_root(&expr);   // 保护入口表达式
     switch (T(expr)) {
         case DISP_BYTE:
         case DISP_SHORT:
@@ -227,6 +229,7 @@ disp_val* disp_eval(disp_val *expr) {
         case DISP_DOUBLE:
         case DISP_STRING:
         case DISP_VOID:
+            gc_remove_root(&expr);
             return expr;
         case DISP_SYMBOL:
             if (V(expr) == QUIT) {
@@ -239,11 +242,19 @@ disp_val* disp_eval(disp_val *expr) {
             disp_val *func_val = disp_eval(disp_car(expr));
             if (T(func_val) == DISP_MACRO) {
                 disp_val *expansion = expand_macro(func_val, expr);
-                if (expansion == NIL) return NIL;
-                return disp_eval(expansion);
+                if (expansion == NIL) {
+                    gc_remove_root(&expr);
+                    return NIL;
+                }
+                gc_add_root(&expansion);       // 保护展开结果
+                disp_val *result = disp_eval(expansion);
+                gc_remove_root(&expansion);
+                gc_remove_root(&expr);
+                return result;
             }
 
             if (T(func_val) == DISP_BUILTIN) {
+                gc_remove_root(&expr);
                 return disp_get_builtin(func_val)(expr);
             }
 
@@ -253,9 +264,13 @@ disp_val* disp_eval(disp_val *expr) {
             for (disp_val *a = arg_list; a && T(a) == DISP_CONS; a = disp_cdr(a))
                 arg_count++;
             disp_val **args = gc_malloc(arg_count * sizeof(disp_val*));
+            gc_add_root(&args);                // 保护数组本身
             int i = 0;
-            for (disp_val *a = arg_list; a && T(a) == DISP_CONS; a = disp_cdr(a))
-                args[i++] = disp_eval(disp_car(a));
+            for (disp_val *a = arg_list; a && T(a) == DISP_CONS; a = disp_cdr(a)) {
+                args[i] = disp_eval(disp_car(a));
+                gc_add_root(&args[i]);         // 保护每个参数
+                i++;
+            }
 
             disp_val *result;
             if (T(func_val) == DISP_SYSCALL) {
@@ -263,15 +278,26 @@ disp_val* disp_eval(disp_val *expr) {
             } else if (T(func_val) == DISP_CLOSURE) {
                 result = disp_apply_closure(func_val, args, arg_count);
             } else {
+                // 释放保护后报错
+                for (int k = 0; k < i; k++) gc_remove_root(&args[k]);
+                gc_remove_root(&args);
                 gc_free(args);
                 char *s = disp_string(func_val);
                 ERET(NIL, "%s is not a function or macro", s);
                 gc_free(s);
+                gc_remove_root(&expr);
+                return NIL;
             }
+            for (int k = 0; k < i; k++) gc_remove_root(&args[k]);
+            gc_remove_root(&args);
             gc_free(args);
+            gc_remove_root(&expr);
             return result;
         }
         default:
+            gc_remove_root(&expr);
             ERET(NIL, "cannot evaluate");
     }
+    gc_remove_root(&expr);
+    return NIL;   // never reach
 }

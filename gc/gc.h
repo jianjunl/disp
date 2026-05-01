@@ -291,10 +291,12 @@ extern _Thread_local gc_exception_t *gc_current_exception;
     } while (0)
 
 #define THROW(code) gc_throw(code)
+#define CAUGHT(code) gc_caught(code)
 #define THROWN gc_current_exception->code
 
 /* Prototype */
 void gc_throw(int code);
+void gc_caught(int code);
 
 /* ============================================================================
  * Thread Support

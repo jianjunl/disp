@@ -32,20 +32,6 @@ typedef struct frame {
 /* 所有帧都挂在这个线程局部链表上 */
 _Thread_local frame_t *current_frame = NULL;
 
-/*
-static void run_cleanups(frame_t *from, frame_t *to) {
-    for (frame_t *f = from; f != to; f = f->prev) {
-        if (f->type == FRAME_UNWIND && f->cleanup) {
-            disp_val *cleanup = f->cleanup;
-            while (cleanup && T(cleanup) == DISP_CONS) {
-                disp_eval(disp_car(cleanup));
-                cleanup = disp_cdr(cleanup);
-            }
-        }
-    }
-}
-*/
-
 /* -------------------------------------------------------------------------
  * 用于从 throw / return-from 定位目标帧的线程局部变量
  * ------------------------------------------------------------------------- */
@@ -138,7 +124,7 @@ static disp_val* catch_builtin(disp_val *expr) {
         }
         /* 否则传播异常：先弹出自身（如果是 unwind 帧则执行清理，这里不是） */
         current_frame = frame.prev;
-        THROW(THROWN);
+        CAUGHT(THROWN);
     }
     END_TRY;
     return NIL;
@@ -188,7 +174,7 @@ static disp_val* block_builtin(disp_val *expr) {
         }
         /* 传播：弹出自身，如果是 unwind 帧会执行清理 */
         current_frame = frame.prev;
-        THROW(THROWN);
+        CAUGHT(THROWN);
     }
     END_TRY;
     return NIL;
@@ -231,7 +217,7 @@ static disp_val* unwind_protect_builtin(disp_val *expr) {
             cl = disp_cdr(cl);
         }
         current_frame = frame.prev;
-        THROW(THROWN);
+        CAUGHT(THROWN);
     }
     END_TRY;
     return NIL;
