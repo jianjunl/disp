@@ -204,7 +204,7 @@ static disp_val* let_builtin(disp_val *expr) {
         gc_free(var_names);
         gc_free(expr_vals);
         gc_free(old_vals);
-        CAUGHT(THROWN);
+        THROW_THROWN();
     }
     END_TRY;
 
@@ -333,7 +333,7 @@ static disp_val* letrec_builtin(disp_val *expr) {
         gc_free(var_names);
         gc_free(expr_vals);
         gc_free(old_vals);
-        CAUGHT(THROWN);
+        THROW_THROWN();
     }
     END_TRY;
 

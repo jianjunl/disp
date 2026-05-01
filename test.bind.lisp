@@ -32,13 +32,13 @@
 ;; ------------------------------------------------------------------
 (letrec ((even?
           (lambda (n)
-            (if (= n 0) t (odd? (- n 1)))))
+            (if (= n 0) true (odd? (- n 1)))))
          (odd?
           (lambda (n)
             (if (= n 0) nil (even? (- n 1))))))
-  (assert-equal (even? 4) t   "letrec: even? 4")
+  (assert-equal (even? 4) true   "letrec: even? 4")
   (assert-equal (even? 3) nil "letrec: even? 3")
-  (assert-equal (odd? 3) t    "letrec: odd? 3"))
+  (assert-equal (odd? 3) true    "letrec: odd? 3"))
 
 ;; ------------------------------------------------------------------
 ;; 4. letrec* 与 letrec 的区别

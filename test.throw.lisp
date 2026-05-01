@@ -11,13 +11,13 @@
 (test "catch/throw simple"
       (catch 'foo
         (throw 'foo 42)
-        (println "never reached"))
+        (println "never reached") 99)
       42)
 
 (test "catch without throw"
       (catch 'bar
         (println "no throw")
-        42)
+        99)
       99)
 
 ;; -------------------------------

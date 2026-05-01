@@ -124,7 +124,7 @@ static disp_val* catch_builtin(disp_val *expr) {
         }
         /* 否则传播异常：先弹出自身（如果是 unwind 帧则执行清理，这里不是） */
         current_frame = frame.prev;
-        CAUGHT(THROWN);
+        THROW_THROWN();
     }
     END_TRY;
     return NIL;
@@ -174,7 +174,7 @@ static disp_val* block_builtin(disp_val *expr) {
         }
         /* 传播：弹出自身，如果是 unwind 帧会执行清理 */
         current_frame = frame.prev;
-        CAUGHT(THROWN);
+        THROW_THROWN();
     }
     END_TRY;
     return NIL;
@@ -217,7 +217,7 @@ static disp_val* unwind_protect_builtin(disp_val *expr) {
             cl = disp_cdr(cl);
         }
         current_frame = frame.prev;
-        CAUGHT(THROWN);
+        THROW_THROWN();
     }
     END_TRY;
     return NIL;
