@@ -104,8 +104,21 @@
 #define AAAA(a, aa, aaa, aaaa) ((void)0)
 #else
 #define AAAA(a, aa, aaa, aaaa) do { \
-    AAA(a, aa, aaa, aaaa); \
+    AAA(a, aa, aaa); \
     A(a->aa->aaa->aaaa); \
+} while(0);
+#endif
+#endif
+
+#ifdef AAAAA 
+# error "AAAAA has been defined before " #__LINE__ "@" #__FILE__
+#else 
+#ifndef DEBUG
+#define AAAAA(a, aa, aaa, aaaa, aaaaa) ((void)0)
+#else
+#define AAAAA(a, aa, aaa, aaaa, aaaaa) do { \
+    AAAA(a, aa, aaa, aaaa); \
+    A(a->aa->aaa->aaaa->aaaaa); \
 } while(0);
 #endif
 #endif
