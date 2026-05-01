@@ -49,12 +49,10 @@ char* disp_get_file_mode(disp_val *v) {
 
 void disp_set_file(disp_val *v, FILE *f) {
     if (T(v) != DISP_FILE) return;
-    GC_WRITE_BARRIER(v, f);
-    v->data->file_val.file = f;
+    GC_ASSIGN_PTR(v->data->file_val.file, f);
 }
 
 void disp_set_file_mode(disp_val *v, char *mode) {
     if (T(v) != DISP_FILE) return;
-    GC_WRITE_BARRIER(v, mode);
-    v->data->file_val.mode = mode;
+    GC_ASSIGN_PTR(v->data->file_val.mode, mode);
 }

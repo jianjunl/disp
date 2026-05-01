@@ -162,13 +162,11 @@ disp_val* disp_cdr(disp_val *cons) {
 }
 
 void disp_set_car(disp_val *cons, disp_val *car) {
-    GC_WRITE_BARRIER(cons, car);
-    if (cons && cons->flag == DISP_CONS) cons->data->cons.car = car;
+    if (cons && cons->flag == DISP_CONS) GC_ASSIGN_PTR(cons->data->cons.car, car);
 }
 
 void disp_set_cdr(disp_val *cons, disp_val *cdr) {
-    GC_WRITE_BARRIER(cons, cdr);
-    if (cons && cons->flag == DISP_CONS) cons->data->cons.cdr = cdr;
+    if (cons && cons->flag == DISP_CONS) GC_ASSIGN_PTR(cons->data->cons.cdr, cdr);
 }
 
 disp_val* disp_make_socket(int fd) {

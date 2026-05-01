@@ -25,8 +25,7 @@ disp_channel_t* disp_get_channel(disp_val *v) {
 }
 
 void disp_set_channel(disp_val *v, disp_channel_t *c) {
-    GC_WRITE_BARRIER(v, c);
-    v->data->chan = c;
+    GC_ASSIGN_PTR(v->data->chan, c);
 }
 
 /* =============================== 通道（支持无缓冲握手） =============================== */
