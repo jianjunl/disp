@@ -30,6 +30,7 @@ static disp_val *ready_head = NULL;
 static disp_val *ready_tail = NULL;
 
 static void coroutine_entry(disp_val *coro) {
+    gc_add_root(&coro);
     current_coro = coro;
     coro->data->coro->status = 1;
     disp_val *func = coro->data->coro->func;
@@ -38,6 +39,7 @@ static void coroutine_entry(disp_val *coro) {
     coro->data->coro->status = 2;
     current_coro = NULL;
     swapcontext(&coro->data->coro->ctx, &main_ctx);
+    gc_remove_root(&coro);
 }
 
 disp_val* disp_make_coroutine(disp_val *func, size_t stack_size) {
@@ -259,6 +261,9 @@ static disp_val* event_loop_run_syscall(disp_val **args, int count) {
 /* =============================== 模块初始化 =============================== */
 
 void disp_init_module(void) {
+    gc_add_root(&current_coro);
+    gc_add_root(&ready_head);
+    gc_add_root(&ready_tail);
     DEF("make-coroutine", MKF(make_coroutine_syscall, "<make-coroutine>"), 1);
     DEF("yield"         , MKF(yield_syscall          , "<yield>"         ), 1);
     DEF("resume"        , MKF(resume_syscall         , "<resume>"        ), 1);

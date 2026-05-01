@@ -181,6 +181,24 @@ void gc_remove_root(void *ptr_addr);
 /* Internal helper for GC_ROOT; do not call directly. */
 void gc_root_cleanup(void **ptr_addr);
 
+/* Atomic assignment + root registration */
+#define GC_ASSIGN_ROOT(var, val) do { \
+    (var) = (val); \
+    if ((var) != NULL) gc_add_root(&(var)); \
+} while(0)
+
+/* Scope-based automatic protection */
+void gc_unroot_cleanup(void **ptr_addr);
+#define GC_PROTECT(type, var, init) \
+    type var __attribute__((cleanup(gc_unroot_cleanup))) = (init); \
+    gc_add_root(&var)
+
+/* Manual early unprotection */
+#define GC_UNPROTECT(var) do { \
+    gc_remove_root(&(var)); \
+    (var) = NULL; \
+} while(0)
+
 #if GC_FINALIZING == 1
 
 /* ============================================================================
