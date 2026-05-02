@@ -31,7 +31,7 @@ extern "C" {
 #endif
 
 #ifndef GC_OPT_INCREMENTAL
-#define GC_OPT_INCREMENTAL 1 /* set to 1 to enable incremental marking */
+#define GC_OPT_INCREMENTAL 0 /* set to 1 to enable incremental marking */
 #endif
 
 #ifndef GC_OPT_FINALIZING
@@ -159,6 +159,50 @@ void gc_add_root(void *ptr_addr);
  * @ptr_addr: the same address passed to gc_add_root().
  */
 void gc_remove_root(void *ptr_addr);
+
+/*
+ * gc_root_add - 为数组或包含多个指针的内存区域一次性注册保护。
+ *
+ * @base:   第一个指针元素的地址（例如 &array[0]）。
+ * @nmemb:  元素个数。
+ * @size:   元素大小（通常为 sizeof(void*) 或 sizeof(array[0])）。
+ *
+ * 该函数创建一个公共根节点（保护基址），并为每个元素生成子节点，
+ * 从而使整个数组内的指针都被视为 GC 根。
+ * 调用 gc_remove_root(base) 时会释放所有子节点。
+ */
+void gc_root_add(void *base, size_t nmemb, size_t size);
+
+/*
+ * gc_hold_add - 向已注册的根对象添加一个需要保护的子指针字段。
+ *
+ * @parent: 父对象地址（即某个根指针当前指向的值，或者其内部字段）。
+ * @child:  需要保护的指针变量的地址（例如 &obj->ref）。
+ *
+ * 该函数在根树中查找所有保存的指针值等于 @parent 的节点，
+ * 并将 @child 作为新子节点挂在这些节点下。
+ */
+void gc_hold_add(void *parent, void *child);
+
+/*
+ * gc_hold_swap - 替换父对象下第一个子节点的指针地址。
+ *
+ * @parent: 父对象地址。
+ * @child:  新的指针变量地址。
+ *
+ * 主要用于修改某个已注册的内部引用。
+ */
+void gc_hold_swap(void *parent, void *child);
+
+/*
+ * gc_root_swap - 将已注册的根指针地址从 @old 改为 @new。
+ *
+ * @old: 原指针变量地址。
+ * @new: 新指针变量地址。
+ *
+ * 当根指针变量地址发生变化（如重新分配）时使用。
+ */
+void gc_root_swap(void *old, void *new);
 
 /*
  * GC_ROOT -  declare ptr for stack-allocated precise roots.

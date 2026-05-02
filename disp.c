@@ -15,7 +15,6 @@
 #endif
 #include "disp.h"
 
-disp_val *NIL, *TRUE, *QUIT;
 disp_val *BYTE, *SHORT, *INT, *LONG, *FLOAT, *DOUBLE, *PNTR;
 disp_val *LAMBDA, *LETA, *LETRECA;
 disp_val *CONS, *LIST, *QUOTE, *QUASIQUOTE, *UNQUOTE, *UNQUOTE_SPLICING, *APPEND;

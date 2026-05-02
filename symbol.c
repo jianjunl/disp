@@ -184,6 +184,9 @@ disp_val* disp_get_symbol_value(disp_val *v) {
 }
 
 /* ======================== GC 初始化和全局常量 ======================== */
+
+disp_val *NIL, *TRUE, *QUIT;
+
 void disp_init_gc() {
     gc_init();
     gc_add_root(&sym_table.lock);
