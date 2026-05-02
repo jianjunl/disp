@@ -62,9 +62,3 @@ void gc_remove_root(void *ptr) {
 void gc_root_cleanup(void **ptr_addr) {
     if (ptr_addr) gc_remove_root(ptr_addr);
 }
-
-void gc_unroot_cleanup(void **ptr_addr) {
-    if (*ptr_addr) {
-        gc_remove_root(ptr_addr);
-    }
-}

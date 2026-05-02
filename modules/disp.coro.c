@@ -35,7 +35,7 @@ static void coroutine_entry(disp_val *coro) {
     coro->data->coro->status = 1;
     disp_val *func = coro->data->coro->func;
     disp_val *result = disp_apply_closure(func, NULL, 0);
-    coro->data->coro->final_result = result;
+    GC_ASSIGN_PTR(coro->data->coro->final_result, result);
     coro->data->coro->status = 2;
     current_coro = NULL;
     swapcontext(&coro->data->coro->ctx, &main_ctx);
