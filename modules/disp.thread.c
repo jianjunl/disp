@@ -56,7 +56,8 @@ static disp_val* make_thread_syscall(disp_val **args, int count) {
     t->func = args[0];
     t->finished = 0;
     t->result = NIL;
-    t->lock = &GC_PTHREAD_MUTEX_INITIALIZER;
+    static gc_mutex_t lock = GC_PTHREAD_MUTEX_INITIALIZER;
+    t->lock = &lock;
     
     if (gc_pthread_mutex_init(&t->lock, NULL) != 0) {
         gc_free(t); gc_free(v->data); gc_free(v);

@@ -16,7 +16,7 @@ typedef struct disp_thread_t {
     disp_val *result;        // 线程返回值
     int finished;            // 是否已结束
     gc_mutex_t *lock;        // 保护 result/finished 的互斥锁
-    gc_cond_t *cond;         // 用于 join 的条件变量
+    gc_cond_t  *cond;        // 用于 join 的条件变量
 } disp_thread_t;
 
 #ifndef DISP_ALLINONE_UNION_H

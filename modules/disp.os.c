@@ -287,7 +287,7 @@ static disp_val* time_builtin(disp_val *expr) {
 }
 
 /* 全局 I/O 互斥锁，保护所有线程对文件流的写入 */
-static gc_mutex_t *io_mutex = &GC_PTHREAD_MUTEX_INITIALIZER;
+static gc_mutex_t io_mutex = GC_PTHREAD_MUTEX_INITIALIZER;
 
 /* (safe-fprintf file format-string args...) -> result */
 static disp_val* safe_fprintf_syscall(disp_val **args, int count) {
@@ -298,9 +298,9 @@ static disp_val* safe_fprintf_syscall(disp_val **args, int count) {
     if (!out) return NIL;
     const char *fmt = disp_get_str(args[1]);
     
-    gc_pthread_mutex_lock(io_mutex);
+    gc_pthread_mutex_lock(&io_mutex);
     int printed = disp_vprintf(out, fmt, args + 2, count - 2);
-    gc_pthread_mutex_unlock(io_mutex);
+    gc_pthread_mutex_unlock(&io_mutex);
     
     if (printed < 0) return NIL;
     return TRUE;

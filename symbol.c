@@ -36,10 +36,10 @@ struct sym_entry {
 
 struct sym_table {
     struct sym_entry *buckets[SYM_TABLE_SIZE];
-    gc_mutex_t *lock;   // 改为指针
+    gc_mutex_t lock;
 };
 
-static struct sym_table sym_table = { .lock = &GC_PTHREAD_MUTEX_INITIALIZER };
+static struct sym_table sym_table = { .lock = GC_PTHREAD_MUTEX_INITIALIZER };
 
 static unsigned int hash(const char *s) {
     unsigned int h = 0;
@@ -48,11 +48,11 @@ static unsigned int hash(const char *s) {
 }
 
 void disp_lock_table(void) {
-    gc_pthread_mutex_lock(sym_table.lock);
+    gc_pthread_mutex_lock(&sym_table.lock);
 }
 
 void disp_unlock_table(void) {
-    gc_pthread_mutex_unlock(sym_table.lock);
+    gc_pthread_mutex_unlock(&sym_table.lock);
 }
 
 /* ======================== GC 根管理 ======================== */
@@ -189,7 +189,6 @@ disp_val *NIL, *TRUE, *QUIT;
 
 void disp_init_gc() {
     gc_init();
-    gc_add_root(&sym_table.lock);
     
     disp_init_info();
    
