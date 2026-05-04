@@ -31,7 +31,7 @@ extern "C" {
 #endif
 
 #ifndef GC_OPT_INCREMENTAL
-#define GC_OPT_INCREMENTAL 0 /* set to 1 to enable incremental marking */
+#define GC_OPT_INCREMENTAL 1 /* set to 1 to enable incremental marking */
 #endif
 
 #ifndef GC_OPT_FINALIZING
@@ -53,6 +53,9 @@ extern "C" {
 #define GC_FREELIST    (GC_OPT & 0x02) >> 1
 #define GC_INCREMENTAL (GC_OPT & 0x04) >> 2
 #define GC_FINALIZING  (GC_OPT & 0x08) >> 3
+
+int gc_global_lock();
+int gc_global_unlock();
 
 /* ============================================================================
  * Initialization and Statistics
@@ -161,48 +164,50 @@ void gc_add_root(void *ptr_addr);
 void gc_remove_root(void *ptr_addr);
 
 /*
- * gc_root_add - 为数组或包含多个指针的内存区域一次性注册保护。
+ * gc_root_add - Register a precise root, optionally as a child of another root.
  *
- * @base:   第一个指针元素的地址（例如 &array[0]）。
- * @nmemb:  元素个数。
- * @size:   元素大小（通常为 sizeof(void*) 或 sizeof(array[0])）。
+ * @parent: address of a pointer variable that is already a root (e.g., &my_ptr).
+ *          Must NOT be NULL (calling with NULL is a fatal error).
+ * @child:  address of a pointer variable to protect.  If NULL, the function
+ *          behaves like the original gc_add_root(parent), i.e., it simply
+ *          registers @parent as an independent root.
  *
- * 该函数创建一个公共根节点（保护基址），并为每个元素生成子节点，
- * 从而使整个数组内的指针都被视为 GC 根。
- * 调用 gc_remove_root(base) 时会释放所有子节点。
+ * When @child is non‑NULL, the function traverses the entire root tree looking
+ * for nodes whose stored pointer value equals @parent.  For each such node,
+ * a new root node for @child is created and inserted as the first child of
+ * that parent.  If no parent node is found, @child is added as a top‑level
+ * root.  This allows automatic protection of fields inside a structure already
+ * reachable through an existing root.
  */
-void gc_root_add(void *base, size_t nmemb, size_t size);
+void gc_root_add(void *parent, void *child);
 
 /*
- * gc_hold_add - 向已注册的根对象添加一个需要保护的子指针字段。
+ * gc_root_add_bulk - Register many contiguous pointer variables at once.
  *
- * @parent: 父对象地址（即某个根指针当前指向的值，或者其内部字段）。
- * @child:  需要保护的指针变量的地址（例如 &obj->ref）。
+ * @base:   address of the first pointer element (e.g., &array[0]).
+ * @nmemb:  number of elements.
+ * @size:   size of each element (usually sizeof(void*) or sizeof(array[0])).
  *
- * 该函数在根树中查找所有保存的指针值等于 @parent 的节点，
- * 并将 @child 作为新子节点挂在这些节点下。
+ * If a root node for @base already exists, its old children (if any) are freed
+ * and replaced by the new list.  Otherwise a new top‑level root for @base is
+ * created and populated with @nmemb child nodes.  This is the preferred way to
+ * protect an array of pointers.
  */
-void gc_hold_add(void *parent, void *child);
+void gc_root_add_bulk(void *base, size_t nmemb, size_t size);
 
 /*
- * gc_hold_swap - 替换父对象下第一个子节点的指针地址。
+ * gc_root_assign - Replace an existing root pointer address and discard its children.
  *
- * @parent: 父对象地址。
- * @child:  新的指针变量地址。
+ * @old: current pointer variable address that is a root.
+ * @new: new pointer variable address to replace @old.
  *
- * 主要用于修改某个已注册的内部引用。
+ * Traverses the entire root tree.  Every node whose ptr_addr equals @old
+ * has its ptr_addr set to @new and its entire subtree of children (the
+ * ->more chain) is freed.  This is useful when the root variable moves
+ * (e.g., after realloc) or when a structure is replaced and the old
+ * internal references are no longer needed.
  */
-void gc_hold_swap(void *parent, void *child);
-
-/*
- * gc_root_swap - 将已注册的根指针地址从 @old 改为 @new。
- *
- * @old: 原指针变量地址。
- * @new: 新指针变量地址。
- *
- * 当根指针变量地址发生变化（如重新分配）时使用。
- */
-void gc_root_swap(void *old, void *new);
+void gc_root_assign(void *old, void *new);
 
 /*
  * GC_ROOT -  declare ptr for stack-allocated precise roots.

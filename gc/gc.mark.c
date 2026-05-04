@@ -73,8 +73,8 @@ extern void *gc_stack_bottom;
 typedef struct gc_root {
     void              **ptr_addr;
     struct gc_root     *next;
-    struct gc_root     *hold;
     struct gc_root     *more;
+    struct gc_root     *prev;      /* temporary stack pointer for traversal */
 } gc_root_t;
 
 extern gc_root_t *gc_roots;
@@ -135,72 +135,41 @@ static void gc_scan_region(void *start, void *end) {
     }
 }
 
-
-// 递归遍历根树，标记所有指针可达的堆块
-static void gc_mark_root_subtree(gc_root_t *root) {
-    if (!root) return;
-    // 处理当前节点
-    void *ptr = *(root->ptr_addr);
-    if (ptr && gc_is_valid_ptr(ptr)) {
-        gc_block_t *blk = gc_find_block(ptr);
-        if (blk && !blk->marked) {
-            blk->marked = true;
-            gc_scan_region(blk->ptr, (char*)blk->ptr + blk->size);
-        }
-    }
-    // 递归处理子节点（长子 + 兄弟）
-    gc_mark_root_subtree(root->hold);
-    gc_mark_root_subtree(root->more);
-}
-
 /*
-typedef struct gc_root_stack_frame {
-    gc_root_t *node;
-    struct gc_root_stack_frame *next;   // 栈帧链表
-} gc_root_stack_frame_t;
+ * gc_mark_root_subtree – Mark every pointer reachable from the tree
+ * rooted at `root` (including all descendants).  Uses `prev` as an
+ * explicit stack, leaving it modified but never depended on after return.
+ */
+static void gc_mark_root_subtree(gc_root_t *root) {
+    gc_root_t *stack = NULL;
 
-// 标记版本（非增量）
-static void gc_scan_root_tree_locked(gc_root_t *root_list) {
-    gc_root_stack_frame_t *stack = NULL;
-
-    // 将所有根节点压栈
-    for (gc_root_t *r = root_list; r; r = r->next) {
-        gc_root_stack_frame_t *f = malloc(sizeof(*f));
-        if (!f) continue;
-        f->node = r;
-        f->next = stack;
-        stack = f;
-    }
+    /* push root */
+    root->prev = NULL;
+    stack = root;
 
     while (stack) {
-        gc_root_stack_frame_t *f = stack;
-        stack = f->next;
-        gc_root_t *cur = f->node;
-        free(f);
+        gc_root_t *node = stack;
+        stack = node->prev;        /* pop */
 
-        void *ptr = *(cur->ptr_addr);
+        void *ptr = *(node->ptr_addr);
         if (ptr && gc_is_valid_ptr(ptr)) {
             gc_block_t *blk = gc_find_block(ptr);
             if (blk && !blk->marked) {
                 blk->marked = true;
-                gc_scan_region(blk->ptr, (char*)blk->ptr + blk->size);
+                gc_scan_region(blk->ptr, (char *)blk->ptr + blk->size);
             }
         }
 
-        // 将子节点 (hold + more 链) 反向压栈以保持顺序（顺序不重要）
-        gc_root_t *child = cur->hold;
+        /* Push all children (in any order) */
+        gc_root_t *child = node->more;
         while (child) {
-            gc_root_stack_frame_t *cf = malloc(sizeof(*cf));
-            if (cf) {
-                cf->node = child;
-                cf->next = stack;
-                stack = cf;
-            }
-            child = child->more;
+            gc_root_t *next_child = child->next;
+            child->prev = stack;
+            stack = child;
+            child = next_child;
         }
     }
 }
-*/
 
 void gc_mark(void) {
     asm volatile("" ::: "memory");
@@ -245,9 +214,6 @@ void gc_mark(void) {
     for (gc_root_t *r = gc_roots; r; r = r->next)
         gc_mark_root_subtree(r);
     pthread_mutex_unlock(&gc_roots_lock);
-    //pthread_mutex_lock(&gc_roots_lock);
-    //gc_scan_root_tree_locked(gc_roots);
-    //pthread_mutex_unlock(&gc_roots_lock);
 
     LOG_DEBUG("mark phase finished");
 }
@@ -308,6 +274,7 @@ bool gc_mark_incremental(size_t max_scan_bytes) {
     return more_work;
 }
 
+void gc_mark_roots(void) {
 #define MARK_CANDIDATE(ptr) do { \
     void *cand = (ptr); \
     if (gc_is_valid_ptr(cand)) { \
@@ -319,16 +286,6 @@ bool gc_mark_incremental(size_t max_scan_bytes) {
     } \
 } while(0)
 
-// 递归遍历根树，对每个指针调用 MARK_CANDIDATE（不展开扫描块）
-static void gc_mark_roots_subtree(gc_root_t *root) {
-    if (!root) return;
-    void *ptr = *(root->ptr_addr);
-    MARK_CANDIDATE(ptr);
-    gc_mark_roots_subtree(root->hold);
-    gc_mark_roots_subtree(root->more);
-}
-
-void gc_mark_roots(void) {
     asm volatile("" ::: "memory");
 
     // data segment
@@ -384,11 +341,27 @@ void gc_mark_roots(void) {
 
     // precise roots
     pthread_mutex_lock(&gc_roots_lock);
-    for (gc_root_t *r = gc_roots; r; r = r->next)
-        gc_mark_roots_subtree(r);
+    for (gc_root_t *r = gc_roots; r; r = r->next) {
+        gc_root_t *stack = NULL;
+        r->prev = NULL;
+        stack = r;
+        while (stack) {
+            gc_root_t *node = stack;
+            stack = node->prev;
+            void *root_ptr = *(node->ptr_addr);
+            MARK_CANDIDATE(root_ptr);
+            gc_root_t *child = node->more;
+            while (child) {
+                gc_root_t *next_child = child->next;
+                child->prev = stack;
+                stack = child;
+                child = next_child;
+            }
+        }
+    }
     pthread_mutex_unlock(&gc_roots_lock);
-}
 #undef MARK_CANDIDATE
+}
 
 /* write barrier implementation (unified version)
  * @container: containing object or address of its field (eg. obj or &obj->field)
