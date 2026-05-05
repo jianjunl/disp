@@ -238,6 +238,79 @@ void gc_root_cleanup(void **ptr_addr);
     } \
 } while(0)
 
+
+/* ------------------------------------------------------------------------
+ * Typed allocation support
+ * ------------------------------------------------------------------------ */
+
+/*
+ * gc_type_info_t – describes the positions of pointer fields inside a
+ *                 GC‑managed object.
+ *
+ * Fields:
+ *   object_size   – size of a single element (needed for arrays).
+ *   n_offsets     – number of offsets in the offsets array.
+ *   offsets[]     – array of byte offsets from the start of the element
+ *                   where pointer fields reside.  For unions, list all
+ *                   possible pointer offsets of every member; the collector
+ *                   scans them all.
+ */
+typedef struct gc_type_info {
+    size_t  object_size;
+    size_t  n_offsets;
+    ssize_t offsets[];          /* flexible array, n_offsets elements */
+} gc_type_info_t;
+
+/*
+ * GC_TYPE_INFO(name, struct_type, ...)
+ *
+ * Create a static gc_type_info_t descriptor named 'name' for 'struct_type'
+ * containing the given offsetof(...) expressions.
+ *
+ * Example:
+ *   GC_TYPE_INFO(my_list_type, struct my_list,
+ *                offsetof(struct my_list, next),
+ *                offsetof(struct my_list, data));
+ */
+#define GC_TYPE_INFO(name, struct_type, ...)                                    \
+    static const gc_type_info_t name = {                                        \
+        .object_size = sizeof(struct_type),                                     \
+        .n_offsets   = (sizeof((ssize_t[]){ __VA_ARGS__ }) / sizeof(ssize_t)),  \
+        .offsets     = { __VA_ARGS__ }                                          \
+    }
+
+/*
+ * Alternative macro set for more descriptive declaration:
+ *   GC_TYPE_BEGIN(name, struct_type)
+ *   GC_FIELD(struct_type, member)
+ *   GC_TYPE_END
+ * (Not strictly needed if you use GC_TYPE_INFO, but provided for
+ *  compatibility with earlier sketches.)
+ */
+#define GC_TYPE_BEGIN(name, struct_type)                                        \
+    static ssize_t name ## _offsets[] = {
+#define GC_FIELD(struct_type, member) offsetof(struct_type, member),
+#define GC_TYPE_END                                                             \
+    };                                                                          \
+    static const gc_type_info_t name = {                                        \
+        .object_size = sizeof(struct_type),                                     \
+        .n_offsets   = (sizeof(name ## _offsets)/sizeof(name ## _offsets[0])),  \
+        .offsets     = name ## _offsets                                         \
+    }
+
+
+/* Allocate memory with known pointer layout.
+ * @size:       total size of the allocation (may be > element_size for arrays).
+ * @type_info:  pointer to a static gc_type_info_t describing pointer fields.
+ * The new block will be tracked by the collector; during marking, only the
+ * described offsets will be scanned – no conservative heuristics.
+ */
+/* Typed allocation functions */
+void* gc_typed_malloc(size_t size, const gc_type_info_t *type_info);
+/* Zero‑initialised variant. */
+void* gc_typed_calloc(size_t nmemb, size_t size, const gc_type_info_t *type_info);
+
+
 #if GC_FINALIZING == 1
 
 /* ============================================================================
