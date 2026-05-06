@@ -1,32 +1,44 @@
+#define _POSIX_C_SOURCE 200809L
 
-#include <stdio.h>   /* for size_t */
+#include <stddef.h>
+#include <stdio.h>
+#include <ctype.h>
+#include <sys/types.h> // For ssize_t
 
-#ifndef GC_OPT_MULTITHREAD
-#define GC_OPT_MULTITHREAD 1 /* set to 0 to disable multi-threading */
-#endif
+typedef struct gc_type_info {
+    size_t  object_size;
+    size_t  n_offsets;
+    const ssize_t *offsets; // Changed from ssize_t offsets[] to a pointer
+} gc_type_info_t;
 
-#ifndef GC_OPT_INCREMENTAL
-#define GC_OPT_INCREMENTAL 1 /* set to 1 to enable incremental marking */
-#endif
+void* gc_typed_malloc(size_t size, const gc_type_info_t *ti) { (void)size; (void)ti; return 0; }
 
-#ifndef GC_OPT_FINALIZING
-#define GC_OPT_FINALIZING  0 /* set to 0 to disable finalizers & weak refs */
-#endif
+#define GC_TYPE_BEGIN(name, struct_type)                                \
+    static const ssize_t name ## _offsets[] = {
 
-#define GC_MASK(x, n) ((x) << (n))
+#define GC_FIELD(struct_type, member) offsetof(struct_type, member),
 
-#define GC_OPT (GC_MASK(GC_OPT_MULTITHREAD, 0) |\
-                GC_MASK(GC_OPT_INCREMENTAL, 1) |\
-                GC_MASK(GC_OPT_FINALIZING & GC_OPT_MULTITHREAD, 2)) 
+#define GC_TYPE_END(name, struct_type)                                  \
+    };                                                                  \
+    static const gc_type_info_t name = {                                \
+        .object_size = sizeof(struct_type),                             \
+        .n_offsets   = (sizeof(name ## _offsets) /                      \
+                        sizeof(name ## _offsets[0])),                   \
+        .offsets     = name ## _offsets                                 \
+    };
 
-#define GC_MULTITHREAD (GC_OPT & 0x01) >> 0 
-#define GC_INCREMENTAL (GC_OPT & 0x02) >> 1
-#define GC_FINALIZING  (GC_OPT & 0x04) >> 2
+struct list_node {
+    int value;
+    struct list_node *next;
+    struct list_node *prev;
+};
 
-#define GC_PRINT(OPT) printf(#OPT "=%d\n", OPT)
+GC_TYPE_BEGIN(list_type, struct list_node)
+    GC_FIELD(struct list_node, next)
+    GC_FIELD(struct list_node, prev)
+GC_TYPE_END(list_type, struct list_node)
 
-int main(void) {
-    GC_PRINT(GC_MULTITHREAD); 
-    GC_PRINT(GC_INCREMENTAL); 
-    GC_PRINT(GC_FINALIZING); 
+int main() {
+    struct list_node *n1 = gc_typed_malloc(sizeof(struct list_node), &list_type);
+    return n1 ? 0 : 1;
 }

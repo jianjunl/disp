@@ -109,6 +109,7 @@ void* gc_malloc(size_t size) {
     gc_block_t *blk = malloc(sizeof(gc_block_t));
     if (!blk) { gc_os_free(user_ptr, size); return NULL; }
 
+    blk->type_info = NULL;
     blk->ptr    = user_ptr;
     blk->size   = size;
     blk->marked = false;

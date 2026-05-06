@@ -33,6 +33,18 @@ struct sym_entry {
     int final;
     struct sym_entry *next;
 };
+/*
+GC_TYPE_INFO(sym_entry_type, struct sym_entry,
+             offsetof(struct sym_entry, name),
+             offsetof(struct sym_entry, symbol),
+             offsetof(struct sym_entry, next)
+);
+*/
+GC_TYPED(sym_entry_type, struct sym_entry,
+    GC_FIELD(name),
+    GC_FIELD(symbol),
+    GC_FIELD(next)
+);
 
 struct sym_table {
     struct sym_entry *buckets[SYM_TABLE_SIZE];
@@ -185,22 +197,18 @@ disp_val* disp_get_symbol_value(disp_val *v) {
 
 /* ======================== GC 初始化和全局常量 ======================== */
 
-disp_val *NIL, *TRUE, *QUIT;
+GC_GLOBAL3(disp_val, NIL, TRUE, QUIT);
 
 void disp_init_gc() {
     gc_init();
     
     disp_init_info();
    
-    gc_add_root(&sym_table);
+    //gc_add_root(&sym_table);
  
     NIL  = DISP_ALLOC(DISP_VOID);
     TRUE = DISP_ALLOC(DISP_VOID);
     QUIT = DISP_ALLOC(DISP_VOID);
-    
-    gc_add_root(&NIL);
-    gc_add_root(&TRUE);
-    gc_add_root(&QUIT);
     
     DEF("nil",   NIL,  1);
     DEF("false", NIL,  1);
