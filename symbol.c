@@ -40,10 +40,10 @@ GC_TYPE_INFO(sym_entry_type, struct sym_entry,
              offsetof(struct sym_entry, next)
 );
 */
-GC_TYPED(sym_entry_type, struct sym_entry,
-    GC_FIELD(name),
-    GC_FIELD(symbol),
-    GC_FIELD(next)
+GC_TYPE(sym_entry_type, struct sym_entry,
+    GC_OFF(name),
+    GC_OFF(symbol),
+    GC_OFF(next)
 );
 
 struct sym_table {

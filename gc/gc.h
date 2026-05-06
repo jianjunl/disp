@@ -281,7 +281,7 @@ typedef struct gc_type_info {
         .offsets     = { __VA_ARGS__ }                                \
     }
 
-#define GC_TYPED(name, struct_type, ...)                              \
+#define GC_TYPE(name, struct_type, ...)                               \
     typedef struct_type struct_type_local;                            \
     static const struct {                                             \
         gc_type_info_t info;                                          \
@@ -290,14 +290,14 @@ typedef struct gc_type_info {
     } name ## _full = {                                               \
         .info = {                                                     \
             .object_size = sizeof(struct_type),                       \
-            .n_offsets = sizeof((ssize_t[]){ __VA_ARGS__ }) /         \
-                         sizeof(ssize_t)                              \
+            .n_offsets   = sizeof((ssize_t[]){ __VA_ARGS__ }) /       \
+                           sizeof(ssize_t)                            \
         },                                                            \
         .offsets = { __VA_ARGS__ }                                    \
     };                                                                \
     static const gc_type_info_t *name = (const gc_type_info_t *)&name ## _full;
 
-#define GC_FIELD(field) offsetof(struct_type_local, field)
+#define GC_OFF(field) offsetof(struct_type_local, field)
 
 
 /* Allocate memory with known pointer layout.
