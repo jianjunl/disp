@@ -18,7 +18,6 @@
 #endif
 #include "disp.h"
 
-#ifndef DISP_ALLINONE_UNION_H
 union disp_data {
     /* 基本数值类型 */
     char byte_val;
@@ -45,7 +44,6 @@ union disp_data {
         int fd;
     } socket_val;
 };
-#endif
 
 char disp_get_byte(disp_val *v) {
     if (v->flag != DISP_BYTE) {

@@ -14,7 +14,6 @@
 
 /* ======================== FILE ======================== */
 
-#ifndef DISP_ALLINONE_UNION_H
 union disp_data {
     /* 文件 */
     struct {
@@ -22,7 +21,6 @@ union disp_data {
         char *mode;
     } file_val;
 };
-#endif
 
 disp_val* disp_make_file(FILE *f, char *mode) {
     disp_val *v = DISP_ALLOC(DISP_FILE);

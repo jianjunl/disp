@@ -43,11 +43,6 @@ typedef struct disp_val {
 typedef disp_val* (*disp_syscall_t)(disp_val** args, int arg_count);
 typedef disp_val* (*disp_builtin_t)(disp_val* arg);
 
-/* all-in-one union for testing */
-#define DISP_H_DISP_ALLINONE_UNION_H
-//#include "disp_allinone_union.h"
-#undef DISP_H_DISP_ALLINONE_UNION_H
-
 /* --- Value constructors --- */
 void disp_lock_table(void);
 void disp_unlock_table(void);

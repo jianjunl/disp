@@ -14,7 +14,6 @@
 #endif
 #include "disp.h"
 
-#ifndef DISP_ALLINONE_UNION_H
 union disp_data {
     /* 符号 */
     struct {
@@ -22,7 +21,11 @@ union disp_data {
         disp_val *value;
     } symbol;
 };
-#endif
+
+GC_UNION_TI(disp_data,
+    GC_OFF(disp_data, symbol.name),
+    GC_OFF(disp_data, symbol.value)
+);
 
 /* ======================== 符号表 ======================== */
 #define SYM_TABLE_SIZE 1024
@@ -33,23 +36,21 @@ struct sym_entry {
     int final;
     struct sym_entry *next;
 };
-/*
-GC_TYPE_INFO(sym_entry_type, struct sym_entry,
-             offsetof(struct sym_entry, name),
-             offsetof(struct sym_entry, symbol),
-             offsetof(struct sym_entry, next)
-);
-*/
-GC_TYPE(sym_entry_type, struct sym_entry,
-    GC_OFF(name),
-    GC_OFF(symbol),
-    GC_OFF(next)
+
+GC_STRUCT_TI(sym_entry,
+    GC_OFF(sym_entry, name),
+    GC_OFF(sym_entry, symbol),
+    GC_OFF(sym_entry, next)
 );
 
 struct sym_table {
     struct sym_entry *buckets[SYM_TABLE_SIZE];
     gc_mutex_t lock;
 };
+
+GC_STRUCT_TI(sym_table,
+    GC_OFF(sym_table, buckets)
+);
 
 static struct sym_table sym_table = { .lock = GC_PTHREAD_MUTEX_INITIALIZER };
 
@@ -89,7 +90,7 @@ disp_val* disp_alloc(disp_flag_t flag, disp_data *data) {
 /* ======================== 符号表操作 ======================== */
 
 static disp_val* make_symbol(const char *name) {
-    disp_val *v = DISP_ALLOC(DISP_SYMBOL);
+    disp_val *v = disp_alloc(DISP_SYMBOL, gc_calloc(1, sizeof(disp_data)));
     if (!v) return NULL;
     
     // 初始化符号数据
@@ -206,9 +207,9 @@ void disp_init_gc() {
    
     //gc_add_root(&sym_table);
  
-    NIL  = DISP_ALLOC(DISP_VOID);
-    TRUE = DISP_ALLOC(DISP_VOID);
-    QUIT = DISP_ALLOC(DISP_VOID);
+    NIL  = disp_alloc(DISP_VOID, gc_calloc(1, sizeof(disp_data)));
+    TRUE = disp_alloc(DISP_VOID, gc_calloc(1, sizeof(disp_data)));
+    QUIT = disp_alloc(DISP_VOID, gc_calloc(1, sizeof(disp_data)));
     
     DEF("nil",   NIL,  1);
     DEF("false", NIL,  1);

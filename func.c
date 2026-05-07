@@ -16,7 +16,6 @@
 
 /* ======================== Funcs ======================== */
 
-#ifndef DISP_ALLINONE_UNION_H
 union disp_data {
     /* 内置函数 / 系统调用 */
     struct {
@@ -40,7 +39,6 @@ union disp_data {
         disp_val *decl;
     } type_val;
 };
-#endif
 
 disp_builtin_t disp_get_builtin(disp_val *v) {
     if (v->flag == DISP_BUILTIN) {
