@@ -53,7 +53,6 @@ typedef struct disp_channel_t {
     disp_val *direct_value;   // 用于无缓冲通道的临时值传递
 } disp_channel_t;
 
-#ifndef DISP_ALLINONE_UNION_H
 union disp_data {
     /* 协程 */
     disp_coro_t *coro;
@@ -61,6 +60,10 @@ union disp_data {
     /* 通道 */
     disp_channel_t *chan;
 };
-#endif
+
+GC_UNION_TI(disp_data,
+    GC_OFF(disp_data, coro),
+    GC_OFF(disp_data, chan)
+);
 
 #endif /* DISP_CORO_H */

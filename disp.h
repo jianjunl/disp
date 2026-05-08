@@ -39,6 +39,10 @@ typedef struct disp_val {
     disp_data *data;
 } disp_val;
 
+GC_STRUCT_TI(disp_val,
+    GC_OFF(disp_val, data)
+);
+
 /* Function pointer type for built‑in functions */
 typedef disp_val* (*disp_syscall_t)(disp_val** args, int arg_count);
 typedef disp_val* (*disp_builtin_t)(disp_val* arg);
@@ -105,7 +109,7 @@ disp_val* disp_eval_body(disp_val *body);
 void disp_init_gc(void);
 void disp_gc(void);
 disp_val* disp_alloc(disp_flag_t flag, disp_data *data);
-#define DISP_ALLOC(flag) disp_alloc(flag, gc_calloc(1, sizeof(disp_data)))
+#define DISP_ALLOC(flag) disp_alloc(flag, gc_typed_calloc(1, sizeof(disp_data), &union_disp_data_ti))
  
 
 /* --- I/O --- */

@@ -45,6 +45,12 @@ union disp_data {
     } socket_val;
 };
 
+GC_UNION_TI(disp_data,
+    GC_OFF(disp_data, string_val.str),
+    GC_OFF(disp_data, cons.car),
+    GC_OFF(disp_data, cons.cdr)
+);
+
 char disp_get_byte(disp_val *v) {
     if (v->flag != DISP_BYTE) {
 	ERRO("disp_get_byte failed: %s\n", strerror (errno));

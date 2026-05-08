@@ -40,6 +40,15 @@ union disp_data {
     } type_val;
 };
 
+GC_UNION_TI(disp_data,
+    GC_OFF(disp_data, builtin.desc),
+    GC_OFF(disp_data, syscall.desc),
+    GC_OFF(disp_data, closure.params),
+    GC_OFF(disp_data, closure.body),
+    GC_OFF(disp_data, type_val.name),
+    GC_OFF(disp_data, type_val.decl),
+);
+
 disp_builtin_t disp_get_builtin(disp_val *v) {
     if (v->flag == DISP_BUILTIN) {
         return v->data->builtin.func;

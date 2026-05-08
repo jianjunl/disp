@@ -43,16 +43,10 @@ GC_STRUCT_TI(sym_entry,
     GC_OFF(sym_entry, next)
 );
 
-struct sym_table {
-    struct sym_entry *buckets[SYM_TABLE_SIZE];
-    gc_mutex_t lock;
-};
+static struct sym_entry *sym_buckets[SYM_TABLE_SIZE]  __attribute__((section("gc_roots")));
+//static struct sym_entry **sym_buckets = NULL;
 
-GC_STRUCT_TI(sym_table,
-    GC_OFF(sym_table, buckets)
-);
-
-static struct sym_table sym_table = { .lock = GC_PTHREAD_MUTEX_INITIALIZER };
+static gc_mutex_t sym_lock = GC_PTHREAD_MUTEX_INITIALIZER;
 
 static unsigned int hash(const char *s) {
     unsigned int h = 0;
@@ -61,27 +55,16 @@ static unsigned int hash(const char *s) {
 }
 
 void disp_lock_table(void) {
-    gc_pthread_mutex_lock(&sym_table.lock);
+    gc_pthread_mutex_lock(&sym_lock);
 }
 
 void disp_unlock_table(void) {
-    gc_pthread_mutex_unlock(&sym_table.lock);
-}
-
-/* ======================== GC 根管理 ======================== */
-
-static void register_symbol_root(struct sym_entry *e) {
-    gc_add_root(&e->symbol->data->symbol.value->data);
-    gc_add_root(&e->symbol->data->symbol.value);
-    gc_add_root(&e->symbol->data->symbol.name);
-    gc_add_root(&e->symbol->data);
-    gc_add_root(&e->symbol);
-    gc_add_root(&e);          // 确保条目本身不被回收
+    gc_pthread_mutex_unlock(&sym_lock);
 }
 
 /* ======================== 对象分配 ======================== */
 disp_val* disp_alloc(disp_flag_t flag, disp_data *data) {
-    disp_val *v = gc_calloc(1, sizeof(disp_val));
+    disp_val *v = gc_typed_calloc(1, sizeof(disp_val), &struct_disp_val_ti);
     v->data = data;
     v->flag = flag;
     return v;
@@ -90,7 +73,7 @@ disp_val* disp_alloc(disp_flag_t flag, disp_data *data) {
 /* ======================== 符号表操作 ======================== */
 
 static disp_val* make_symbol(const char *name) {
-    disp_val *v = disp_alloc(DISP_SYMBOL, gc_calloc(1, sizeof(disp_data)));
+    disp_val *v = DISP_ALLOC(DISP_SYMBOL);
     if (!v) return NULL;
     
     // 初始化符号数据
@@ -103,7 +86,7 @@ static disp_val* make_symbol(const char *name) {
 disp_val* disp_find_symbol(const char *name) {
     disp_lock_table();
     unsigned int idx = hash(name);
-    struct sym_entry *e = sym_table.buckets[idx];
+    struct sym_entry *e = sym_buckets[idx];
     while (e) {
         if (strcmp(e->name, name) == 0) {
             disp_unlock_table();
@@ -119,7 +102,7 @@ disp_val* disp_define_symbol(const char *name, disp_val *value, int final) {
     DBG("disp_define_symbol: %s\n", name);
     disp_lock_table();
     unsigned int idx = hash(name);
-    struct sym_entry *e = sym_table.buckets[idx];
+    struct sym_entry *e = sym_buckets[idx];
     while (e) {
         if (strcmp(e->name, name) == 0) {
             if (e->final) {
@@ -138,16 +121,12 @@ disp_val* disp_define_symbol(const char *name, disp_val *value, int final) {
     disp_val *sym = make_symbol(name);
     GC_ASSIGN_PTR(sym->data->symbol.value, value);
     
-    struct sym_entry *new_entry = gc_malloc(sizeof(struct sym_entry));
+    struct sym_entry *new_entry = gc_typed_malloc(sizeof(struct sym_entry), &struct_sym_entry_ti);
     GC_ASSIGN_PTR(new_entry->name, gc_strdup(name));
     GC_ASSIGN_PTR(new_entry->symbol, sym);
     new_entry->final = final;
-    GC_ASSIGN_PTR(new_entry->next, sym_table.buckets[idx]);
-    GC_ASSIGN_PTR(sym_table.buckets[idx], new_entry);
-    
-    // 注册精确根，确保符号不被回收
-    register_symbol_root(new_entry);
-    gc_add_root(&sym_table.buckets[idx]);
+    GC_ASSIGN_PTR(new_entry->next, sym_buckets[idx]);
+    GC_ASSIGN_PTR(sym_buckets[idx], new_entry);
     
     disp_unlock_table();
     return sym;
@@ -156,7 +135,7 @@ disp_val* disp_define_symbol(const char *name, disp_val *value, int final) {
 disp_val* disp_intern_symbol(const char *name) {
     disp_lock_table();
     unsigned int idx = hash(name);
-    struct sym_entry *e = sym_table.buckets[idx];
+    struct sym_entry *e = sym_buckets[idx];
     while (e) {
         if (strcmp(e->name, name) == 0) {
             disp_unlock_table();
@@ -168,15 +147,12 @@ disp_val* disp_intern_symbol(const char *name) {
     // 未找到，创建新符号
     disp_val *sym = make_symbol(name);
     
-    struct sym_entry *new_entry = gc_malloc(sizeof(struct sym_entry));
+    struct sym_entry *new_entry = gc_typed_malloc(sizeof(struct sym_entry), &struct_sym_entry_ti);
     GC_ASSIGN_PTR(new_entry->name, gc_strdup(name));
     GC_ASSIGN_PTR(new_entry->symbol, sym);
     new_entry->final = 0;
-    GC_ASSIGN_PTR(new_entry->next, sym_table.buckets[idx]);
-    GC_ASSIGN_PTR(sym_table.buckets[idx], new_entry);
-    
-    register_symbol_root(new_entry);
-    gc_add_root(&sym_table.buckets[idx]);
+    GC_ASSIGN_PTR(new_entry->next, sym_buckets[idx]);
+    GC_ASSIGN_PTR(sym_buckets[idx], new_entry);
     
     disp_unlock_table();
     return sym;
@@ -202,14 +178,15 @@ GC_GLOBAL3(disp_val, NIL, TRUE, QUIT);
 
 void disp_init_gc() {
     gc_init();
-    
+
+    //sym_buckets = gc_typed_calloc(SYM_TABLE_SIZE, sizeof(void*), &GC_TYPE_PTR_ARRAY);
+    //gc_add_root(&sym_buckets);
+
     disp_init_info();
-   
-    //gc_add_root(&sym_table);
  
-    NIL  = disp_alloc(DISP_VOID, gc_calloc(1, sizeof(disp_data)));
-    TRUE = disp_alloc(DISP_VOID, gc_calloc(1, sizeof(disp_data)));
-    QUIT = disp_alloc(DISP_VOID, gc_calloc(1, sizeof(disp_data)));
+    NIL  = DISP_ALLOC(DISP_VOID);
+    TRUE = DISP_ALLOC(DISP_VOID);
+    QUIT = DISP_ALLOC(DISP_VOID);
     
     DEF("nil",   NIL,  1);
     DEF("false", NIL,  1);

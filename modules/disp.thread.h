@@ -19,7 +19,6 @@ typedef struct disp_thread_t {
     gc_cond_t  *cond;        // 用于 join 的条件变量
 } disp_thread_t;
 
-#ifndef DISP_ALLINONE_UNION_H
 union disp_data {
     /* 线程 */
     struct disp_thread_t *thread;
@@ -28,6 +27,11 @@ union disp_data {
     /* 条件变量 */
     gc_cond_t *cond;
 };
-#endif
+
+GC_UNION_TI(disp_data,
+    GC_OFF(disp_data, thread),
+    GC_OFF(disp_data, mutex),
+    GC_OFF(disp_data, cond)
+);
 
 #endif /* DISP_THREAD_H */
