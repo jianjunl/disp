@@ -366,8 +366,7 @@ void* gc_typed_calloc(size_t nmemb, size_t size, const gc_type_info_t *type_info
 
 /* Place a global pointer variable in a dedicated section so the GC can
    automatically treat it as a root – no explicit add_root() needed. */
-#define GC_GLOBAL(type, name) \
-    type * name __attribute__((section("gc_roots"))) = NULL
+#define GC_GLOBAL(type, name) type * name __attribute__((section("gc_roots"))) = NULL
 #define GC_GLOBAL1(type, x)      GC_GLOBAL(type, x)
 #define GC_GLOBAL2(type, x, ...) GC_GLOBAL(type, x);GC_GLOBAL1(type, __VA_ARGS__)
 #define GC_GLOBAL3(type, x, ...) GC_GLOBAL(type, x);GC_GLOBAL2(type, __VA_ARGS__)

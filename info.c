@@ -14,10 +14,15 @@
 #endif
 #include "disp.h"
 
+GC_STRUCT_TI(disp_info,
+    GC_OFF(disp_info, next)
+);
+
 _Thread_local disp_info_t *current_info = NULL;
+//disp_info_t *all_thread_infos[MAX_THREADS] __attribute__((section("gc_roots")));
 
 void disp_push_source(const char *filename) {
-    disp_info_t *new_info = gc_calloc(1, sizeof(disp_info_t));
+    disp_info_t *new_info = gc_typed_calloc(1, sizeof(disp_info_t), &struct_disp_info_ti);
     new_info->filename = filename ? gc_strdup(filename) : NULL;
     new_info->line = 1;
     new_info->column = 1;
@@ -44,7 +49,7 @@ void disp_pop_source(void) {
 }
 
 void disp_init_info(void) {
-    gc_add_root(&current_info);
+    //gc_add_root(&current_info);
 }
 
 void disp_update_current_pos(int line, int col) {
