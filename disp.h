@@ -106,8 +106,7 @@ disp_val* disp_eval(disp_val *expr);
 disp_val* disp_eval_body(disp_val *body);
 
 /* --- Garbage collection --- */
-void disp_init_gc(void);
-void disp_gc(void);
+void disp_init_symbol(void);
 disp_val* disp_alloc(disp_flag_t flag, disp_data *data);
 #define DISP_ALLOC_TI(flag) disp_alloc(flag, gc_typed_calloc(1, sizeof(union disp_data), &union_disp_data_ti))
 #define DISP_ALLOC(flag) disp_alloc(flag, gc_calloc(1, sizeof(union disp_data)))
@@ -160,6 +159,7 @@ extern int parse_current_col;
 void disp_update_pos(int c);
 
 // 线程局部信息管理（栈式）
+void disp_init_info(void);                     // 初始化（确保 current_info 为 NULL）
 void disp_push_source(const char *filename);   // 加载新文件时压栈
 void disp_pop_source(void);                    // 文件加载完毕弹栈
 void disp_update_current_pos(int line, int col); // 更新栈顶位置
@@ -170,10 +170,40 @@ void disp_init_globals(void);
 void disp_repl(void);
 
 /* --- Global constants --- */
-extern disp_val *NIL, *TRUE, *QUIT;
-extern disp_val *BYTE, *SHORT, *INT, *LONG, *FLOAT, *DOUBLE, *PNTR;
-extern disp_val *LAMBDA, *LETA, *LETRECA;
-extern disp_val *CONS, *LIST, *QUOTE, *QUASIQUOTE, *UNQUOTE, *UNQUOTE_SPLICING, *APPEND;
-extern disp_val *MODPATH;
+extern disp_val* disp_builtin_roots[];
+
+#define NUM_BUILTIN_ROOTS 21
+
+enum disp_builtin_root_idx {
+    IDX_NIL = 0, IDX_TRUE, IDX_QUIT,
+    IDX_BYTE, IDX_SHORT, IDX_INT, IDX_LONG, IDX_FLOAT, IDX_DOUBLE, IDX_PNTR,
+    IDX_LAMBDA, IDX_LETA, IDX_LETRECA,
+    IDX_CONS, IDX_LIST, IDX_QUOTE, IDX_QUASIQUOTE, IDX_UNQUOTE, IDX_UNQUOTE_SPLICING, IDX_APPEND,
+    IDX_MODPATH
+};
+
+#define NIL              disp_builtin_roots[IDX_NIL]
+#define TRUE             disp_builtin_roots[IDX_TRUE]
+#define QUIT             disp_builtin_roots[IDX_QUIT]
+#define BYTE             disp_builtin_roots[IDX_BYTE]
+#define SHORT            disp_builtin_roots[IDX_SHORT]
+#define INT              disp_builtin_roots[IDX_INT]
+#define LONG             disp_builtin_roots[IDX_LONG]
+#define FLOAT            disp_builtin_roots[IDX_FLOAT]
+#define LONG             disp_builtin_roots[IDX_LONG]
+#define DOUBLE           disp_builtin_roots[IDX_DOUBLE]
+#define PNTR             disp_builtin_roots[IDX_PNTR]
+#define LAMBDA           disp_builtin_roots[IDX_LAMBDA]
+#define LETA             disp_builtin_roots[IDX_LETA]
+#define LETRECA          disp_builtin_roots[IDX_LETRECA]
+#define CONS             disp_builtin_roots[IDX_CONS]
+#define LIST             disp_builtin_roots[IDX_LIST]
+#define QUOTE            disp_builtin_roots[IDX_QUOTE]
+#define QUASIQUOTE       disp_builtin_roots[IDX_QUASIQUOTE]
+#define UNQUOTE          disp_builtin_roots[IDX_UNQUOTE]
+#define UNQUOTE_SPLICING disp_builtin_roots[IDX_UNQUOTE_SPLICING]
+#define APPEND           disp_builtin_roots[IDX_APPEND]
+#define MODPATH          disp_builtin_roots[IDX_MODPATH]
+
 
 #endif /* DISP_H */

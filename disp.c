@@ -15,11 +15,7 @@
 #endif
 #include "disp.h"
 
-disp_val *NIL, *TRUE, *QUIT;
-disp_val *BYTE, *SHORT, *INT, *LONG, *FLOAT, *DOUBLE, *PNTR;
-disp_val *LAMBDA, *LETA, *LETRECA;
-disp_val *CONS, *LIST, *QUOTE, *QUASIQUOTE, *UNQUOTE, *UNQUOTE_SPLICING, *APPEND;
-disp_val *MODPATH;
+disp_val* __attribute__((section("gc_roots"))) disp_builtin_roots[NUM_BUILTIN_ROOTS] = { NULL };
 
 /* ======================== Built‑in 'load' ======================== */
 static disp_val* load_syscall(disp_val **args, int argc) {
@@ -35,7 +31,8 @@ static disp_val* gc_syscall(disp_val **args, int count) {
     (void)args;
     if (count != 0)
         ERET(NIL, "gc expects no arguments");
-    disp_gc();
+    gc_collect();
+    gc_dump_stats();
     return TRUE;
 }
 
@@ -75,10 +72,11 @@ void disp_init_globals() {
 	DBG("disp module path is '%s'\n", p);
         MODPATH = MKS(p);
         DEF(":path", MODPATH, 1);
-        gc_add_root(&MODPATH);
     }
 
-    disp_init_gc();
+    gc_init();
+    disp_init_info();
+    disp_init_symbol();
       
     BYTE    = disp_define_type("byte"     , MKS(":byte"  ));
     SHORT   = disp_define_type("short"    , MKS(":short" ));
@@ -87,14 +85,6 @@ void disp_init_globals() {
     FLOAT   = disp_define_type("float"    , MKS(":float" ));
     DOUBLE  = disp_define_type("double"   , MKS(":double"));
     PNTR    = disp_define_type("pointer"  , MKS(":pntr"  ));
-
-    gc_add_root(&BYTE);
-    gc_add_root(&SHORT);
-    gc_add_root(&INT);
-    gc_add_root(&LONG);
-    gc_add_root(&FLOAT);
-    gc_add_root(&DOUBLE);
-    gc_add_root(&PNTR);
 
     DEF("stdin"  , disp_make_file(stdin ,"r"), 1);
     DEF("stdout" , disp_make_file(stdout,"w"), 1);
@@ -111,23 +101,12 @@ void disp_init_globals() {
     disp_load("disp.data.so");
     CONS              = disp_find_symbol("cons");
     LIST              = disp_find_symbol("list");
-
-    gc_add_root(&CONS);
-    gc_add_root(&LIST);
-
     disp_load("disp.quote.so");
     APPEND            = disp_find_symbol("append");
     QUOTE             = disp_find_symbol("quote");
     QUASIQUOTE        = disp_find_symbol("quasiquote");
     UNQUOTE           = disp_find_symbol("unquote");
     UNQUOTE_SPLICING  = disp_find_symbol("unquote-splicing");
-
-    gc_add_root(&APPEND);
-    gc_add_root(&QUOTE);
-    gc_add_root(&QUASIQUOTE);
-    gc_add_root(&UNQUOTE);
-    gc_add_root(&UNQUOTE_SPLICING);
-
     disp_load("disp.lamb.so");
     LAMBDA  = disp_find_symbol("lambda");
     disp_load("disp.leta.so");
@@ -137,10 +116,6 @@ void disp_init_globals() {
     disp_load("disp.flow.so");
     disp_load("disp.loop.so");
     disp_load("disp.throw.so");
-
-    gc_add_root(&LAMBDA);
-    gc_add_root(&LETA);
-    gc_add_root(&LETRECA);
 
     disp_load("disp.math.so");
     disp_load("disp.string.so");

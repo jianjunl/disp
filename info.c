@@ -14,11 +14,16 @@
 #endif
 #include "disp.h"
 
+GC_STRUCT_TI(disp_info,
+    GC_OFF(disp_info, filename),
+    GC_OFF(disp_info, next)
+);
+
 _Thread_local disp_info_t *current_info = NULL;
 
 void disp_push_source(const char *filename) {
-    disp_info_t *new_info = calloc(1, sizeof(disp_info_t));
-    new_info->filename = filename ? strdup(filename) : NULL;
+    disp_info_t *new_info = gc_typed_calloc(1, sizeof(disp_info_t), &struct_disp_info_ti);
+    new_info->filename = filename ? gc_strdup(filename) : NULL;
     new_info->line = 1;
     new_info->column = 1;
     // 保存当前解析器的行列号
@@ -38,8 +43,8 @@ void disp_pop_source(void) {
         // 恢复解析器的行列号
         parse_current_line = old->saved_line;
         parse_current_col = old->saved_col;
-        free(old->filename);
-        free(old);
+        gc_free(old->filename);
+        gc_free(old);
     }
 }
 
@@ -52,6 +57,10 @@ void disp_update_current_pos(int line, int col) {
 
 disp_info_t* disp_get_current_info(void) {
     return current_info;
+}
+
+void disp_init_info(void) {
+    gc_add_root(&current_info);
 }
 
 int parse_current_line = 1;

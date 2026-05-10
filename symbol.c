@@ -19,7 +19,6 @@ GC_STRUCT_TI(disp_val,
 );
 
 union disp_data {
-    /* 符号 */
     struct {
         char *name;
         disp_val *value;
@@ -177,27 +176,14 @@ disp_val* disp_get_symbol_value(disp_val *v) {
 
 /* ======================== GC 初始化和全局常量 ======================== */
 
-void disp_init_gc() {
-    gc_init();
-
-    gc_add_root(&sym_buckets);
-
+void disp_init_symbol() {
     NIL  = DISP_ALLOC_TI(DISP_VOID);
     TRUE = DISP_ALLOC_TI(DISP_VOID);
     QUIT = DISP_ALLOC_TI(DISP_VOID);
-    gc_add_root(&NIL);
-    gc_add_root(&TRUE);
-    gc_add_root(&QUIT);
-    
     DEF("nil",   NIL,  1);
     DEF("false", NIL,  1);
     DEF("true",  TRUE, 1);
     DEF("quit",  QUIT, 1);
     DEF("q",     QUIT, 1);
     DEF(":q",    QUIT, 1);
-}
-
-void disp_gc(void) {
-    gc_collect();
-    gc_dump_stats();
 }
