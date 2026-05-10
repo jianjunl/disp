@@ -15,41 +15,8 @@
 #include "disp.h"
 
 /* ======================== Parser ======================== */
-#if GC_MULTITHREAD && GC_INCREMENTAL
-/*
-static int disp_fgetc(FILE *f) {
-    sigset_t mask;
-    sigemptyset(&mask);
-    sigaddset(&mask, SIGUSR1);
-    int c;
-disp_lock_table();
-    pthread_sigmask(SIG_BLOCK, &mask, NULL);
-    do {
-        clearerr(f);               // 清除因信号中断设置的错误标志
-        c = fgetc(f);
-    //} while (c != EOF && errno == EINTR);
-    //} while (ferror(f) || errno == EINTR);
-    } while (c == EOF && ferror(f) && errno == EINTR);
-    pthread_sigmask(SIG_UNBLOCK, &mask, NULL);
-disp_unlock_table();
-    return c;
-}
-*/
-///*
-int disp_fgetc(FILE *f) {
-    int c;
-    do {
-        clearerr(f);               // 清除因信号中断设置的错误标志
-        c = fgetc(f);
-    } while (c == EOF && ferror(f) && errno == EINTR);
-    //} while (ferror(f) || errno == EINTR);
-    return c;
-}
-//*/
-//#define disp_fgetc fgetc
-#else
+
 #define disp_fgetc fgetc
-#endif // GC_MULTITHREAD && GC_INCREMENTAL
 
 static int skip_and_get(FILE *f) {
     int c, d;

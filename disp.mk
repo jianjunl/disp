@@ -12,6 +12,8 @@ else
 endif
 
 # 子目录
+BESTLINE_DIR = bestline
+include $(BESTLINE_DIR)/bestline.mk
 GC_DIR      = gc
 MOD_DIR     = modules
 
@@ -27,7 +29,7 @@ INCLUDEDIR := $(PREFIX)/include
 MODDIR := $(PREFIX)/share/disp/modules
 
 LIB_SRCS := disp.c number.c print.c parse.c load.c eval.c macro.c symbol.c \
-            prim.c string.c cons.c func.c closure.c file.c info.c
+            prim.c string.c cons.c func.c closure.c file.c info.c repl.c
 LIB_OBJS := $(LIB_SRCS:.c=.o)
 MAIN_SRC := main.c
 MAIN_OBJ := main.o
@@ -70,17 +72,18 @@ libdisp.a: $(LIB_OBJS)
 libdisp.so: $(LIB_OBJS) | $(GC_LIB_STATIC)
 	$(CC) -shared $(LDFLAGS) $^ $(LDLIBS) -o $@
 
-disp.static: $(MAIN_OBJ) libdisp.a | $(GC_LIB_STATIC)
+disp.static: $(MAIN_OBJ) libdisp.a $(BESTLINE_LIB) | $(GC_LIB_STATIC)
 	$(CC) $(LDFLAGS) $^ -lpthread -lm -ldl -L. -ldisp -L$(GC_DIR) -lgc -o $@
 
-disp: $(MAIN_OBJ) libdisp.so | $(GC_LIB_SHARED)
-	$(CC) $(LDFLAGS) $< -L. -ldisp $(LDLIBS) -o $@
+disp: $(MAIN_OBJ) libdisp.so | $(GC_LIB_SHARED) $(BESTLINE_SO)
+	$(CC) $(LDFLAGS) $< -L. -ldisp $(LDLIBS) -L$(BESTLINE_DIR) -lbestline -o $@
 
 %.so: $(MOD_DIR)/%.c disp.h $(GC_HEADER) | $(GC_LIB_STATIC)
 	$(CC) $(CFLAGS) -shared $< $(LDLIBS) -o $@
 
 install: all
 	$(MAKE) -C $(GC_DIR) -f gc.mk install DESTDIR=$(DESTDIR) PREFIX=$(PREFIX)
+	$(MAKE) -C $(BESTLINE_DIR) -f bestline.mk install DESTDIR=$(DESTDIR) PREFIX=$(PREFIX)
 	$(INSTALL) -d $(DESTDIR)$(BINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(INCLUDEDIR) $(DESTDIR)$(MODDIR)
 	$(INSTALL) -m755 disp $(DESTDIR)$(BINDIR)/disp
 	$(INSTALL) -m755 disp.static $(DESTDIR)$(BINDIR)/disp.static
@@ -94,6 +97,7 @@ install: all
 
 uninstall:
 	$(MAKE) -C $(GC_DIR) -f gc.mk uninstall DESTDIR=$(DESTDIR) PREFIX=$(PREFIX)
+	$(MAKE) -C $(BESTLINE_DIR) -f bestline.mk uninstall DESTDIR=$(DESTDIR) PREFIX=$(PREFIX)
 	$(RM) $(DESTDIR)$(BINDIR)/disp
 	$(RM) $(DESTDIR)$(BINDIR)/disp.static
 	$(RM) $(DESTDIR)$(LIBDIR)/libdisp.a
@@ -106,6 +110,7 @@ uninstall:
 
 clean:
 	$(MAKE) -C $(GC_DIR) -f gc.mk clean
+	$(MAKE) -C $(BESTLINE_DIR) -f bestline.mk clean
 	$(RM) $(LIB_OBJS) $(MAIN_OBJ) $(LIB_OBJS:.o=.d) $(MAIN_OBJ:.o=.d)
 	$(RM) $(TARGETS) $(GC_STAMP)
 
