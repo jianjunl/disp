@@ -17,54 +17,6 @@
 #include "bestline/bestline.h"
 
 /* ======================== REPL ======================== */
-void disp_repl0() {
-
-    printf("disp Lisp (type :quit to exit)\n");
-
-    for (;;) {
-        disp_info_t *_info = disp_get_current_info();
-        if (_info && _info->filename) {
-            printf("disp:");
-            printf("%d", _info->line);
-        } else printf("disp:");
-        printf("> ");
-        fflush(stdout);
-/*
-char *line = NULL;
-size_t len = 0;
-ssize_t nread = getline(&line, &len, stdin);
-if (nread == -1) break;
-fprintf(stderr, "RAW LINE: '%s' (len=%zu)\n", line, strlen(line));
-
-FILE *mem = fmemopen(line, nread, "r");   // nread 包含换行符
-if (!mem) {
-    gc_free(line);
-    break;
-}
-
-disp_val *expr = disp_read(mem);
-fclose(mem);
-gc_free(line);
-*/
-//sigset_t mask;
-//sigemptyset(&mask);
-//sigaddset(&mask, SIGUSR1);
-
-//pthread_sigmask(SIG_BLOCK, &mask, NULL);
-        disp_val *expr = disp_read(stdin);
-//pthread_sigmask(SIG_UNBLOCK, &mask, NULL);
-        if (!expr) break;
-        disp_val *result = disp_eval(expr);
-        disp_print(result);
-        printf("\n");
-        static int gc_counter = 0;
-        if (++gc_counter > 1000) {
-//            disp_gc();
-            gc_counter = 0;
-        }
-    }
-}
-
 
 void disp_repl() {
     printf("disp Lisp (type :quit to exit)\n");
