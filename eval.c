@@ -71,7 +71,7 @@ disp_val* disp_eval(disp_val *expr) {
             disp_val *arg_list = disp_cdr(expr);
             for (disp_val *a = arg_list; a && T(a) == DISP_CONS; a = disp_cdr(a))
                 arg_count++;
-            disp_val **args = gc_malloc(arg_count * sizeof(disp_val*));
+            disp_val **args = gc_typed_malloc(arg_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
             gc_add_root(&args);                // 保护数组本身
             int i = 0;
             for (disp_val *a = arg_list; a && T(a) == DISP_CONS; a = disp_cdr(a)) {

@@ -108,8 +108,17 @@ disp_val* disp_eval_body(disp_val *body);
 /* --- Garbage collection --- */
 void disp_init_gc(void);
 void disp_gc(void);
-disp_val* disp_alloc(disp_flag_t flag, disp_data *data);
-#define DISP_ALLOC(flag) disp_alloc(flag, gc_typed_calloc(1, sizeof(disp_data), &union_disp_data_ti))
+disp_val* disp_alloc(const gc_type_info_t *ti, disp_flag_t flag, disp_data *data);
+/*
+#define DISP_ALLOC_TI(flag) (GC_LOG_TI(struct_disp_val_ti), GC_LOG_TI(union_disp_data_ti), \
+                            disp_alloc(&struct_disp_val_ti, flag, \
+                            gc_typed_calloc(1, sizeof(union disp_data), &union_disp_data_ti)))
+#define DISP_ALLOC(flag) (GC_LOG_TI(struct_disp_val_ti), \
+                         disp_alloc(&struct_disp_val_ti, flag, gc_calloc(1, sizeof(union disp_data))))
+*/
+#define DISP_ALLOC_TI(flag) disp_alloc(&struct_disp_val_ti, flag, \
+                            gc_typed_calloc(1, sizeof(union disp_data), &union_disp_data_ti))
+#define DISP_ALLOC(flag) disp_alloc(&struct_disp_val_ti, flag, gc_calloc(1, sizeof(union disp_data)))
  
 
 /* --- I/O --- */
@@ -159,7 +168,6 @@ extern int parse_current_col;
 void disp_update_pos(int c);
 
 // 线程局部信息管理（栈式）
-void disp_init_info(void);                     // 初始化（确保 current_info 为 NULL）
 void disp_push_source(const char *filename);   // 加载新文件时压栈
 void disp_pop_source(void);                    // 文件加载完毕弹栈
 void disp_update_current_pos(int line, int col); // 更新栈顶位置

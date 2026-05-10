@@ -27,7 +27,7 @@ GC_UNION_TI(disp_data,
 );
 
 disp_val* disp_make_file(FILE *f, char *mode) {
-    disp_val *v = DISP_ALLOC(DISP_FILE);
+    disp_val *v = DISP_ALLOC_TI(DISP_FILE);
     v->data->file_val.file = f;
     v->data->file_val.mode = mode;
     return v;

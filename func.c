@@ -26,27 +26,11 @@ union disp_data {
         disp_syscall_t func;
         char *desc;
     } syscall; // for function/primitive
-
-    /* 闭包 / 宏 */
-    struct {
-        disp_val *params;
-        disp_val *body;
-    } closure;
-
-    /* 类型 */
-    struct {
-        char *name;
-        disp_val *decl;
-    } type_val;
 };
 
 GC_UNION_TI(disp_data,
-    GC_OFF(disp_data, builtin.desc),
-    GC_OFF(disp_data, syscall.desc),
-    GC_OFF(disp_data, closure.params),
-    GC_OFF(disp_data, closure.body),
-    GC_OFF(disp_data, type_val.name),
-    GC_OFF(disp_data, type_val.decl),
+    GC_OFF(disp_data, builtin.func),
+    GC_OFF(disp_data, builtin.desc)
 );
 
 disp_builtin_t disp_get_builtin(disp_val *v) {
@@ -78,7 +62,7 @@ char* disp_get_syscall_desc(disp_val *v) {
 }
 
 disp_val* disp_make_builtin(disp_builtin_t f, char *d) {
-    disp_val *v = DISP_ALLOC(DISP_BUILTIN);
+    disp_val *v = DISP_ALLOC_TI(DISP_BUILTIN);
     v->data->builtin.func = f;
     v->data->builtin.desc = d;
     gc_add_root(&v->data->builtin.func);
@@ -90,7 +74,7 @@ disp_val* disp_make_builtin(disp_builtin_t f, char *d) {
 }
 
 disp_val* disp_make_syscall(disp_syscall_t f, char *d) {
-    disp_val *v = DISP_ALLOC(DISP_SYSCALL);
+    disp_val *v = DISP_ALLOC_TI(DISP_SYSCALL);
     v->data->syscall.func = f;
     v->data->syscall.desc = d;
     gc_add_root(&v->data->syscall.func);
@@ -99,69 +83,4 @@ disp_val* disp_make_syscall(disp_syscall_t f, char *d) {
     gc_add_root(&v->data);
     gc_add_root(&v);
     return v;
-}
-
-static void intern_params(disp_val *params) {
-    for (disp_val *p = params; p && T(p) == DISP_CONS; p = disp_cdr(p)) {
-        disp_val *sym = disp_car(p);
-        if (T(sym) == DISP_SYMBOL) {
-            const char *name = disp_get_symbol_name(sym);
-            if (!disp_find_symbol(name)) {
-                disp_define_symbol(name, NIL, 0);
-            }
-        }
-    }
-}
-
-disp_val* disp_make_closure(disp_val *params, disp_val *body) {
-    intern_params(params);
-    disp_val *v = DISP_ALLOC(DISP_CLOSURE);
-    v->data->closure.params = params;
-    v->data->closure.body = body;
-    return v;
-}
-
-disp_val* disp_make_macro(disp_val *params, disp_val *body) {
-    intern_params(params);
-    disp_val *v = DISP_ALLOC(DISP_MACRO);
-    v->data->closure.params = params;
-    v->data->closure.body = body;
-    return v;
-}
-
-disp_val* disp_get_closure_params(disp_val *closure) {
-    if (T(closure) != DISP_CLOSURE && T(closure) != DISP_MACRO) {
-        ERRO("disp_get_closure_params: not a closure/macro\n");
-        return NIL;
-    }
-    return closure->data->closure.params;
-}
-
-disp_val* disp_get_closure_body(disp_val *closure) {
-    if (T(closure) != DISP_CLOSURE && T(closure) != DISP_MACRO) {
-        ERRO("disp_get_closure_body: not a closure/macro\n");
-        return NIL;
-    }
-    return closure->data->closure.body;
-}
-
-char* disp_get_type_name(disp_val *v) {
-    if (v->flag != DISP_TYPE) {
-	ERRO("disp_get_type_name failed: %s\n", strerror (errno));
-    }
-    return v->data->type_val.name;
-}
-
-disp_val* disp_get_type_decl(disp_val *v) {
-    if (v->flag != DISP_TYPE) {
-	ERRO("T_decl failed: %s\n", strerror (errno));
-    }
-    return v->data->type_val.decl;
-}
-
-disp_val* disp_define_type(char *name, disp_val *decl) {
-    disp_val *v = DISP_ALLOC(DISP_TYPE);
-    v->data->type_val.name = name;
-    v->data->type_val.decl = decl;
-    return disp_define_symbol(name, v, 1);
 }

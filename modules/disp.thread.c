@@ -17,6 +17,13 @@
 #include "../disp.h"
 #include "disp.thread.h"
 
+GC_STRUCT_TI(disp_thread_t,
+    GC_OFF(disp_thread_t, func),
+    GC_OFF(disp_thread_t, result),
+    GC_OFF(disp_thread_t, lock),
+    GC_OFF(disp_thread_t, cond)
+);
+
 
 /* ======================== 辅助函数 ======================== */
 
@@ -46,8 +53,8 @@ static disp_val* make_thread_syscall(disp_val **args, int count) {
     if (count != 1 || T(args[0]) != DISP_CLOSURE)
         ERET(NIL, "make-thread expects a closure");
     
-    disp_val *v = DISP_ALLOC(DISP_THREAD);
-    disp_thread_t *t = gc_calloc(1, sizeof(disp_thread_t));
+    disp_val *v = DISP_ALLOC_TI(DISP_THREAD);
+    disp_thread_t *t = gc_typed_calloc(1, sizeof(disp_thread_t), &struct_disp_thread_t_ti);
     if (!t) {
         gc_free(v->data); gc_free(v);
         return NIL;
@@ -104,7 +111,7 @@ static disp_val* thread_join_syscall(disp_val **args, int count) {
 static disp_val* make_mutex_syscall(disp_val **args, int count) {
     (void)args; (void)count;
     
-    disp_val *v = DISP_ALLOC(DISP_MUTEX);
+    disp_val *v = DISP_ALLOC_TI(DISP_MUTEX);
     if (gc_pthread_mutex_init(&v->data->mutex, NULL) != 0) {
         gc_free(v->data); gc_free(v);
         ERET(NIL, "make-mutex: init failed");
@@ -136,7 +143,7 @@ static disp_val* unlock_mutex_syscall(disp_val **args, int count) {
 static disp_val* make_condition_syscall(disp_val **args, int count) {
     (void)args; (void)count;
     
-    disp_val *v = DISP_ALLOC(DISP_COND);
+    disp_val *v = DISP_ALLOC_TI(DISP_COND);
     if (gc_pthread_cond_init(&v->data->cond, NULL) != 0) {
         gc_free(v->data); gc_free(v);
         ERET(NIL, "make-condition: init failed");

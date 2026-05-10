@@ -51,7 +51,7 @@ static disp_val* letf(disp_val *expr) {
     
     // 构造 (lambda (var1 var2 ...) body ...)
     disp_val *params = NIL;
-    disp_val **param_list = gc_malloc(var_count * sizeof(disp_val*));
+    disp_val **param_list = gc_typed_malloc(var_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
     int i = 0;
     disp_val *b = bindings;
     while (b && T(b) == DISP_CONS) {
@@ -130,8 +130,8 @@ static disp_val* let_builtin(disp_val *expr) {
         return disp_eval_body(body);
     }
 
-    char **var_names = gc_malloc(var_count * sizeof(char*));
-    disp_val **expr_vals = gc_malloc(var_count * sizeof(disp_val*));
+    char **var_names = gc_typed_malloc(var_count * sizeof(char*), &GC_TYPE_PTR_ARRAY);
+    disp_val **expr_vals = gc_typed_malloc(var_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
     // 保护动态数组
     gc_add_root(&var_names);
     gc_add_root(&expr_vals);
@@ -154,7 +154,7 @@ static disp_val* let_builtin(disp_val *expr) {
         b = disp_cdr(b);
     }
 
-    disp_val **old_vals = gc_malloc(var_count * sizeof(disp_val*));
+    disp_val **old_vals = gc_typed_malloc(var_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
     gc_add_root(&old_vals);
     for (int j = 0; j < var_count; j++) {
         disp_val *old_sym = disp_find_symbol(var_names[j]);
@@ -169,7 +169,7 @@ static disp_val* let_builtin(disp_val *expr) {
             disp_define_symbol(var_names[j], val, 0);
         }
     } else {
-        disp_val **values = gc_malloc(var_count * sizeof(disp_val*));
+        disp_val **values = gc_typed_malloc(var_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
         gc_add_root(&values);
         for (int j = 0; j < var_count; j++) {
             values[j] = disp_eval(expr_vals[j]);
@@ -253,8 +253,8 @@ static disp_val* letrec_builtin(disp_val *expr) {
         return disp_eval_body(body);
     }
 
-    char **var_names = gc_malloc(var_count * sizeof(char*));
-    disp_val **expr_vals = gc_malloc(var_count * sizeof(disp_val*));
+    char **var_names = gc_typed_malloc(var_count * sizeof(char*), &GC_TYPE_PTR_ARRAY);
+    disp_val **expr_vals = gc_typed_malloc(var_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
     // 保护动态数组
     gc_add_root(&var_names);
     gc_add_root(&expr_vals);
@@ -279,12 +279,10 @@ static disp_val* letrec_builtin(disp_val *expr) {
     }
 
     // 保存旧值
-    disp_val **old_vals = gc_malloc(var_count * sizeof(disp_val*));
+    disp_val **old_vals = gc_typed_malloc(var_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
     gc_add_root(&old_vals);
     for (int j = 0; j < var_count; j++) {
-        disp_val *old_sym = disp_find_symbol(var_names[j]);
-        old_vals[j] = old_sym ? disp_get_symbol_value(old_sym) : NULL;
-        if (old_vals[j] != NULL) gc_add_root(&old_vals[j]);   // 旧值本身保护
+        disp_val *old_sym = disp_find_symbol(var_names[j]); old_vals[j] = old_sym ? disp_get_symbol_value(old_sym) : NULL; if (old_vals[j] != NULL) gc_add_root(&old_vals[j]);   // 旧值本身保护
     }
 
     // 占位赋 NIL
@@ -298,7 +296,7 @@ static disp_val* letrec_builtin(disp_val *expr) {
             disp_define_symbol(var_names[j], val, 0);
         }
     } else {
-        disp_val **values = gc_malloc(var_count * sizeof(disp_val*));
+        disp_val **values = gc_typed_malloc(var_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
         gc_add_root(&values);                   // 保护 values 数组本身
         for (int j = 0; j < var_count; j++) {
             values[j] = disp_eval(expr_vals[j]);

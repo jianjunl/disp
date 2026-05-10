@@ -32,11 +32,11 @@ extern "C" {
 #endif
 
 #ifndef GC_OPT_INCREMENTAL
-#define GC_OPT_INCREMENTAL 1 /* set to 1 to enable incremental marking */
+#define GC_OPT_INCREMENTAL 0 /* set to 1 to enable incremental marking */
 #endif
 
 #ifndef GC_OPT_FINALIZING
-#define GC_OPT_FINALIZING  1 /* set to 0 to disable finalizers & weak refs */
+#define GC_OPT_FINALIZING  0 /* set to 0 to disable finalizers & weak refs */
 #endif
 
 #ifndef GC_OPT_FREELIST
@@ -261,6 +261,9 @@ typedef struct gc_type_info {
     size_t  n_offsets;
     ssize_t offsets[];          /* flexible array, n_offsets elements */
 } gc_type_info_t;
+
+void gc_log_ti(const char *name, gc_type_info_t *ti);
+#define GC_LOG_TI(name) gc_log_ti(#name, &name)
 
 /* Special type descriptor for blocks that are plain pointer arrays. */
 extern const gc_type_info_t GC_TYPE_PTR_ARRAY;

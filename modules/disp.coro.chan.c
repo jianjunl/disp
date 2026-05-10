@@ -20,6 +20,14 @@
 #include "../disp.h"
 #include "disp.coro.h"
 
+GC_STRUCT_TI(disp_channel_t,
+    GC_OFF(disp_channel_t, buffer),
+    GC_OFF(disp_channel_t, wait_send),
+    GC_OFF(disp_channel_t, wait_recv),
+    GC_OFF(disp_channel_t, lock),
+    GC_OFF(disp_channel_t, direct_value)
+);
+
 disp_channel_t* disp_get_channel(disp_val *v) {
     return v->data->chan;
 }
@@ -35,13 +43,13 @@ static disp_val* make_channel_syscall(disp_val **args, int count) {
         ERET(NIL, "make-chan expects capacity (integer)");
     int cap = disp_get_int(args[0]);
     if (cap < 0) cap = 0;
-    disp_val *v = DISP_ALLOC(DISP_CHAN);
-    disp_channel_t *ch = gc_calloc(1, sizeof(struct disp_channel_t));
+    disp_val *v = DISP_ALLOC_TI(DISP_CHAN);
+    disp_channel_t *ch = gc_typed_calloc(1, sizeof(struct disp_channel_t), &struct_disp_channel_t_ti);
     ch->cap = cap;
     ch->size = 0;
     ch->head = 0;
     ch->tail = 0;
-    ch->buffer = (cap > 0) ? gc_calloc(cap, sizeof(disp_val*)) : NULL;
+    ch->buffer = (cap > 0) ? gc_typed_calloc(cap, sizeof(disp_val*), &GC_TYPE_PTR_ARRAY) : NULL;
     ch->lock = gc_calloc(1, sizeof(pthread_mutex_t));
     ch->wait_send = NULL;
     ch->wait_recv = NULL;

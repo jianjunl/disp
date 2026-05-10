@@ -20,6 +20,16 @@
 #include "../disp.h"
 #include "disp.coro.h"
 
+GC_STRUCT_TI(disp_coro_t,
+    GC_OFF(disp_coro_t, func),
+    GC_OFF(disp_coro_t, yield_value),
+    GC_OFF(disp_coro_t, resume_arg),
+    GC_OFF(disp_coro_t, final_result),
+    GC_OFF(disp_coro_t, select_data),
+    GC_OFF(disp_coro_t, stack),
+    GC_OFF(disp_coro_t, next)
+);
+
 /* =============================== 协程核心 =============================== */
 
 static ucontext_t main_ctx;      // 调度器（事件循环）的主上下文
@@ -43,8 +53,8 @@ static void coroutine_entry(disp_val *coro) {
 }
 
 disp_val* disp_make_coroutine(disp_val *func, size_t stack_size) {
-    disp_val *v = DISP_ALLOC(DISP_CORO);
-    disp_coro_t *c = gc_calloc(1, sizeof(struct disp_coro_t));
+    disp_val *v = DISP_ALLOC_TI(DISP_CORO);
+    disp_coro_t *c = gc_typed_calloc(1, sizeof(struct disp_coro_t), &struct_disp_coro_t_ti);
     v->data->coro = c;
     c->status = 0;
     c->func = func;
@@ -53,7 +63,7 @@ disp_val* disp_make_coroutine(disp_val *func, size_t stack_size) {
     c->final_result = NIL;
     c->timer_fd = -1;
     c->select_data = NULL;
-    void *s = gc_malloc(stack_size);
+    void *s = gc_typed_malloc(stack_size, &GC_TYPE_PTR_ARRAY);
     v->data->coro->stack = s;
     if (!s) {
         gc_free(v); gc_free(c);

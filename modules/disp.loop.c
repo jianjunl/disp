@@ -65,9 +65,9 @@ static disp_val* do_builtin(disp_val *expr) {
     }
 
     // 收集变量信息
-    char **var_names = gc_malloc(var_count * sizeof(char*));
-    disp_val **init_vals = gc_malloc(var_count * sizeof(disp_val*));
-    disp_val **step_exprs = gc_malloc(var_count * sizeof(disp_val*));
+    char **var_names = gc_typed_malloc(var_count * sizeof(char*), &GC_TYPE_PTR_ARRAY);
+    disp_val **init_vals = gc_typed_malloc(var_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
+    disp_val **step_exprs = gc_typed_malloc(var_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
     gc_add_root(&var_names);
     gc_add_root(&init_vals);
     gc_add_root(&step_exprs);
@@ -111,7 +111,7 @@ static disp_val* do_builtin(disp_val *expr) {
     }
 
     // 保存旧值并求值初始值
-    disp_val **old_vals = gc_malloc(var_count * sizeof(disp_val*));
+    disp_val **old_vals = gc_typed_malloc(var_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
     gc_add_root(&old_vals);
     for (int j = 0; j < var_count; j++) {
         disp_val *old_sym = disp_find_symbol(var_names[j]);
@@ -144,7 +144,7 @@ static disp_val* do_builtin(disp_val *expr) {
                 b = disp_cdr(b);
             }
             // 更新变量（并行更新：先求值所有新值，再赋值）
-            disp_val **new_vals = gc_malloc(var_count * sizeof(disp_val*));
+            disp_val **new_vals = gc_typed_malloc(var_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
             gc_add_root(&new_vals);
             for (int j = 0; j < var_count; j++) {
                 if (step_exprs[j]) {

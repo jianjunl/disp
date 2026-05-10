@@ -55,7 +55,7 @@ static disp_val* make_string_syscall(disp_val **args, int count) {
 /* ----- string ----- 将任意参数转为字符串表示并拼接 */
 static disp_val* string_syscall(disp_val **args, int count) {
     size_t total_len = 0;
-    char **parts = gc_malloc(count * sizeof(char*));
+    char **parts = gc_typed_malloc(count * sizeof(char*), &GC_TYPE_PTR_ARRAY);
     if (!parts) return NIL;
     for (int i = 0; i < count; i++) {
         parts[i] = val_to_write_str(args[i]);
@@ -161,7 +161,7 @@ static disp_val* substring_syscall(disp_val **args, int count) {
 /* ----- string-append ----- */
 static disp_val* string_append_syscall(disp_val **args, int count) {
     size_t total_len = 0;
-    char **parts = gc_malloc(count * sizeof(char*));
+    char **parts = gc_typed_malloc(count * sizeof(char*), &GC_TYPE_PTR_ARRAY);
     if (!parts) return NIL;
     for (int i = 0; i < count; i++) {
         if (T(args[i]) != DISP_STRING) {

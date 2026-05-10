@@ -63,8 +63,8 @@ void disp_unlock_table(void) {
 }
 
 /* ======================== 对象分配 ======================== */
-disp_val* disp_alloc(disp_flag_t flag, disp_data *data) {
-    disp_val *v = gc_typed_calloc(1, sizeof(disp_val), &struct_disp_val_ti);
+disp_val* disp_alloc(const gc_type_info_t *ti, disp_flag_t flag, disp_data *data) {
+    disp_val *v = gc_typed_calloc(1, sizeof(struct disp_val), ti);
     v->data = data;
     v->flag = flag;
     return v;
@@ -73,7 +73,7 @@ disp_val* disp_alloc(disp_flag_t flag, disp_data *data) {
 /* ======================== 符号表操作 ======================== */
 
 static disp_val* make_symbol(const char *name) {
-    disp_val *v = DISP_ALLOC(DISP_SYMBOL);
+    disp_val *v = DISP_ALLOC_TI(DISP_SYMBOL);
     if (!v) return NULL;
     
     // 初始化符号数据
@@ -174,19 +174,17 @@ disp_val* disp_get_symbol_value(disp_val *v) {
 
 /* ======================== GC 初始化和全局常量 ======================== */
 
-GC_GLOBAL3(disp_val, NIL, TRUE, QUIT);
-
 void disp_init_gc() {
     gc_init();
 
-    //sym_buckets = gc_typed_calloc(SYM_TABLE_SIZE, sizeof(void*), &GC_TYPE_PTR_ARRAY);
-    //gc_add_root(&sym_buckets);
+    gc_add_root(&sym_buckets);
 
-    disp_init_info();
- 
-    NIL  = DISP_ALLOC(DISP_VOID);
-    TRUE = DISP_ALLOC(DISP_VOID);
-    QUIT = DISP_ALLOC(DISP_VOID);
+    NIL  = DISP_ALLOC_TI(DISP_VOID);
+    TRUE = DISP_ALLOC_TI(DISP_VOID);
+    QUIT = DISP_ALLOC_TI(DISP_VOID);
+    gc_add_root(&NIL);
+    gc_add_root(&TRUE);
+    gc_add_root(&QUIT);
     
     DEF("nil",   NIL,  1);
     DEF("false", NIL,  1);

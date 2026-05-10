@@ -15,11 +15,16 @@
 #include "disp.h"
 
 // Helper: bind parameters to evaluated arguments, return saved bindings
-typedef struct {
+typedef struct saved_binding {
     char *name;
     disp_val *old_value;
     int existed;   /* 1 if the symbol existed before binding */
 } saved_binding;
+
+GC_STRUCT_TI(saved_binding,
+    GC_OFF(saved_binding, name),
+    GC_OFF(saved_binding, old_value)
+);
 
 static saved_binding* bind_params(disp_val *params, disp_val **args, int arg_count) {
     // Count fixed parameters and detect rest symbol
@@ -50,7 +55,7 @@ static saved_binding* bind_params(disp_val *params, disp_val **args, int arg_cou
 
     // Allocate saved bindings: fixed parameters + optionally rest
     int total_bindings = fixed_count + (rest_sym != NIL ? 1 : 0);
-    saved_binding *saved = gc_malloc(total_bindings * sizeof(saved_binding));
+    saved_binding *saved = gc_typed_malloc(total_bindings * sizeof(saved_binding), &struct_saved_binding_ti);
     if (!saved) return NULL;
 
     int i = 0;
@@ -172,7 +177,7 @@ disp_val* disp_expand_macro(disp_val *macro, disp_val *expr) {
     }
 
     // Collect all argument forms into an array
-    disp_val **arg_forms = gc_malloc(arg_count * sizeof(disp_val*));
+    disp_val **arg_forms = gc_typed_malloc(arg_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
     int i = 0;
     for (disp_val *a = args; a && T(a) == DISP_CONS; a = disp_cdr(a)) {
         arg_forms[i] = disp_car(a);

@@ -47,7 +47,7 @@ static disp_val* load_so(const char *filename) {
     void *handle = dlopen(filename, RTLD_NOW | RTLD_GLOBAL);   // 改为 GLOBAL
     //void *handle = dlopen(filename, RTLD_LAZY | RTLD_GLOBAL);   // 改为 GLOBAL
     if (!handle) {
-        ERET(NIL, "dlopen: %s\n", dlerror());
+        ERET(NIL, "dlopen: %s %s\n", filename, dlerror());
     }
     DBG("dlopen succeeded\n");
     void (*init)(void) = dlsym(handle, "disp_init_module");

@@ -59,7 +59,7 @@ static disp_val* apply_syscall(disp_val **args, int count) {
     }
 
     // 分配参数数组
-    disp_val **argv = gc_malloc(arg_count * sizeof(disp_val*));
+    disp_val **argv = gc_typed_malloc(arg_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
     if (!argv) return NIL;
     int i = 0;
     for (disp_val *a = arg_list; a != NIL; a = disp_cdr(a)) {

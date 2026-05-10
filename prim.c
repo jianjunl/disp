@@ -26,30 +26,11 @@ union disp_data {
     long long_val;
     float float_val;
     double double_val;
-
-    /* 字符串 */
-    struct {
-        char *str;
-        size_t len;
-    } string_val;
-
-    /* cons 单元 */
-    struct {
-        disp_val *car;
-        disp_val *cdr;
-    } cons;
-
     /* 套接字 */
     struct {
         int fd;
     } socket_val;
 };
-
-GC_UNION_TI(disp_data,
-    GC_OFF(disp_data, string_val.str),
-    GC_OFF(disp_data, cons.car),
-    GC_OFF(disp_data, cons.cdr)
-);
 
 char disp_get_byte(disp_val *v) {
     if (v->flag != DISP_BYTE) {
@@ -93,20 +74,6 @@ double disp_get_double(disp_val *v) {
     return v->data->double_val;
 }
 
-char* disp_get_str(disp_val *v) {
-    if (v->flag != DISP_STRING) {
-	ERRO("disp_get_string failed: %s\n", strerror (errno));
-    }
-    return v->data->string_val.str;
-}
-
-size_t disp_get_str_len(disp_val *v) {
-    if (v->flag != DISP_STRING) {
-	ERRO("disp_get_string failed: %s\n", strerror (errno));
-    }
-    return v->data->string_val.len;
-}
-
 disp_val* disp_make_byte(char c) {
     disp_val *v = DISP_ALLOC(DISP_BYTE);
     v->data->byte_val = c;
@@ -141,36 +108,6 @@ disp_val* disp_make_double(double d) {
     disp_val *v = DISP_ALLOC(DISP_DOUBLE);
     v->data->double_val = d;
     return v;
-}
-
-disp_val* disp_make_string(const char *s) {
-    disp_val *v = DISP_ALLOC(DISP_STRING);
-    v->data->string_val.str = gc_strdup(s);
-    v->data->string_val.len = strlen(s);
-    return v;
-}
-
-disp_val* disp_make_cons(disp_val *car, disp_val *cdr) {
-    disp_val *v = DISP_ALLOC(DISP_CONS);
-    v->data->cons.car = car;
-    v->data->cons.cdr = cdr;
-    return v;
-}
-
-disp_val* disp_car(disp_val *cons) {
-    return (cons && cons->flag == DISP_CONS) ? cons->data->cons.car : NIL;
-}
-
-disp_val* disp_cdr(disp_val *cons) {
-    return (cons && cons->flag == DISP_CONS) ? cons->data->cons.cdr : NIL;
-}
-
-void disp_set_car(disp_val *cons, disp_val *car) {
-    if (cons && cons->flag == DISP_CONS) GC_ASSIGN_PTR(cons->data->cons.car, car);
-}
-
-void disp_set_cdr(disp_val *cons, disp_val *cdr) {
-    if (cons && cons->flag == DISP_CONS) GC_ASSIGN_PTR(cons->data->cons.cdr, cdr);
 }
 
 disp_val* disp_make_socket(int fd) {

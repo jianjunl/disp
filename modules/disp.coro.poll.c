@@ -49,7 +49,7 @@ typedef enum {
     CASE_DEFAULT
 } case_type_t;
 
-typedef struct {
+typedef struct case_info_t {
     case_type_t type;
     disp_val *channel;      // evaluated channel object
     disp_val *value;        // evaluated value (for send)
@@ -57,6 +57,12 @@ typedef struct {
     int timer_fd;           // for after
     disp_val *body;         // list of expressions to evaluate
 } case_info_t;
+
+GC_STRUCT_TI(case_info_t,
+    GC_OFF(case_info_t, channel),
+    GC_OFF(case_info_t, value),
+    GC_OFF(case_info_t, body)
+);
 
 /* 从等待队列中移除指定协程 */
 static void remove_from_queue(disp_val **head, disp_val *coro) {
@@ -384,7 +390,7 @@ static disp_val *select_builtin(disp_val *expr) {
     if (case_count == 0)
         ERET(NIL, "select: no clauses");
 
-    case_info_t *infos = gc_malloc(case_count * sizeof(case_info_t));
+    case_info_t *infos = gc_typed_malloc(case_count * sizeof(case_info_t), &struct_case_info_t_ti);
     if (!infos) return NIL;
     int default_idx = -1;
 
