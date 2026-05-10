@@ -14,6 +14,10 @@
 #endif
 #include "disp.h"
 
+GC_STRUCT_TI(disp_val,
+    GC_OFF(disp_val, data)
+);
+
 union disp_data {
     /* 符号 */
     struct {
@@ -44,7 +48,6 @@ GC_STRUCT_TI(sym_entry,
 );
 
 static struct sym_entry *sym_buckets[SYM_TABLE_SIZE]  __attribute__((section("gc_roots")));
-//static struct sym_entry **sym_buckets = NULL;
 
 static gc_mutex_t sym_lock = GC_PTHREAD_MUTEX_INITIALIZER;
 
@@ -63,8 +66,8 @@ void disp_unlock_table(void) {
 }
 
 /* ======================== 对象分配 ======================== */
-disp_val* disp_alloc(const gc_type_info_t *ti, disp_flag_t flag, disp_data *data) {
-    disp_val *v = gc_typed_calloc(1, sizeof(struct disp_val), ti);
+disp_val* disp_alloc(disp_flag_t flag, disp_data *data) {
+    disp_val *v = gc_typed_calloc(1, sizeof(struct disp_val), &struct_disp_val_ti);
     v->data = data;
     v->flag = flag;
     return v;

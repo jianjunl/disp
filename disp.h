@@ -38,11 +38,11 @@ typedef struct disp_val {
     disp_flag_t flag;
     disp_data *data;
 } disp_val;
-
+/*
 GC_STRUCT_TI(disp_val,
     GC_OFF(disp_val, data)
 );
-
+*/
 /* Function pointer type for built‑in functions */
 typedef disp_val* (*disp_syscall_t)(disp_val** args, int arg_count);
 typedef disp_val* (*disp_builtin_t)(disp_val* arg);
@@ -108,17 +108,9 @@ disp_val* disp_eval_body(disp_val *body);
 /* --- Garbage collection --- */
 void disp_init_gc(void);
 void disp_gc(void);
-disp_val* disp_alloc(const gc_type_info_t *ti, disp_flag_t flag, disp_data *data);
-/*
-#define DISP_ALLOC_TI(flag) (GC_LOG_TI(struct_disp_val_ti), GC_LOG_TI(union_disp_data_ti), \
-                            disp_alloc(&struct_disp_val_ti, flag, \
-                            gc_typed_calloc(1, sizeof(union disp_data), &union_disp_data_ti)))
-#define DISP_ALLOC(flag) (GC_LOG_TI(struct_disp_val_ti), \
-                         disp_alloc(&struct_disp_val_ti, flag, gc_calloc(1, sizeof(union disp_data))))
-*/
-#define DISP_ALLOC_TI(flag) disp_alloc(&struct_disp_val_ti, flag, \
-                            gc_typed_calloc(1, sizeof(union disp_data), &union_disp_data_ti))
-#define DISP_ALLOC(flag) disp_alloc(&struct_disp_val_ti, flag, gc_calloc(1, sizeof(union disp_data)))
+disp_val* disp_alloc(disp_flag_t flag, disp_data *data);
+#define DISP_ALLOC_TI(flag) disp_alloc(flag, gc_typed_calloc(1, sizeof(union disp_data), &union_disp_data_ti))
+#define DISP_ALLOC(flag) disp_alloc(flag, gc_calloc(1, sizeof(union disp_data)))
  
 
 /* --- I/O --- */

@@ -1,5 +1,5 @@
 
-(load "disp.lisp")
+(define define-macro (macro (name args . body)(list 'define name (cons 'macro (cons args body)))))
 
 ;; 定义 go 宏
 (define-macro go (expr)
