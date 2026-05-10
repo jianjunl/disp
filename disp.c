@@ -95,22 +95,15 @@ void disp_init_globals() {
     gc_add_root(&FLOAT);
     gc_add_root(&DOUBLE);
     gc_add_root(&PNTR);
-/*
-    gc_add_root(&stdin);
-    gc_add_root(&stdout);
-    gc_add_root(&stderr);
-*/
+
     DEF("stdin"  , disp_make_file(stdin ,"r"), 1);
     DEF("stdout" , disp_make_file(stdout,"w"), 1);
     DEF("stderr" , disp_make_file(stderr,"w"), 1);
 
     DEF("load"  , MKF(load_syscall , "<load>" ), 1);
-    //gc_add_root(&load_syscall);
     DEF("gc"    , MKF(gc_syscall   , "<gc>"   ), 1);
     DEF("info"  , MKF(info_syscall , "<info>" ), 1);
     DEF("trace" , MKF(trace_syscall, "<trace>"), 1);
-    //gc_add_root(&info_syscall);
-    //gc_add_root(&trace_syscall);
 
     // make else evaluate to true (so cond's default clause works)
     DEF("else", TRUE, 1);
