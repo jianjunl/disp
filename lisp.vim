@@ -25,10 +25,12 @@ syntax keyword lispVar #f
 syntax keyword lispVar stdin
 syntax keyword lispVar stdout
 syntax keyword lispVar stderr
-syntax keyword lispKey :p
+syntax keyword lispKey :path
 syntax keyword lispVar nil
 syntax keyword lispVar false
 syntax keyword lispVar true
 syntax keyword lispKey :q
 syntax keyword lispFunc load
+syntax keyword lispFunc info
+syntax keyword lispFunc trace
 

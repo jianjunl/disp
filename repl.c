@@ -28,15 +28,8 @@
 void disp_repl() {
     printf("disp Lisp (type :quit to exit)\n");
 
-    const char *keywords[] = {
-        "define", "lambda", "if", "cond", "else",
-        "let", "let*", "letrec", "set!", "begin",
-        "quote", "quasiquote", "unquote", "unquote-splicing",
-        "and", "or", "not",
-        "car", "cdr", "cons", "list", "append",
-        "+", "-", "*", "/", "=", "<", ">", "print",
-        "gc", "load", "info", "trace", "quit"
-    };
+    #include "keywords.h"
+
     bestlineBalanceMode(1);
     bestlineSetHighlightKeywords(keywords, sizeof(keywords)/sizeof(keywords[0]));
 
