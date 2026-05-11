@@ -239,15 +239,6 @@ static char maskmode;
 static char emacsmode;
 static char llamamode;
 static char balancemode;
-
-/* ========= 高亮支持 ========= */
-typedef char *(*bestlineHighlightCallback)(const char *buf);
-static bestlineHighlightCallback hlCallback = NULL;
-static const char **hl_keywords = NULL;
-static int hl_keywords_count = 0;
-/* 默认高亮：用关键词列表 */
-static char *defaultHighlightCallback(const char *buf);
-
 static char ispaused;
 static char iscapital;
 static unsigned historylen;
@@ -2316,81 +2307,6 @@ static int bestlineEditMirror(struct bestlineState *l, int res[2]) {
     return rc;
 }
 
-void bestlineSetHighlightCallback(bestlineHighlightCallback fn) {
-    hlCallback = fn;
-}
-
-void bestlineSetHighlightKeywords(const char *keywords[], int n) {
-    hl_keywords = keywords;
-    hl_keywords_count = n;
-    hlCallback = defaultHighlightCallback;
-}
-
-/* 默认高亮回调：红色标记关键词 */
-static char *defaultHighlightCallback(const char *buf) {
-    struct abuf ab;
-    abInit(&ab);
-    const char *p = buf;
-    while (*p) {
-        int matched = 0;
-        if (!bestlineIsSeparator((unsigned char)*p)) {
-            for (int k = 0; k < hl_keywords_count; k++) {
-                size_t kwlen = strlen(hl_keywords[k]);
-                if (strncmp(p, hl_keywords[k], kwlen) == 0 &&
-                    (p[kwlen] == '\0' || bestlineIsSeparator((unsigned char)p[kwlen]))) {
-                    abAppends(&ab, "\033[1;31m");   // 红色
-                    abAppend(&ab, p, kwlen);
-                    abAppends(&ab, "\033[0m");
-                    p += kwlen;
-                    matched = 1;
-                    break;
-                }
-            }
-        }
-        if (!matched) {
-            abAppend(&ab, p, 1);
-            p++;
-        }
-    }
-    return strdup(ab.b);   // 调用者 free
-}
-
-/* 高亮输出辅助：从高亮字符串 hp 当前位置输出一个可见字符（含前导 ANSI）
-   返回输出的字节数，更新 hp */
-static int abAppendHighlighted(struct abuf *ab, const char *highlighted, int *hp) {
-    int start = *hp;
-    const char *p = highlighted + start;
-
-    // 输出所有前导 ANSI 转义序列
-    while (*p == '\033') {
-        const char *q = p;
-        if (q[1] == '[') {
-            q += 2;
-            while (*q && *q != 'm') q++;
-            if (*q == 'm') q++;
-            else break;  // 不完整的序列，强制结束
-        } else {
-            break;
-        }
-        abAppend(ab, p, q - p);
-        p = q;
-    }
-
-    // 输出一个 UTF-8 字符（可能多字节）
-    if (*p) {
-        int len = 1;
-        if ((*p & 0x80) == 0) len = 1;
-        else if ((*p & 0xE0) == 0xC0) len = 2;
-        else if ((*p & 0xF0) == 0xE0) len = 3;
-        else if ((*p & 0xF8) == 0xF0) len = 4;
-        else len = 1; // 非法序列按单字节处理
-        abAppend(ab, p, len);
-        *hp = (p + len) - highlighted;
-        return len;
-    }
-    return 0;
-}
-
 static void bestlineRefreshLineImpl(struct bestlineState *l, int force) {
     char *hint;
     char flipit;
@@ -2425,13 +2341,6 @@ static void bestlineRefreshLineImpl(struct bestlineState *l, int force) {
     }
     hasflip = !l->final && !bestlineEditMirror(l, flip);
 
-    /* 高亮字符串（仅在非 mask 模式下启用） */
-    char *highlighted = NULL;
-    int use_highlight = (maskmode == 0 && hlCallback != NULL);
-    if (use_highlight) {
-        highlighted = hlCallback(l->buf);
-    }
-
 StartOver:
     fd = l->ofd;
     buf = l->buf;
@@ -2441,35 +2350,40 @@ StartOver:
     yn = l->ws.ws_row;
     plen = strlen(l->prompt);
     pwidth = GetMonospaceWidth(l->prompt, plen, 0);
-    width = GetMonospaceWidth(use_highlight ? highlighted : buf,
-                              use_highlight ? (unsigned)strlen(highlighted) : (unsigned)len,
-                              &haswides);
+    width = GetMonospaceWidth(buf, len, &haswides);
 
-    /* 行长超过屏幕时的裁剪（高亮模式下禁用裁剪以保证颜色完整） */
-    if (!use_highlight) {
-        for (tn = xn - haswides * 2;;) {
-            if (pwidth + width + 1 < tn * yn) break;
-            if (!len || width < 2) break;
-            if (pwidth + 2 > tn * yn) break;
-            if (pos > len / 2) {
-                rune = GetUtf8(buf, len);
-                buf += rune.n;
-                len -= rune.n;
-                pos -= rune.n;
-            } else {
-                t = len;
-                while (len && (buf[len - 1] & 0300) == 0200) --len;
-                if (len) --len;
-                rune = GetUtf8(buf + len, t - len);
-            }
-            if ((t = GetMonospaceCharacterWidth(rune.c)) > 0) {
-                width -= t;
-            }
+    /*
+     * handle the case where the line is larger than the whole display
+     * gnu readline actually isn't able to deal with this situation!!!
+     * we kludge xn to address the edge case of wide chars on the edge
+     */
+    for (tn = xn - haswides * 2;;) {
+        if (pwidth + width + 1 < tn * yn)
+            break; /* we're fine */
+        if (!len || width < 2)
+            break; /* we can't do anything */
+        if (pwidth + 2 > tn * yn)
+            break; /* we can't do anything */
+        if (pos > len / 2) {
+            /* hide content on the left if we're editing on the right */
+            rune = GetUtf8(buf, len);
+            buf += rune.n;
+            len -= rune.n;
+            pos -= rune.n;
+        } else {
+            /* hide content on the right if we're editing on left */
+            t = len;
+            while (len && (buf[len - 1] & 0300) == 0200)
+                --len;
+            if (len)
+                --len;
+            rune = GetUtf8(buf + len, t - len);
         }
-        pos = Max(0, Min(pos, len));
-    } else {
-        pos = Max(0, Min(pos, len));  // 高亮模式下保持 pos 在范围内
+        if ((t = GetMonospaceCharacterWidth(rune.c)) > 0) {
+            width -= t;
+        }
     }
+    pos = Max(0, Min(pos, len));
 
     /*
      * now generate the terminal codes to update the line
@@ -2490,60 +2404,56 @@ StartOver:
     cy = -1;
     cx = -1;
     rows = 1;
-    int hp = 0;  // 高亮字符串当前指针
     abInit(&ab);
-    abAppendw(&ab, '\r');
+    abAppendw(&ab, '\r'); /* start of line */
     if (l->rows - l->oldpos - 1 > 0) {
         abAppends(&ab, "\033[");
         abAppendu(&ab, l->rows - l->oldpos - 1);
-        abAppendw(&ab, 'A');
+        abAppendw(&ab, 'A'); /* cursor up clamped */
     }
     abAppends(&ab, l->prompt);
     x = pwidth;
-
     for (i = 0; i < len; i += rune.n) {
         rune = GetUtf8(buf + i, len - i);
-
         if (x && x + rune.n > xn) {
-            if (cy >= 0) ++cy;
-            if (x < xn) abAppends(&ab, "\033[K");
-            abAppends(&ab, "\r\n");
+            if (cy >= 0)
+                ++cy;
+            if (x < xn) {
+                abAppends(&ab, "\033[K"); /* clear line forward */
+            }
+            abAppends(&ab, "\r" /* start of line */
+                           "\n"); /* cursor down unclamped */
             ++rows;
             x = 0;
         }
-
         if (i == pos) {
             cy = 0;
             cx = x;
         }
-
         if (maskmode) {
             abAppendw(&ab, '*');
-        } else if (use_highlight) {
-            flipit = hasflip && (i == flip[0] || i == flip[1]);
-            if (flipit) abAppends(&ab, "\033[1m");
-            abAppendHighlighted(&ab, highlighted, &hp);
-            if (flipit) abAppends(&ab, "\033[22m");
         } else {
             flipit = hasflip && (i == flip[0] || i == flip[1]);
-            if (flipit) abAppends(&ab, "\033[1m");
+            if (flipit)
+                abAppends(&ab, "\033[1m");
             abAppendw(&ab, EncodeUtf8(rune.c));
-            if (flipit) abAppends(&ab, "\033[22m");
+            if (flipit)
+                abAppends(&ab, "\033[22m");
         }
-
         t = GetMonospaceCharacterWidth(rune.c);
         t = Max(0, t);
         x += t;
     }
-
     if (!l->final && (hint = bestlineRefreshHints(l))) {
         if (GetMonospaceWidth(hint, strlen(hint), 0) < xn - x) {
-            if (cx < 0) cx = x;
+            if (cx < 0) {
+                cx = x;
+            }
             abAppends(&ab, hint);
         }
         free(hint);
     }
-    abAppendw(&ab, Read32le("\033[J"));
+    abAppendw(&ab, Read32le("\033[J")); /* erase display forwards */
 
     /*
      * if we are at the very end of the screen with our prompt, we need
@@ -2577,7 +2487,6 @@ StartOver:
     l->rows = rows;
     if (resized && oldsize.ws_col > l->ws.ws_col) {
         resized = 0;
-        free(highlighted);
         abFree(&ab);
         goto StartOver;
     }
@@ -2588,9 +2497,7 @@ StartOver:
      * send codes to terminal
      */
     bestlineWrite(fd, ab.b, ab.len);
-    bestlineWrite(fd, ab.b, ab.len);
     abFree(&ab);
-    free(highlighted);
 }
 
 static void bestlineRefreshLine(struct bestlineState *l) {
