@@ -82,9 +82,9 @@ disp: $(MAIN_OBJ) libdisp.so | $(GC_LIB_SHARED) $(BESTLINE_SO)
 	$(CC) $(CFLAGS) -shared $< $(LDLIBS) -o $@
 
 install: all
-	$(MAKE) -C $(GC_DIR) -f gc.mk install DESTDIR=$(DESTDIR) PREFIX=$(PREFIX)
-	$(MAKE) -C $(BESTLINE_DIR) -f bestline.mk install DESTDIR=$(DESTDIR) PREFIX=$(PREFIX)
 	$(INSTALL) -d $(DESTDIR)$(BINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(INCLUDEDIR) $(DESTDIR)$(MODDIR)
+	$(MAKE) -C $(GC_DIR) -f gc.mk install
+	$(MAKE) -C $(BESTLINE_DIR) -f bestline.mk inst
 	$(INSTALL) -m755 disp $(DESTDIR)$(BINDIR)/disp
 	$(INSTALL) -m755 disp.static $(DESTDIR)$(BINDIR)/disp.static
 	$(INSTALL) -m644 libdisp.a $(DESTDIR)$(LIBDIR)/libdisp.a
@@ -96,8 +96,8 @@ install: all
 	$(INSTALL) -m644 init.disp $(DESTDIR)$(MODDIR)/init.disp
 
 uninstall:
-	$(MAKE) -C $(GC_DIR) -f gc.mk uninstall DESTDIR=$(DESTDIR) PREFIX=$(PREFIX)
-	$(MAKE) -C $(BESTLINE_DIR) -f bestline.mk uninstall DESTDIR=$(DESTDIR) PREFIX=$(PREFIX)
+	$(MAKE) -C $(GC_DIR) -f gc.mk uninstall
+	$(MAKE) -C $(BESTLINE_DIR) -f bestline.mk uninst
 	$(RM) $(DESTDIR)$(BINDIR)/disp
 	$(RM) $(DESTDIR)$(BINDIR)/disp.static
 	$(RM) $(DESTDIR)$(LIBDIR)/libdisp.a
@@ -110,7 +110,7 @@ uninstall:
 
 clean:
 	$(MAKE) -C $(GC_DIR) -f gc.mk clean
-	$(MAKE) -C $(BESTLINE_DIR) -f bestline.mk clean
+	$(MAKE) -C $(BESTLINE_DIR) -f bestline.mk clear
 	$(RM) $(LIB_OBJS) $(MAIN_OBJ) $(LIB_OBJS:.o=.d) $(MAIN_OBJ:.o=.d)
 	$(RM) $(TARGETS) $(GC_STAMP)
 

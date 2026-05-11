@@ -1,4 +1,6 @@
 # bestline.mk ── 独立的 bestline 库构建（可嵌入 disp.mk）
+DESTDIR ?=
+PREFIX ?= /usr/local
 BESTLINE_DIR ?= .
 
 CC ?= gcc
@@ -32,16 +34,16 @@ $(BESTLINE_SO): $(BESTLINE_OBJ)
 $(TEST_BIN): $(TEST_SRC) $(BESTLINE_HEAD) $(BESTLINE_LIB)
 	$(CC) $(CFLAGS) -o $@ $(TEST_SRC) -L$(BESTLINE_DIR) -lbestline
 
-install: all
+inst: all
 	install -d $(DESTDIR)$(PREFIX)/lib $(DESTDIR)$(PREFIX)/include
 	install -m 644 $(BESTLINE_LIB) $(DESTDIR)$(PREFIX)/lib/
 	install -m 755 $(BESTLINE_SO) $(DESTDIR)$(PREFIX)/lib/
 	install -m 644 $(BESTLINE_HEAD) $(DESTDIR)$(PREFIX)/include/
 
-uninstall:
+uninst:
 	rm -f $(BESTLINE_LIB) $(DESTDIR)$(PREFIX)/lib/$(BESTLINE_LIB)
 	rm -f $(BESTLINE_LIB) $(DESTDIR)$(PREFIX)/lib/$(BESTLINE_SO)
 	rm -f $(DESTDIR)$(PREFIX)/include/$(BESTLINE_HEAD)
 
-clean:
+clear:
 	rm -f $(BESTLINE_OBJ) $(BESTLINE_LIB) $(BESTLINE_SO) $(TEST_BIN)
