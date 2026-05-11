@@ -11,6 +11,7 @@
 "q",
 ":q",
 "load",
+"gc",
 "info",
 "trace",
 "make-coroutine",

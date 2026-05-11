@@ -30,6 +30,7 @@ syntax keyword lispVar nil
 syntax keyword lispVar false
 syntax keyword lispVar true
 syntax keyword lispKey :q
+syntax keyword lispFunc gc
 syntax keyword lispFunc load
 syntax keyword lispFunc info
 syntax keyword lispFunc trace
