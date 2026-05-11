@@ -2327,6 +2327,7 @@ void bestlineSetHighlightKeywords(const char *keywords[], int n) {
 }
 
 /* 默认高亮回调：红色标记关键词 */
+/*
 static char *defaultHighlightCallback(const char *buf) {
     struct abuf ab;
     abInit(&ab);
@@ -2354,9 +2355,97 @@ static char *defaultHighlightCallback(const char *buf) {
     }
     return strdup(ab.b);   // 调用者 free
 }
+*/
+
+/* ── 默认高亮回调：关键词 + 字符串 + 数字 + 注释 ── */
+/* ── 增强默认高亮：关键词(红) + 字符串(绿) + 数字(黄) + 注释(青) ── */
+static char *defaultHighlightCallback(const char *buf) {
+    struct abuf ab;
+    abInit(&ab);
+    const char *p = buf;
+
+    while (*p) {
+        if (isspace((unsigned char)*p)) {
+            abAppend(&ab, p, 1);
+            ++p;
+            continue;
+        }
+
+        if (*p == '"') {
+            const char *start = p;
+            ++p;
+            while (*p && *p != '"') {
+                if (*p == '\\' && *(p+1)) p += 2;
+                else ++p;
+            }
+            if (*p == '"') ++p;
+            abAppends(&ab, "\033[0;32m");       /* 绿色 */
+            abAppend(&ab, start, p - start);
+            abAppends(&ab, "\033[0m");
+            continue;
+        }
+
+        if (*p == ';') {
+            const char *start = p;
+            while (*p && *p != '\n') ++p;
+            abAppends(&ab, "\033[0;36m");       /* 青色 */
+            abAppend(&ab, start, p - start);
+            abAppends(&ab, "\033[0m");
+            continue;
+        }
+
+        if (isdigit((unsigned char)*p) ||
+            ((*p == '-' || *p == '+') &&
+             (isdigit((unsigned char)*(p+1)) || *(p+1) == '.'))) {
+            const char *start = p;
+            if (*p == '-' || *p == '+') ++p;
+            while (*p && (isdigit((unsigned char)*p) || *p == '.' ||
+                          *p == 'x' || *p == 'X' ||
+                          (*p >= 'a' && *p <= 'f') ||
+                          (*p >= 'A' && *p <= 'F'))) ++p;
+            abAppends(&ab, "\033[0;33m");       /* 黄色 */
+            abAppend(&ab, start, p - start);
+            abAppends(&ab, "\033[0m");
+            continue;
+        }
+
+        const char *start = p;
+        if (isprint((unsigned char)*p) && !strchr("()'`,@#\"", *p)) {
+            while (*p && isprint((unsigned char)*p) &&
+                   !isspace((unsigned char)*p) &&
+                   !strchr("()'`,@#\"", *p)) ++p;
+        } else {
+            ++p;
+        }
+        size_t len = p - start;
+        if (len == 0) { len = 1; p = start + 1; }  // 安全防护
+
+        int is_keyword = 0;
+        for (int i = 0; i < hl_keywords_count; ++i) {
+            if (strlen(hl_keywords[i]) == len &&
+                memcmp(start, hl_keywords[i], len) == 0) {
+                is_keyword = 1;
+                break;
+            }
+        }
+        if (is_keyword) {
+            abAppends(&ab, "\033[1;31m");
+            abAppend(&ab, start, len);
+            abAppends(&ab, "\033[0m");
+        } else {
+            abAppend(&ab, start, len);
+        }
+    }
+
+    /* ★ 行末强制复位，防止颜色泄露到下一行 */
+    abAppends(&ab, "\033[0m");
+
+    return strdup(ab.b);
+}
 
 /* 高亮输出辅助：从高亮字符串 hp 当前位置输出一个可见字符（含前导 ANSI）
    返回输出的字节数，更新 hp */
+/*
 static int abAppendHighlighted(struct abuf *ab, const char *highlighted, int *hp) {
     int start = *hp;
     const char *p = highlighted + start;
@@ -2389,6 +2478,43 @@ static int abAppendHighlighted(struct abuf *ab, const char *highlighted, int *hp
         return len;
     }
     return 0;
+}
+*/
+static int abAppendHighlighted(struct abuf *ab, const char *highlighted, int *hp) {
+    int start = *hp;
+    const char *p = highlighted + start;
+
+    /* 输出所有 ANSI 转义序列 */
+    while (*p == '\033') {
+        const char *q = p;
+        if (q[1] == '[') {
+            q += 2;
+            while (*q && *q != 'm') q++;
+            if (*q == 'm') q++;
+            else break;
+        } else {
+            break;
+        }
+        abAppend(ab, p, q - p);
+        p = q;
+    }
+
+    /* 输出一个 UTF-8 字符（如果还有） */
+    if (*p) {
+        int len = 1;
+        if ((*p & 0x80) == 0) len = 1;
+        else if ((*p & 0xE0) == 0xC0) len = 2;
+        else if ((*p & 0xF0) == 0xE0) len = 3;
+        else if ((*p & 0xF8) == 0xF0) len = 4;
+        else len = 1;
+        abAppend(ab, p, len);
+        *hp = (p + len) - highlighted;
+        return len;
+    } else {
+        /* 已经没有可见字符了，但可能还留有 ANSI 序列（例如末尾的复位码），强制输出它们 */
+        *hp = start;  // 不变
+        return 0;
+    }
 }
 
 static void bestlineRefreshLineImpl(struct bestlineState *l, int force) {
@@ -2542,6 +2668,9 @@ StartOver:
             abAppends(&ab, hint);
         }
         free(hint);
+    }
+    if (use_highlight) {
+        abAppends(&ab, "\033[0m");
     }
     abAppendw(&ab, Read32le("\033[J"));
 

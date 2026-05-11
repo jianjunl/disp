@@ -16,6 +16,13 @@
 #include "disp.h"
 #include "bestline/bestline.h"
 
+/* ANSI 颜色定义 */
+#define CLR_KEYWORD   "\033[1;31m"   // 红色粗体
+#define CLR_STRING    "\033[0;32m"   // 绿色
+#define CLR_NUMBER    "\033[0;33m"   // 黄色
+#define CLR_COMMENT   "\033[0;36m"   // 青色
+#define CLR_RESET     "\033[0m"
+
 /* ======================== REPL ======================== */
 
 void disp_repl() {
@@ -30,6 +37,7 @@ void disp_repl() {
         "+", "-", "*", "/", "=", "<", ">",
         "gc", "load", "info", "trace", "quit"
     };
+
     bestlineSetHighlightKeywords(keywords, sizeof(keywords)/sizeof(keywords[0]));
 
     int repl_line = 1;   // REPL 起始行号

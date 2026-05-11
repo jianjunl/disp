@@ -38,7 +38,7 @@ install: all
 	install -m 755 $(BESTLINE_SO) $(DESTDIR)$(PREFIX)/lib/
 	install -m 644 $(BESTLINE_HEAD) $(DESTDIR)$(PREFIX)/include/
 
-uninstall: all
+uninstall:
 	rm -f $(BESTLINE_LIB) $(DESTDIR)$(PREFIX)/lib/$(BESTLINE_LIB)
 	rm -f $(BESTLINE_LIB) $(DESTDIR)$(PREFIX)/lib/$(BESTLINE_SO)
 	rm -f $(DESTDIR)$(PREFIX)/include/$(BESTLINE_HEAD)
