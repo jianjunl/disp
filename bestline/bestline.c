@@ -2357,6 +2357,89 @@ static char *defaultHighlightCallback(const char *buf) {
 }
 */
 
+/* 扫描合法的 C 数字字面量，返回消耗的长度（>0 ），失败返回 0 */
+static int scan_number(const char *s, int *out_len) {
+    if (!s) return 0;
+    const char *p = s;
+    //int hex = 0;
+    int has_int_digit = 0;
+    int has_frac_digit = 0;
+    int has_exp_digit = 0;
+
+    /* 十六进制前缀 */
+    if (p[0] == '0' && (p[1] == 'x' || p[1] == 'X')) {
+        //hex = 1;
+        p += 2;
+        if (!isxdigit((unsigned char)*p)) return 0;
+        while (isxdigit((unsigned char)*p)) { has_int_digit = 1; p++; }
+        /* 可选小数部分 */
+        if (*p == '.') {
+            p++;
+            while (isxdigit((unsigned char)*p)) { has_frac_digit = 1; p++; }
+        }
+        if (!has_int_digit && !has_frac_digit) return 0;
+        /* 有小数则必须要有 p/P 指数 */
+        if (has_frac_digit || (*p == 'p' || *p == 'P')) {
+            if (*p != 'p' && *p != 'P') return 0;
+            p++;
+            if (*p == '+' || *p == '-') p++;
+            if (!isdigit((unsigned char)*p)) return 0;
+            has_exp_digit = 1;
+            while (isdigit((unsigned char)*p)) p++;
+        }
+        *out_len = (int)(p - s);
+        return 1;
+    }
+
+    /* 十进制 / 八进制 */
+    if (*p == '0') {
+        has_int_digit = 1;
+        p++;
+        while (*p >= '0' && *p <= '7') { has_int_digit = 1; p++; }
+        if (*p == '8' || *p == '9') return 0;   /* 非法八进制 */
+    } else if (isdigit((unsigned char)*p)) {
+        while (isdigit((unsigned char)*p)) { has_int_digit = 1; p++; }
+    } else if (*p == '.') {
+        /* 无整数部分，如 .5 */
+        has_int_digit = 0;
+    } else {
+        return 0;
+    }
+
+    /* 小数部分 */
+    if (*p == '.') {
+        p++;
+        if (isdigit((unsigned char)*p)) {
+            has_frac_digit = 1;
+            while (isdigit((unsigned char)*p)) p++;
+        }
+    }
+
+    /* 指数部分 */
+    if (*p == 'e' || *p == 'E') {
+        p++;
+        if (*p == '+' || *p == '-') p++;
+        if (!isdigit((unsigned char)*p)) return 0;
+        has_exp_digit = 1;
+        while (isdigit((unsigned char)*p)) p++;
+    }
+
+    /* 至少有一组数字（整数或小数） */
+    if (!has_int_digit && !has_frac_digit) return 0;
+
+    /* 后缀 */
+    if (*p == 'l' || *p == 'L') {
+        if (has_frac_digit || has_exp_digit) return 0; /* 整数后缀 */
+        p++;
+    } else if (*p == 'f' || *p == 'F') {
+        if (!has_frac_digit && !has_exp_digit) return 0; /* 必须有小数或指数 */
+        p++;
+    }
+
+    *out_len = (int)(p - s);
+    return 1;
+}
+
 /* ── 默认高亮回调：关键词 + 字符串 + 数字 + 注释 ── */
 /* ── 增强默认高亮：关键词(红) + 字符串(绿) + 数字(黄) + 注释(青) ── */
 static char *defaultHighlightCallback(const char *buf) {
@@ -2393,7 +2476,35 @@ static char *defaultHighlightCallback(const char *buf) {
             abAppends(&ab, "\033[0m");
             continue;
         }
-
+    /* ── 数字（含可选正负号以及点开头的小数） ── */
+    if (isdigit((unsigned char)*p) ||
+        ((*p == '-' || *p == '+') &&
+         (isdigit((unsigned char)*(p+1)) || *(p+1) == '.')) ||
+        (*p == '.' && isdigit((unsigned char)*(p+1))))   // 新增 . 开头数字
+    {
+        const char *start = p;
+        int num_len = 0;
+        int has_sign = 0;
+        if (*p == '-' || *p == '+') {
+            has_sign = 1;
+            p++;   /* 跳过符号 */
+        }
+        if (scan_number(p, &num_len) && num_len > 0) {
+            int total_len = (has_sign ? 1 : 0) + num_len;
+            abAppends(&ab, "\033[0;33m");          /* 黄色 */
+            abAppend(&ab, start, total_len);
+            abAppends(&ab, "\033[0m");
+            p = start + total_len;
+            continue;
+        } else {
+            /* 不是合法数字，输出单个字符并继续 */
+            p = start;
+            abAppend(&ab, p, 1);
+            ++p;
+            continue;
+        }
+    }
+/*
         if (isdigit((unsigned char)*p) ||
             ((*p == '-' || *p == '+') &&
              (isdigit((unsigned char)*(p+1)) || *(p+1) == '.'))) {
@@ -2403,12 +2514,12 @@ static char *defaultHighlightCallback(const char *buf) {
                           *p == 'x' || *p == 'X' ||
                           (*p >= 'a' && *p <= 'f') ||
                           (*p >= 'A' && *p <= 'F'))) ++p;
-            abAppends(&ab, "\033[0;33m");       /* 黄色 */
+            abAppends(&ab, "\033[0;33m");       // 黄色
             abAppend(&ab, start, p - start);
             abAppends(&ab, "\033[0m");
             continue;
         }
-
+*/
         const char *start = p;
         if (isprint((unsigned char)*p) && !strchr("()'`,@#\"", *p)) {
             while (*p && isprint((unsigned char)*p) &&

@@ -200,122 +200,106 @@ bool disp_is_integer_literal(const char *s) {
 }
 
 disp_val* disp_parse_number(const char *s) {
-    if (!s || *s == '\0') {
-        return NULL;
-    }
+    if (!s || *s == '\0') return NULL;
 
     const char *p = s;
-    bool hex = false;
+    bool negate = false;
+    //bool has_sign = false;
+
+    /* 1. 处理前导符号 */
+    if (*p == '+' || *p == '-') {
+        //has_sign = true;
+        negate = (*p == '-');
+        p++;
+    }
+
+    const char *number_start = p;   /* 符号之后的部分 */
+
+    //bool hex = false;
     bool has_dot = false;
     bool has_exp = false;
-    bool has_frac_digits = false;   // 小数部分是否有数字
-    bool has_int_digits = false;     // 整数部分是否有数字
-    bool has_exp_digits = false;     // 指数部分是否有数字
+    bool has_frac_digits = false;
+    bool has_int_digits = false;
+    bool has_exp_digits = false;
     bool long_suffix = false;
     bool float_suffix = false;
     bool valid = true;
 
-    // 1. 检查十六进制前缀
+    /* 2. 检查十六进制前缀 */
     if (p[0] == '0' && (p[1] == 'x' || p[1] == 'X')) {
-        hex = true;
+        //hex = true;
         p += 2;
-        if (*p == '\0') valid = false; // 只有 0x 非法
-    }
-
-    // 2. 解析数字部分
-    if (hex) {
-        // 十六进制整数部分
-        while (isxdigit(*p)) {
-            has_int_digits = true;
-            p++;
-        }
-        // 小数点
-        if (*p == '.') {
-            has_dot = true;
-            p++;
-            while (isxdigit(*p)) {
-                has_frac_digits = true;
+        if (!isxdigit((unsigned char)*p)) valid = false;
+        else {
+            while (isxdigit((unsigned char)*p)) { has_int_digits = true; p++; }
+            if (*p == '.') {
+                has_dot = true;
                 p++;
+                while (isxdigit((unsigned char)*p)) { has_frac_digits = true; p++; }
             }
-        }
-        // 必须有数字（整数或小数）
-        if (!has_int_digits && !has_frac_digits) valid = false;
-        // 十六进制浮点数必须有指数部分 p/P
-        if (*p == 'p' || *p == 'P') {
-            has_exp = true;
-            p++;
-            if (*p == '+' || *p == '-') p++;
-            if (isdigit(*p)) {
-                has_exp_digits = true;
-                while (isdigit(*p)) p++;
+            if (!has_int_digits && !has_frac_digits) valid = false;
+            if (*p == 'p' || *p == 'P') {
+                has_exp = true;
+                p++;
+                if (*p == '+' || *p == '-') p++;
+                if (isdigit((unsigned char)*p)) {
+                    has_exp_digits = true;
+                    while (isdigit((unsigned char)*p)) p++;
+                } else {
+                    valid = false;
+                }
             } else {
-                valid = false;
+                if (has_dot) valid = false;  /* 十六进制浮点数必须有 p 指数 */
             }
-        } else {
-            // 没有指数部分，则只能是整数（十六进制整数不允许有小数点）
-            if (has_dot) valid = false;
-            // 没有指数，也没有小数点，合法十六进制整数
         }
     } else {
-        // 十进制（可能八进制，但八进制只能出现在整数且没有小数点/指数）
-        // 先解析整数部分
+        /* 十进制 / 八进制 */
         if (*p == '0') {
-            // 可能是八进制或单纯的0
             has_int_digits = true;
             p++;
-            // 八进制数字（0-7）
-            while (*p >= '0' && *p <= '7') {
-                has_int_digits = true;
-                p++;
-            }
-            // 如果后面紧跟 8 或 9，则不是合法的八进制，但可能构成十进制浮点数？例如 "09.0" 是非法的，因为八进制不能有 9
-            // C标准：以0开头的数字序列，若包含8或9，则整个常量非法（除非后面有小数点或指数，但八进制浮点数不存在）
-            // 为简单起见，这里统一处理：如果整数部分以0开头且后面跟着8或9，则视为非法（因为不能作为八进制，也不能作为十进制）
-            if (*p == '8' || *p == '9') {
-                valid = false;
-            }
-        } else if (isdigit(*p)) {
-            // 十进制，不能以0开头
-            while (isdigit(*p)) {
-                has_int_digits = true;
-                p++;
-            }
-        } else {
-            // 不是数字开头，可能是小数点开头？C语言浮点字面量允许 .123 形式
-            // 此时整数部分没有数字
+            while (*p >= '0' && *p <= '7') { has_int_digits = true; p++; }
+            if (*p == '8' || *p == '9') valid = false;
+        } else if (isdigit((unsigned char)*p)) {
+            while (isdigit((unsigned char)*p)) { has_int_digits = true; p++; }
+        } else if (*p == '.') {
             has_int_digits = false;
+        } else {
+            valid = false;
         }
 
-        // 小数点
+        if (!valid) {
+            /* 如果不是有效数字，但前面有符号，那么就不是合法数字，返回 NULL */
+            return NULL;
+        }
+
+        /* 小数点 */
         if (*p == '.') {
             has_dot = true;
             p++;
-            while (isdigit(*p)) {
+            if (isdigit((unsigned char)*p)) {
                 has_frac_digits = true;
-                p++;
+                while (isdigit((unsigned char)*p)) p++;
             }
         }
 
-        // 指数部分
+        /* 指数 */
         if (*p == 'e' || *p == 'E') {
             has_exp = true;
             p++;
             if (*p == '+' || *p == '-') p++;
-            if (isdigit(*p)) {
+            if (isdigit((unsigned char)*p)) {
                 has_exp_digits = true;
-                while (isdigit(*p)) p++;
+                while (isdigit((unsigned char)*p)) p++;
             } else {
                 valid = false;
             }
         }
 
-        // 整数部分和小数部分必须至少有一个数字
         if (!has_int_digits && !has_frac_digits) valid = false;
-        // 如果有指数部分，必须要有指数数字
         if (has_exp && !has_exp_digits) valid = false;
     }
 
-    // 3. 解析后缀
+    /* 3. 后缀 */
     if (*p == 'l' || *p == 'L') {
         long_suffix = true;
         p++;
@@ -324,52 +308,40 @@ disp_val* disp_parse_number(const char *s) {
         p++;
     }
 
-    // 4. 检查是否完全消耗字符串
+    /* 4. 检查是否完全消耗（后缀之后不能有非空白字符） */
+    while (*p && isspace((unsigned char)*p)) p++;   /* 允许末尾空白？严格来说不允许，但为了容错可加。这里不跳过空白，直接要求结束 */
     if (*p != '\0') valid = false;
 
-    // 5. 根据标志判断类型
-    if (!valid) {
-        return NULL;
-    }
+    if (!valid) return NULL;
 
-    // long literal: 必须有 long 后缀，且不能有小数点或指数
+    /* 5. 根据标志构建值 */
     if (long_suffix) {
-        if (has_dot || has_exp) {
-            // 非法：后缀 l/L 只能用于整数
-            return NULL;
-        }
-        long val = strtol(s, NULL, 0);
+        if (has_dot || has_exp) return NULL;
+        long val = strtol(number_start, NULL, 0);
+        if (negate) val = -val;
         return disp_make_long(val);
     }
 
-    // float literal: 必须有 f/F 后缀，且必须有小数点或指数
     if (float_suffix) {
-        if (!has_dot && !has_exp) {
-            // 非法：f/F 后缀必须用于浮点数
-            return NULL;
-        }
-        float val = strtof(s, NULL);
+        if (!has_dot && !has_exp) return NULL;
+        float val = strtof(number_start, NULL);
+        if (negate) val = -val;
         return disp_make_float(val);
     }
 
-    // double literal: 无后缀，但包含小数点或指数
     if (has_dot || has_exp) {
-        double val = strtod(s, NULL);
+        double val = strtod(number_start, NULL);
+        if (negate) val = -val;
+        return disp_make_double(val);   /* 修正：之前错误用了 disp_make_long */
+    }
+
+    /* 普通整数 */
+    long val = strtol(number_start, NULL, 0);
+    if (negate) val = -val;
+    if (val >= INT_MIN && val <= INT_MAX) {
+        return disp_make_int((int)val);
+    } else {
         return disp_make_long(val);
     }
-
-    // 一般整数: 无后缀，无小数点，无指数
-    if (!has_dot && !has_exp) {
-        // 一般整数（int），使用 strtol 转换后转为 int
-        long val = strtol(s, NULL, 0);
-        // 无后缀，根据范围决定 int 或 long
-        if (val >= INT_MIN && val <= INT_MAX) {
-            return disp_make_int((int)val);
-        } else {
-            return disp_make_long(val);
-        }
-    }
-
-    // 理论上不会走到这里，但为了安全
-    return NULL;
 }
+
