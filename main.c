@@ -16,6 +16,9 @@
 
 /* ======================== MAIN ======================== */
 
+extern void disp_push_source(const char *filename);
+extern void disp_pop_source(void);
+
 int main(int argc, char **argv) {
 
     disp_init_globals();

@@ -21,6 +21,9 @@ GC_STRUCT_TI(disp_info,
 
 _Thread_local disp_info_t *current_info = NULL;
 
+int parse_current_line = 1;
+int parse_current_col  = 1;
+
 void disp_push_source(const char *filename) {
     disp_info_t *new_info = gc_typed_calloc(1, sizeof(disp_info_t), &struct_disp_info_ti);
     new_info->filename = filename ? gc_strdup(filename) : NULL;
@@ -62,9 +65,6 @@ disp_info_t* disp_get_current_info(void) {
 void disp_init_info(void) {
     gc_add_root(&current_info);
 }
-
-int parse_current_line = 1;
-int parse_current_col  = 1;
 
 // 更新行列号的辅助函数
 void disp_update_pos(int c) {

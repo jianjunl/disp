@@ -25,6 +25,8 @@
 
 /* ======================== REPL ======================== */
 
+extern int parse_current_line;
+
 void disp_repl() {
     printf("disp Lisp (type :quit to exit)\n");
 

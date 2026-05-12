@@ -153,16 +153,8 @@ typedef struct disp_info {
     struct disp_info *next;
 } disp_info_t;
 
-// 声明解析器当前行列号（定义在 info.c）
-extern int parse_current_line;
-extern int parse_current_col;
-void disp_update_pos(int c);
-
 // 线程局部信息管理（栈式）
 void disp_init_info(void);                     // 初始化（确保 current_info 为 NULL）
-void disp_push_source(const char *filename);   // 加载新文件时压栈
-void disp_pop_source(void);                    // 文件加载完毕弹栈
-void disp_update_current_pos(int line, int col); // 更新栈顶位置
 disp_info_t* disp_get_current_info(void);      // 返回栈顶指针
 
 /* --- disp.c (repl) --- */

@@ -16,6 +16,8 @@
 
 /* ======================== Parser ======================== */
 
+extern void disp_update_pos(int c);
+
 #define disp_fgetc fgetc
 
 static int skip_and_get(FILE *f) {
@@ -298,6 +300,10 @@ static disp_val* parse_sexpr(int first, FILE *f) {
         return parse_atom(first, f);
     }
 }
+
+extern int parse_current_line;
+extern int parse_current_col;
+extern void disp_update_current_pos(int line, int col); // 更新栈顶位置
 
 disp_val* disp_read(FILE *f) {
     int c = skip_and_get(f);
