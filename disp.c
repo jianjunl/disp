@@ -63,6 +63,10 @@ static disp_val* trace_syscall(disp_val **args, int arg_count) {
 
 /* ======================== Initialisation ======================== */
 void disp_init_globals() {
+    gc_init();
+    disp_init_info();
+    disp_init_symbol();
+      
     char p[PATH_MAX] = "\0";
     if (!readlink("/proc/self/exe", p, sizeof(p) - 1)) {
 	ERRO("readlink failed: %s\n", strerror (errno));
@@ -74,10 +78,6 @@ void disp_init_globals() {
         DEF(":path", MODPATH, 1);
     }
 
-    gc_init();
-    disp_init_info();
-    disp_init_symbol();
-      
     BYTE    = disp_define_type("byte"     , MKS(":byte"  ));
     SHORT   = disp_define_type("short"    , MKS(":short" ));
     INT     = disp_define_type("int"      , MKS(":int"   ));
