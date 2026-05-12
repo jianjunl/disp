@@ -1,6 +1,6 @@
     const char *keywords[] = {
-"#t ",
-"#f ",
+"#t",
+"#f",
 "stdin",
 "stdout",
 "stderr",
@@ -14,6 +14,7 @@
 "gc",
 "info",
 "trace",
+
 "make-coroutine",
 "yield",
 "resume",
