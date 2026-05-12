@@ -29,7 +29,9 @@ char* disp_string(disp_val *v) {
     if (!mem) return NULL;
     disp_fprint(mem, v);
     fclose(mem);
-    return buf;   // 调用者负责 free
+    char *s = gc_strdup(buf);
+    free(buf);
+    return s;
 }
 
 char* disp_str(disp_val *v) {
@@ -39,7 +41,9 @@ char* disp_str(disp_val *v) {
     if (!mem) return NULL;
     disp_fwrite(mem, v);
     fclose(mem);
-    return buf;   // 调用者负责 free
+    char *s = gc_strdup(buf);
+    free(buf);
+    return s;
 }
 
 void disp_fprint(FILE *out, disp_val *v) {

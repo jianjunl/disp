@@ -65,11 +65,6 @@ disp_val* disp_make_builtin(disp_builtin_t f, char *d) {
     disp_val *v = DISP_ALLOC_TI(DISP_BUILTIN);
     v->data->builtin.func = f;
     v->data->builtin.desc = d;
-    gc_add_root(&v->data->builtin.func);
-    gc_add_root(&v->data->builtin.desc);
-    gc_add_root(&v->data->builtin);
-    gc_add_root(&v->data);
-    gc_add_root(&v);
     return v;
 }
 
@@ -77,10 +72,5 @@ disp_val* disp_make_syscall(disp_syscall_t f, char *d) {
     disp_val *v = DISP_ALLOC_TI(DISP_SYSCALL);
     v->data->syscall.func = f;
     v->data->syscall.desc = d;
-    gc_add_root(&v->data->syscall.func);
-    gc_add_root(&v->data->syscall.desc);
-    gc_add_root(&v->data->syscall);
-    gc_add_root(&v->data);
-    gc_add_root(&v);
     return v;
 }

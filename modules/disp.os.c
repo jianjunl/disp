@@ -33,12 +33,7 @@ static const char* val_to_str(disp_val *v) {
     if (v == NIL) return "nil";
     if (v == TRUE) return "true";
     if (T(v) == DISP_STRING) return disp_get_str(v);
-    static char buf[256];
-    char *s = disp_str(v);
-    strncpy(buf, s, sizeof(buf)-1);
-    buf[sizeof(buf)-1] = '\0';
-    gc_free(s);
-    return buf;
+    return disp_str(v);
 }
 
 // 辅助函数：将 disp_val 转换为双精度浮点数（用于 %f, %g, %e）

@@ -2401,7 +2401,7 @@ static int scan_number(const char *s, int *out_len) {
         if (has_frac_digit || has_exp_digit) return 0; /* 整数后缀 */
         p++;
     } else if (*p == 'f' || *p == 'F') {
-        if (!has_frac_digit && !has_exp_digit) return 0; /* 必须有小数或指数 */
+        if (!has_int_digit && !has_frac_digit && !has_exp_digit) return 0; /* 必须有小数或指数 */
         p++;
     }
 

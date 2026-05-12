@@ -28,11 +28,11 @@
 
 ;; 启动后台 GC 线程，interval 单位为秒
 (define (start-gc-thread interval)
-  (if (not (number? interval))
+  (if (not (or (integer? interval) (decimal? interval)))
       (begin (fprintln stderr "start-gc-thread: interval must be a number") nil)
       (begin
         (if (not (null? *gc-thread*)) (stop-gc-thread))
-        (set! *gc-chan* (make-channel 0))   ; 无缓冲通道，用于精确控制
+        (set! *gc-chan* (make-channel 1))   ; 无缓冲通道，用于精确控制
         (set! *gc-thread*
               (make-thread
                (lambda ()
@@ -48,7 +48,7 @@
                            (gc)
                            (fprintln stderr ";; [GC] performed.")
                            ;; 设置定时器，interval 秒后向通道发送 'tick
-                           (thread-sleep interval)
+                           (thread-sleep 1.0)
                            (send *gc-chan* 'tick)
                            (loop))))))))
         ;; 启动循环：发送第一个 tick
