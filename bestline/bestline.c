@@ -2326,37 +2326,6 @@ void bestlineSetHighlightKeywords(const char *keywords[], int n) {
     hlCallback = defaultHighlightCallback;
 }
 
-/* 默认高亮回调：红色标记关键词 */
-/*
-static char *defaultHighlightCallback(const char *buf) {
-    struct abuf ab;
-    abInit(&ab);
-    const char *p = buf;
-    while (*p) {
-        int matched = 0;
-        if (!bestlineIsSeparator((unsigned char)*p)) {
-            for (int k = 0; k < hl_keywords_count; k++) {
-                size_t kwlen = strlen(hl_keywords[k]);
-                if (strncmp(p, hl_keywords[k], kwlen) == 0 &&
-                    (p[kwlen] == '\0' || bestlineIsSeparator((unsigned char)p[kwlen]))) {
-                    abAppends(&ab, "\033[1;31m");   // 红色
-                    abAppend(&ab, p, kwlen);
-                    abAppends(&ab, "\033[0m");
-                    p += kwlen;
-                    matched = 1;
-                    break;
-                }
-            }
-        }
-        if (!matched) {
-            abAppend(&ab, p, 1);
-            p++;
-        }
-    }
-    return strdup(ab.b);   // 调用者 free
-}
-*/
-
 /* 扫描合法的 C 数字字面量，返回消耗的长度（>0 ），失败返回 0 */
 static int scan_number(const char *s, int *out_len) {
     if (!s) return 0;
@@ -2476,50 +2445,34 @@ static char *defaultHighlightCallback(const char *buf) {
             abAppends(&ab, "\033[0m");
             continue;
         }
-    /* ── 数字（含可选正负号以及点开头的小数） ── */
-    if (isdigit((unsigned char)*p) ||
-        ((*p == '-' || *p == '+') &&
-         (isdigit((unsigned char)*(p+1)) || *(p+1) == '.')) ||
-        (*p == '.' && isdigit((unsigned char)*(p+1))))   // 新增 . 开头数字
-    {
-        const char *start = p;
-        int num_len = 0;
-        int has_sign = 0;
-        if (*p == '-' || *p == '+') {
-            has_sign = 1;
-            p++;   /* 跳过符号 */
-        }
-        if (scan_number(p, &num_len) && num_len > 0) {
-            int total_len = (has_sign ? 1 : 0) + num_len;
-            abAppends(&ab, "\033[0;33m");          /* 黄色 */
-            abAppend(&ab, start, total_len);
-            abAppends(&ab, "\033[0m");
-            p = start + total_len;
-            continue;
-        } else {
-            /* 不是合法数字，输出单个字符并继续 */
-            p = start;
-            abAppend(&ab, p, 1);
-            ++p;
-            continue;
-        }
-    }
-/*
+        /* ── 数字（含可选正负号以及点开头的小数） ── */
         if (isdigit((unsigned char)*p) ||
             ((*p == '-' || *p == '+') &&
-             (isdigit((unsigned char)*(p+1)) || *(p+1) == '.'))) {
+             (isdigit((unsigned char)*(p+1)) || *(p+1) == '.')) ||
+            (*p == '.' && isdigit((unsigned char)*(p+1))))   // 新增 . 开头数字
+        {
             const char *start = p;
-            if (*p == '-' || *p == '+') ++p;
-            while (*p && (isdigit((unsigned char)*p) || *p == '.' ||
-                          *p == 'x' || *p == 'X' ||
-                          (*p >= 'a' && *p <= 'f') ||
-                          (*p >= 'A' && *p <= 'F'))) ++p;
-            abAppends(&ab, "\033[0;33m");       // 黄色
-            abAppend(&ab, start, p - start);
-            abAppends(&ab, "\033[0m");
-            continue;
+            int num_len = 0;
+            int has_sign = 0;
+            if (*p == '-' || *p == '+') {
+                has_sign = 1;
+                p++;   /* 跳过符号 */
+            }
+            if (scan_number(p, &num_len) && num_len > 0) {
+                int total_len = (has_sign ? 1 : 0) + num_len;
+                abAppends(&ab, "\033[0;33m");          /* 黄色 */
+                abAppend(&ab, start, total_len);
+                abAppends(&ab, "\033[0m");
+                p = start + total_len;
+                continue;
+            } else {
+                /* 不是合法数字，输出单个字符并继续 */
+                p = start;
+                abAppend(&ab, p, 1);
+                ++p;
+                continue;
+            }
         }
-*/
         const char *start = p;
         if (isprint((unsigned char)*p) && !strchr("()'`,@#\"", *p)) {
             while (*p && isprint((unsigned char)*p) &&
