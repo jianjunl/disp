@@ -99,19 +99,19 @@ void disp_init_globals() {
     DEF("else", TRUE, 1);
 
     disp_load("disp.data.so");
-    CONS              = disp_find_symbol("cons");
-    LIST              = disp_find_symbol("list");
+    CONS              = disp_find_symbol(NULL, "cons");
+    LIST              = disp_find_symbol(NULL, "list");
     disp_load("disp.quote.so");
-    APPEND            = disp_find_symbol("append");
-    QUOTE             = disp_find_symbol("quote");
-    QUASIQUOTE        = disp_find_symbol("quasiquote");
-    UNQUOTE           = disp_find_symbol("unquote");
-    UNQUOTE_SPLICING  = disp_find_symbol("unquote-splicing");
+    APPEND            = disp_find_symbol(NULL, "append");
+    QUOTE             = disp_find_symbol(NULL, "quote");
+    QUASIQUOTE        = disp_find_symbol(NULL, "quasiquote");
+    UNQUOTE           = disp_find_symbol(NULL, "unquote");
+    UNQUOTE_SPLICING  = disp_find_symbol(NULL, "unquote-splicing");
     disp_load("disp.lamb.so");
-    LAMBDA  = disp_find_symbol("lambda");
+    LAMBDA  = disp_find_symbol(NULL, "lambda");
     disp_load("disp.leta.so");
-    LETA    = disp_find_symbol("let*");
-    LETRECA = disp_find_symbol("letrec*");
+    LETA    = disp_find_symbol(NULL, "let*");
+    LETRECA = disp_find_symbol(NULL, "letrec*");
 
     disp_load("disp.flow.so");
     disp_load("disp.loop.so");

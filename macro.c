@@ -69,7 +69,7 @@ static saved_binding* bind_params(disp_val *params, disp_val **args, int arg_cou
             return NULL;
         }
         const char *name = disp_get_symbol_name(sym);
-        disp_val *old_sym = disp_find_symbol(name);
+        disp_val *old_sym = disp_find_symbol(NULL, name);
         saved[i].name = gc_strdup(name);
         saved[i].existed = (old_sym != NULL);
         saved[i].old_value = saved[i].existed ? disp_get_symbol_value(old_sym) : NIL;
@@ -77,7 +77,7 @@ static saved_binding* bind_params(disp_val *params, disp_val **args, int arg_cou
         if (saved[i].existed && saved[i].old_value != NULL) {
             gc_add_root(&saved[i].old_value);
         }
-        disp_define_symbol(name, args[i], 0);
+        disp_define_symbol(NULL, name, args[i], 0);
         i++;
         p = disp_cdr(p);
     }
@@ -93,14 +93,14 @@ static saved_binding* bind_params(disp_val *params, disp_val **args, int arg_cou
         // 临时保护 rest_list，防止在绑定前被 GC 回收
         gc_add_root(&rest_list);
 
-        disp_val *old_rest_sym = disp_find_symbol(rest_name);
+        disp_val *old_rest_sym = disp_find_symbol(NULL, rest_name);
         saved[i].name = gc_strdup(rest_name);
         saved[i].existed = (old_rest_sym != NULL);
         saved[i].old_value = saved[i].existed ? disp_get_symbol_value(old_rest_sym) : NIL;
         if (saved[i].existed && saved[i].old_value != NULL) {
             gc_add_root(&saved[i].old_value);
         }
-        disp_define_symbol(rest_name, rest_list, 0);
+        disp_define_symbol(NULL, rest_name, rest_list, 0);
         // 绑定完成，rest_list 现在由符号表持有，可解除保护
         gc_remove_root(&rest_list);
     }
@@ -115,9 +115,9 @@ static void restore_bindings(saved_binding *saved, int count) {
             gc_remove_root(&saved[i].old_value);
         }
         if (saved[i].existed)
-            disp_define_symbol(saved[i].name, saved[i].old_value, 0);
+            disp_define_symbol(NULL, saved[i].name, saved[i].old_value, 0);
         else
-            disp_define_symbol(saved[i].name, NIL, 0);  //disp_remove_symbol(saved[i].name);
+            disp_define_symbol(NULL, saved[i].name, NIL, 0);  //disp_remove_symbol(saved[i].name);
         gc_free(saved[i].name);
     }
     gc_free(saved);

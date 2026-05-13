@@ -87,9 +87,10 @@ void disp_set_car(disp_val *cons, disp_val *car);   /* use with care – immutab
 void disp_set_cdr(disp_val *cons, disp_val *cdr);
 
 /* --- Symbol table --- */
-disp_val* disp_find_symbol(const char *name);
-disp_val* disp_define_symbol(const char *name, disp_val *value, int final);
-disp_val* disp_intern_symbol(const char *name);
+disp_scope_t* disp_new_scope(disp_scope_t *parent);
+disp_val* disp_find_symbol(const disp_scope_t *scope, const char *name);
+disp_val* disp_define_symbol(const disp_scope_t *scope, const char *name, disp_val *value, int final);
+disp_val* disp_intern_symbol(const disp_scope_t *scope, const char *name);
 
 /* --- numbers --- */
 bool disp_is_float_literal(const char *s);

@@ -9,7 +9,7 @@
 #define MKB disp_make_builtin
 #define MKF disp_make_syscall
 #define MKS disp_make_string
-#define DEF(n, v, i) disp_define_symbol(n, v, i)
+#define DEF(n, v, i) disp_define_symbol(NULL, n, v, i)
 
 #ifndef URET
 #define URET(R) do { \

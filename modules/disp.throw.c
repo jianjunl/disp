@@ -70,7 +70,7 @@ static disp_val* error_syscall(disp_val **args, int count) {
     if (count < 1) ERET(NIL, "error: expects at least one argument");
 
     disp_val *throw_args[2];
-    throw_args[0] = disp_intern_symbol("error");
+    throw_args[0] = disp_intern_symbol(NULL, "error");
 
     if (count == 1) {
         throw_args[1] = args[0];

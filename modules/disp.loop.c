@@ -114,11 +114,11 @@ static disp_val* do_builtin(disp_val *expr) {
     disp_val **old_vals = gc_typed_malloc(var_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
     gc_add_root(&old_vals);
     for (int j = 0; j < var_count; j++) {
-        disp_val *old_sym = disp_find_symbol(var_names[j]);
+        disp_val *old_sym = disp_find_symbol(NULL, var_names[j]);
         old_vals[j] = old_sym ? disp_get_symbol_value(old_sym) : NULL;
         if (old_vals[j] != NULL) gc_add_root(&old_vals[j]);
         disp_val *init_val = disp_eval(init_vals[j]);
-        disp_define_symbol(var_names[j], init_val, 0);
+        disp_define_symbol(NULL, var_names[j], init_val, 0);
     }
 
     // 主循环（异常安全）
@@ -151,13 +151,13 @@ static disp_val* do_builtin(disp_val *expr) {
                     new_vals[j] = disp_eval(step_exprs[j]);
                 } else {
                     // 无步进，保持当前值
-                    disp_val *sym = disp_find_symbol(var_names[j]);
+                    disp_val *sym = disp_find_symbol(NULL, var_names[j]);
                     new_vals[j] = sym ? disp_get_symbol_value(sym) : NIL;
                 }
                 gc_add_root(&new_vals[j]);
             }
             for (int j = 0; j < var_count; j++) {
-                disp_define_symbol(var_names[j], new_vals[j], 0);
+                disp_define_symbol(NULL, var_names[j], new_vals[j], 0);
                 gc_remove_root(&new_vals[j]);
             }
             gc_remove_root(&new_vals);
@@ -166,7 +166,7 @@ static disp_val* do_builtin(disp_val *expr) {
         // 正常退出：恢复旧值，清理资源
         for (int j = 0; j < var_count; j++) {
             disp_val *restore = old_vals[j];
-            disp_define_symbol(var_names[j], restore ? restore : NIL, 0);
+            disp_define_symbol(NULL, var_names[j], restore ? restore : NIL, 0);
             if (restore != NULL) gc_remove_root(&old_vals[j]);
             gc_free(var_names[j]);
         }
@@ -181,7 +181,7 @@ static disp_val* do_builtin(disp_val *expr) {
         // 异常路径：恢复绑定，清理资源，传播异常
         for (int j = 0; j < var_count; j++) {
             disp_val *restore = old_vals[j];
-            disp_define_symbol(var_names[j], restore ? restore : NIL, 0);
+            disp_define_symbol(NULL, var_names[j], restore ? restore : NIL, 0);
             if (restore != NULL) gc_remove_root(&old_vals[j]);
             gc_free(var_names[j]);
         }
@@ -238,7 +238,7 @@ static disp_val* dotimes_builtin(disp_val *expr) {
     }
 
     // 保存旧值并保护
-    disp_val *old_sym = disp_find_symbol(var_name);
+    disp_val *old_sym = disp_find_symbol(NULL, var_name);
     disp_val *old_val = old_sym ? disp_get_symbol_value(old_sym) : NULL;
     if (old_val != NULL) gc_add_root(&old_val);
 
@@ -252,7 +252,7 @@ static disp_val* dotimes_builtin(disp_val *expr) {
                 last_result = NIL;
         } else {
             for (long i = 0; i < limit; i++) {
-                disp_define_symbol(var_name, disp_make_long(i), 0);
+                disp_define_symbol(NULL, var_name, disp_make_long(i), 0);
                 disp_val *b = body;
                 while (b && T(b) == DISP_CONS) {
                     last_result = disp_eval(disp_car(b));
@@ -265,9 +265,9 @@ static disp_val* dotimes_builtin(disp_val *expr) {
         }
         // 恢复旧值，清理保护
         if (old_sym) {
-            disp_define_symbol(var_name, old_val ? old_val : NIL, 0);
+            disp_define_symbol(NULL, var_name, old_val ? old_val : NIL, 0);
         } else {
-            disp_define_symbol(var_name, NIL, 0);
+            disp_define_symbol(NULL, var_name, NIL, 0);
         }
         if (old_val != NULL) gc_remove_root(&old_val);
         gc_remove_root(&rest);
@@ -275,9 +275,9 @@ static disp_val* dotimes_builtin(disp_val *expr) {
     } CATCH {
         // 异常：恢复绑定
         if (old_sym) {
-            disp_define_symbol(var_name, old_val ? old_val : NIL, 0);
+            disp_define_symbol(NULL, var_name, old_val ? old_val : NIL, 0);
         } else {
-            disp_define_symbol(var_name, NIL, 0);
+            disp_define_symbol(NULL, var_name, NIL, 0);
         }
         if (old_val != NULL) gc_remove_root(&old_val);
         gc_remove_root(&rest);
@@ -313,7 +313,7 @@ static disp_val* dolist_builtin(disp_val *expr) {
     gc_add_root(&rest);
     disp_val *lst = disp_eval(list_expr);
 
-    disp_val *old_sym = disp_find_symbol(var_name);
+    disp_val *old_sym = disp_find_symbol(NULL, var_name);
     disp_val *old_val = old_sym ? disp_get_symbol_value(old_sym) : NULL;
     if (old_val != NULL) gc_add_root(&old_val);
 
@@ -322,7 +322,7 @@ static disp_val* dolist_builtin(disp_val *expr) {
     TRY {
         for (disp_val *p = lst; p && T(p) == DISP_CONS; p = disp_cdr(p)) {
             disp_val *elem = disp_car(p);
-            disp_define_symbol(var_name, elem, 0);
+            disp_define_symbol(NULL, var_name, elem, 0);
             disp_val *b = body;
             while (b && T(b) == DISP_CONS) {
                 last_result = disp_eval(disp_car(b));
@@ -333,18 +333,18 @@ static disp_val* dolist_builtin(disp_val *expr) {
             last_result = disp_eval(result_expr);
         // 恢复
         if (old_sym) {
-            disp_define_symbol(var_name, old_val ? old_val : NIL, 0);
+            disp_define_symbol(NULL, var_name, old_val ? old_val : NIL, 0);
         } else {
-            disp_define_symbol(var_name, NIL, 0);
+            disp_define_symbol(NULL, var_name, NIL, 0);
         }
         if (old_val != NULL) gc_remove_root(&old_val);
         gc_remove_root(&rest);
         normal_exit = 1;
     } CATCH {
         if (old_sym) {
-            disp_define_symbol(var_name, old_val ? old_val : NIL, 0);
+            disp_define_symbol(NULL, var_name, old_val ? old_val : NIL, 0);
         } else {
-            disp_define_symbol(var_name, NIL, 0);
+            disp_define_symbol(NULL, var_name, NIL, 0);
         }
         if (old_val != NULL) gc_remove_root(&old_val);
         gc_remove_root(&rest);

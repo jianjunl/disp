@@ -161,9 +161,9 @@ static disp_val *try_recv(disp_val *ch, disp_val *body, int *executed) {
     if (!ok) return NULL;
 
     // 绑定 'it' 并执行 body
-    disp_val *it_sym = disp_find_symbol("it");
+    disp_val *it_sym = disp_find_symbol(NULL, "it");
     disp_val *old_it = it_sym ? disp_get_symbol_value(it_sym) : NIL;
-    disp_define_symbol("it", value, 0);
+    disp_define_symbol(NULL, "it", value, 0);
 
     disp_val *result = NIL;
     disp_val *body_it = body;
@@ -173,9 +173,9 @@ static disp_val *try_recv(disp_val *ch, disp_val *body, int *executed) {
     }
 
     if (it_sym)
-        disp_define_symbol("it", old_it, 0);
+        disp_define_symbol(NULL, "it", old_it, 0);
     else
-        disp_define_symbol("it", NIL, 0);
+        disp_define_symbol(NULL, "it", NIL, 0);
 
     *executed = 1;
     return result;
@@ -304,9 +304,9 @@ static disp_val *handle_ready_cases(case_info_t *infos, int count, disp_val *cur
             if (ok) {
                 gc_pthread_mutex_unlock(LOCK(c));
                 // 绑定 'it' 并执行 body
-                disp_val *it_sym = disp_find_symbol("it");
+                disp_val *it_sym = disp_find_symbol(NULL, "it");
                 disp_val *old_it = it_sym ? disp_get_symbol_value(it_sym) : NIL;
-                disp_define_symbol("it", value, 0);
+                disp_define_symbol(NULL, "it", value, 0);
 
                 disp_val *body_it = info->body;
                 result = NIL;
@@ -316,9 +316,9 @@ static disp_val *handle_ready_cases(case_info_t *infos, int count, disp_val *cur
                 }
 
                 if (it_sym)
-                    disp_define_symbol("it", old_it, 0);
+                    disp_define_symbol(NULL, "it", old_it, 0);
                 else
-                    disp_define_symbol("it", NIL, 0);
+                    disp_define_symbol(NULL, "it", NIL, 0);
                 executed = 1;
             } else {
                 // 未就绪，从等待队列中移除自己（可能是被其他 case 唤醒）

@@ -40,8 +40,8 @@ static void intern_params(disp_val *params) {
         disp_val *sym = disp_car(p);
         if (T(sym) == DISP_SYMBOL) {
             const char *name = disp_get_symbol_name(sym);
-            if (!disp_find_symbol(name)) {
-                disp_define_symbol(name, NIL, 0);
+            if (!disp_find_symbol(NULL, name)) {
+                disp_define_symbol(NULL, name, NIL, 0);
             }
         }
     }
@@ -97,5 +97,5 @@ disp_val* disp_define_type(char *name, disp_val *decl) {
     disp_val *v = DISP_ALLOC_TI(DISP_TYPE);
     v->data->type_val.name = name;
     v->data->type_val.decl = decl;
-    return disp_define_symbol(name, v, 1);
+    return disp_define_symbol(NULL, name, v, 1);
 }

@@ -36,7 +36,7 @@ static disp_val* define_builtin(disp_val *expr) {
                 disp_val *lambda_expr = disp_make_cons(LAMBDA, 
                                         disp_make_cons(params, body_rest));
                 disp_val *closure = disp_eval(lambda_expr);
-                disp_define_symbol(disp_get_symbol_name(first_arg), closure, 0);
+                disp_define_symbol(NULL, disp_get_symbol_name(first_arg), closure, 0);
                 return first_arg;
             }
         }
@@ -45,7 +45,7 @@ static disp_val* define_builtin(disp_val *expr) {
         if (!rest || T(rest) != DISP_CONS) 
             ERET(NIL, "define: missing expression");
         disp_val *value = disp_eval(disp_car(rest));
-        disp_define_symbol(disp_get_symbol_name(first_arg), value, 0);
+        disp_define_symbol(NULL, disp_get_symbol_name(first_arg), value, 0);
         return first_arg;
         
     } else if (T(first_arg) == DISP_CONS) {
@@ -58,7 +58,7 @@ static disp_val* define_builtin(disp_val *expr) {
         if (!rest) ERET(NIL, "define: missing body");
         disp_val *lambda_expr = disp_make_cons(LAMBDA, disp_make_cons(params, rest));
         disp_val *closure = disp_eval(lambda_expr);
-        disp_define_symbol(disp_get_symbol_name(name_sym), closure, 0);
+        disp_define_symbol(NULL, disp_get_symbol_name(name_sym), closure, 0);
         return name_sym;
         
     } else {
@@ -76,7 +76,7 @@ static disp_val* setq_builtin(disp_val *expr) {
     disp_val *rest = disp_cdr(cadr);
     if (!rest || T(rest) != DISP_CONS) ERET(NIL, "set!: missing expression");
     disp_val *value = disp_eval(disp_car(rest));
-    disp_define_symbol(disp_get_symbol_name(sym), value, 0); // define updates the symbol's value
+    disp_define_symbol(NULL, disp_get_symbol_name(sym), value, 0); // define updates the symbol's value
     return value;
 }
 

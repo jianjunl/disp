@@ -228,7 +228,7 @@ static disp_val* parse_atom(int first, FILE *f) {
         if (strcmp(buf, "#f") == 0) return NIL;
         // 其他以 # 开头的字符串继续作为普通符号
     }
-    disp_val *sym = disp_intern_symbol(buf);
+    disp_val *sym = disp_intern_symbol(NULL, buf);
     return sym;
 }
 
@@ -237,7 +237,7 @@ static disp_val* parse_sexpr(int first, FILE *f) {
         return parse_list(f, ')', 0);
     } else if (first == '{') {
         // 保持不变：逗号分隔的 begin 语法
-        disp_val *sym = disp_find_symbol("begin");
+        disp_val *sym = disp_find_symbol(NULL, "begin");
         if(!sym || sym == NIL) ERET(NIL, "'begin' not found");
         disp_val *sub_lists = parse_list(f, '}', 1);
         disp_val *result = disp_make_cons(sym, NIL);
@@ -250,7 +250,7 @@ static disp_val* parse_sexpr(int first, FILE *f) {
         }
         return result;
     } else if (first == '[') {
-        disp_val *sym = disp_find_symbol("list");
+        disp_val *sym = disp_find_symbol(NULL, "list");
         if(!sym || sym == NIL) ERET(NIL, "'list' not found");
         return disp_make_cons(sym, parse_list(f, ']', 0));
     } else if (first == '"') {
@@ -261,7 +261,7 @@ static disp_val* parse_sexpr(int first, FILE *f) {
         if (next_c == EOF) ERET(NIL, "unexpected EOF after quote");
         disp_val *quoted = parse_sexpr(next_c, f);
         if (!quoted) return NIL;
-        disp_val *quote_sym = disp_find_symbol("quote");
+        disp_val *quote_sym = disp_find_symbol(NULL, "quote");
         return disp_make_cons(quote_sym, disp_make_cons(quoted, NIL));
     } else if (first == '`') {
         // 反引号 -> quasiquote
@@ -269,7 +269,7 @@ static disp_val* parse_sexpr(int first, FILE *f) {
         if (next_c == EOF) ERET(NIL, "unexpected EOF after quasiquote");
         disp_val *quasiquoted = parse_sexpr(next_c, f);
         if (!quasiquoted) return NIL;
-        disp_val *qq_sym = disp_find_symbol("quasiquote");
+        disp_val *qq_sym = disp_find_symbol(NULL, "quasiquote");
         return disp_make_cons(qq_sym, disp_make_cons(quasiquoted, NIL));
     } else if (first == ',') {
         // 逗号 -> unquote 或 unquote-splicing
@@ -281,13 +281,13 @@ static disp_val* parse_sexpr(int first, FILE *f) {
             if (expr_c == EOF) ERET(NIL, "unexpected EOF after ,@");
             disp_val *spliced = parse_sexpr(expr_c, f);
             if (!spliced) return NIL;
-            disp_val *us_sym = disp_find_symbol("unquote-splicing");
+            disp_val *us_sym = disp_find_symbol(NULL, "unquote-splicing");
             return disp_make_cons(us_sym, disp_make_cons(spliced, NIL));
         } else {
             // , -> unquote
             disp_val *unquoted = parse_sexpr(next_c, f);
             if (!unquoted) return NIL;
-            disp_val *uq_sym = disp_find_symbol("unquote");
+            disp_val *uq_sym = disp_find_symbol(NULL, "unquote");
             return disp_make_cons(uq_sym, disp_make_cons(unquoted, NIL));
         }
     } else if (first == ')') {

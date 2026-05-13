@@ -40,7 +40,7 @@ static disp_val* letf(disp_val *expr) {
         ERET(NIL, "named let: missing body");
     
     // 获取 letrec* 符号（确保存在）
-    disp_val *letrec_star = disp_find_symbol("letrec*");
+    disp_val *letrec_star = disp_find_symbol(NULL, "letrec*");
     if (!letrec_star || letrec_star == NIL)
         ERET(NIL, "named let: letrec* not defined (load disp.lamb.so)");
     
@@ -157,7 +157,7 @@ static disp_val* let_builtin(disp_val *expr) {
     disp_val **old_vals = gc_typed_malloc(var_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
     gc_add_root(&old_vals);
     for (int j = 0; j < var_count; j++) {
-        disp_val *old_sym = disp_find_symbol(var_names[j]);
+        disp_val *old_sym = disp_find_symbol(NULL, var_names[j]);
         old_vals[j] = old_sym ? disp_get_symbol_value(old_sym) : NULL;
         if (old_vals[j] != NULL) gc_add_root(&old_vals[j]);   // 旧值本身保护
     }
@@ -166,7 +166,7 @@ static disp_val* let_builtin(disp_val *expr) {
     if (disp_car(expr) == LETA) {   // let*
         for (int j = 0; j < var_count; j++) {
             disp_val *val = disp_eval(expr_vals[j]);
-            disp_define_symbol(var_names[j], val, 0);
+            disp_define_symbol(NULL, var_names[j], val, 0);
         }
     } else {
         disp_val **values = gc_typed_malloc(var_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
@@ -176,7 +176,7 @@ static disp_val* let_builtin(disp_val *expr) {
             gc_add_root(&values[j]);
         }
         for (int j = 0; j < var_count; j++) {
-            disp_define_symbol(var_names[j], values[j], 0);
+            disp_define_symbol(NULL, var_names[j], values[j], 0);
         }
         for (int j = 0; j < var_count; j++) gc_remove_root(&values[j]);
         gc_remove_root(&values);
@@ -193,7 +193,7 @@ static disp_val* let_builtin(disp_val *expr) {
         // 异常路径：恢复绑定，释放资源，然后继续传播
         for (int j = 0; j < var_count; j++) {
             disp_val *restore = old_vals[j];
-            disp_define_symbol(var_names[j], restore ? restore : NIL, 0);
+            disp_define_symbol(NULL, var_names[j], restore ? restore : NIL, 0);
             if (restore != NULL) gc_remove_root(&old_vals[j]);
             gc_free(var_names[j]);
         }
@@ -212,7 +212,7 @@ static disp_val* let_builtin(disp_val *expr) {
     if (normal_exit) {
         for (int j = 0; j < var_count; j++) {
             disp_val *restore = old_vals[j];
-            disp_define_symbol(var_names[j], restore ? restore : NIL, 0);
+            disp_define_symbol(NULL, var_names[j], restore ? restore : NIL, 0);
             if (restore != NULL) gc_remove_root(&old_vals[j]);
             gc_free(var_names[j]);
         }
@@ -282,18 +282,18 @@ static disp_val* letrec_builtin(disp_val *expr) {
     disp_val **old_vals = gc_typed_malloc(var_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
     gc_add_root(&old_vals);
     for (int j = 0; j < var_count; j++) {
-        disp_val *old_sym = disp_find_symbol(var_names[j]); old_vals[j] = old_sym ? disp_get_symbol_value(old_sym) : NULL; if (old_vals[j] != NULL) gc_add_root(&old_vals[j]);   // 旧值本身保护
+        disp_val *old_sym = disp_find_symbol(NULL, var_names[j]); old_vals[j] = old_sym ? disp_get_symbol_value(old_sym) : NULL; if (old_vals[j] != NULL) gc_add_root(&old_vals[j]);   // 旧值本身保护
     }
 
     // 占位赋 NIL
     for (int j = 0; j < var_count; j++)
-        disp_define_symbol(var_names[j], NIL, 0);
+        disp_define_symbol(NULL, var_names[j], NIL, 0);
 
     // 求值并赋值
     if (disp_car(expr) == LETRECA) {   // letrec*
         for (int j = 0; j < var_count; j++) {
             disp_val *val = disp_eval(expr_vals[j]);
-            disp_define_symbol(var_names[j], val, 0);
+            disp_define_symbol(NULL, var_names[j], val, 0);
         }
     } else {
         disp_val **values = gc_typed_malloc(var_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
@@ -303,7 +303,7 @@ static disp_val* letrec_builtin(disp_val *expr) {
             gc_add_root(&values[j]);            // 保护每个元素
         }
         for (int j = 0; j < var_count; j++) {
-            disp_define_symbol(var_names[j], values[j], 0);
+            disp_define_symbol(NULL, var_names[j], values[j], 0);
         }
         for (int j = 0; j < var_count; j++) gc_remove_root(&values[j]);
         gc_remove_root(&values);
@@ -320,7 +320,7 @@ static disp_val* letrec_builtin(disp_val *expr) {
         // 异常路径：恢复绑定，移除所有保护，释放资源
         for (int j = 0; j < var_count; j++) {
             disp_val *restore = old_vals[j];
-            disp_define_symbol(var_names[j], restore ? restore : NIL, 0);
+            disp_define_symbol(NULL, var_names[j], restore ? restore : NIL, 0);
             if (restore != NULL) gc_remove_root(&old_vals[j]);
             gc_free(var_names[j]);
         }
@@ -339,7 +339,7 @@ static disp_val* letrec_builtin(disp_val *expr) {
     if (normal_exit) {
         for (int j = 0; j < var_count; j++) {
             disp_val *restore = old_vals[j];
-            disp_define_symbol(var_names[j], restore ? restore : NIL, 0);
+            disp_define_symbol(NULL, var_names[j], restore ? restore : NIL, 0);
             if (restore != NULL) gc_remove_root(&old_vals[j]);
             gc_free(var_names[j]);
         }

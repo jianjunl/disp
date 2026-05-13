@@ -227,7 +227,7 @@ static disp_val* unquote_splicing_builtin(disp_val *expr) {
 /* Initialisation function called when the shared library is loaded */
 void disp_init_module(void) {
 
-    SPLICE_MARK = disp_intern_symbol("splice-mark");
+    SPLICE_MARK = disp_intern_symbol(NULL, "splice-mark");
 
     DEF("append"  , MKF(append_syscall , "<append>"  ), 1);
     DEF("append0" , MKB(append_builtin , "<#append>" ), 1);
