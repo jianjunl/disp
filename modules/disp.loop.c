@@ -14,7 +14,7 @@
 
 // ======================== do 循环 ========================
 // 语法: (do ((var init step) ...) (test result ...) body ...)
-static disp_val* do_builtin(disp_val *expr) {
+static disp_val* do_builtin(disp_scope_t *scope, disp_val *expr) {
     disp_val *rest = disp_cdr(expr);
     if (!rest || T(rest) != DISP_CONS)
         ERET(NIL, "do: missing variable list");
@@ -39,19 +39,19 @@ static disp_val* do_builtin(disp_val *expr) {
         volatile int normal_exit = 0;
         TRY {
             while (1) {
-                disp_val *test = disp_eval(disp_car(term_clause));
+                disp_val *test = disp_eval(NULL, disp_car(term_clause));
                 if (test != NIL) {
                     disp_val *results = disp_cdr(term_clause);
                     result = NIL;
                     while (results && T(results) == DISP_CONS) {
-                        result = disp_eval(disp_car(results));
+                        result = disp_eval(NULL, disp_car(results));
                         results = disp_cdr(results);
                     }
                     break;
                 }
                 disp_val *b = body;
                 while (b && T(b) == DISP_CONS) {
-                    disp_eval(disp_car(b));
+                    disp_eval(NULL, disp_car(b));
                     b = disp_cdr(b);
                 }
             }
@@ -117,7 +117,7 @@ static disp_val* do_builtin(disp_val *expr) {
         disp_val *old_sym = disp_find_symbol(NULL, var_names[j]);
         old_vals[j] = old_sym ? disp_get_symbol_value(old_sym) : NULL;
         if (old_vals[j] != NULL) gc_add_root(&old_vals[j]);
-        disp_val *init_val = disp_eval(init_vals[j]);
+        disp_val *init_val = disp_eval(NULL, init_vals[j]);
         disp_define_symbol(NULL, var_names[j], init_val, 0);
     }
 
@@ -126,13 +126,13 @@ static disp_val* do_builtin(disp_val *expr) {
     volatile int normal_exit = 0;
     TRY {
         while (1) {
-            disp_val *test = disp_eval(disp_car(term_clause));
+            disp_val *test = disp_eval(NULL, disp_car(term_clause));
             if (test != NIL) {
                 // 求值结果表达式
                 disp_val *results = disp_cdr(term_clause);
                 result = NIL;
                 while (results && T(results) == DISP_CONS) {
-                    result = disp_eval(disp_car(results));
+                    result = disp_eval(NULL, disp_car(results));
                     results = disp_cdr(results);
                 }
                 break;
@@ -140,7 +140,7 @@ static disp_val* do_builtin(disp_val *expr) {
             // 执行 body
             disp_val *b = body;
             while (b && T(b) == DISP_CONS) {
-                disp_eval(disp_car(b));
+                disp_eval(NULL, disp_car(b));
                 b = disp_cdr(b);
             }
             // 更新变量（并行更新：先求值所有新值，再赋值）
@@ -148,7 +148,7 @@ static disp_val* do_builtin(disp_val *expr) {
             gc_add_root(&new_vals);
             for (int j = 0; j < var_count; j++) {
                 if (step_exprs[j]) {
-                    new_vals[j] = disp_eval(step_exprs[j]);
+                    new_vals[j] = disp_eval(NULL, step_exprs[j]);
                 } else {
                     // 无步进，保持当前值
                     disp_val *sym = disp_find_symbol(NULL, var_names[j]);
@@ -202,7 +202,7 @@ static disp_val* do_builtin(disp_val *expr) {
 }
 
 // ======================== dotimes 循环 ========================
-static disp_val* dotimes_builtin(disp_val *expr) {
+static disp_val* dotimes_builtin(disp_scope_t *scope, disp_val *expr) {
     disp_val *rest = disp_cdr(expr);
     if (!rest || T(rest) != DISP_CONS)
         ERET(NIL, "dotimes: missing binding list");
@@ -225,7 +225,7 @@ static disp_val* dotimes_builtin(disp_val *expr) {
     // 保护 body 表达式以及用到的临时对象
     gc_add_root(&rest);                // 保护整个尾部
     // 求值 count
-    disp_val *count_val = disp_eval(count_expr);
+    disp_val *count_val = disp_eval(NULL, count_expr);
     long limit;
     disp_flag_t ct = T(count_val);
     if (ct == DISP_INT) {
@@ -247,7 +247,7 @@ static disp_val* dotimes_builtin(disp_val *expr) {
     TRY {
         if (limit <= 0) {
             if (result_expr)
-                last_result = disp_eval(result_expr);
+                last_result = disp_eval(NULL, result_expr);
             else
                 last_result = NIL;
         } else {
@@ -255,13 +255,13 @@ static disp_val* dotimes_builtin(disp_val *expr) {
                 disp_define_symbol(NULL, var_name, disp_make_long(i), 0);
                 disp_val *b = body;
                 while (b && T(b) == DISP_CONS) {
-                    last_result = disp_eval(disp_car(b));
+                    last_result = disp_eval(NULL, disp_car(b));
                     b = disp_cdr(b);
                 }
             }
             // 循环正常结束，取 result 表达式
             if (result_expr)
-                last_result = disp_eval(result_expr);
+                last_result = disp_eval(NULL, result_expr);
         }
         // 恢复旧值，清理保护
         if (old_sym) {
@@ -289,7 +289,7 @@ static disp_val* dotimes_builtin(disp_val *expr) {
 }
 
 // ======================== dolist 循环 ========================
-static disp_val* dolist_builtin(disp_val *expr) {
+static disp_val* dolist_builtin(disp_scope_t *scope, disp_val *expr) {
     disp_val *rest = disp_cdr(expr);
     if (!rest || T(rest) != DISP_CONS)
         ERET(NIL, "dolist: missing binding list");
@@ -311,7 +311,7 @@ static disp_val* dolist_builtin(disp_val *expr) {
 
     // 保护
     gc_add_root(&rest);
-    disp_val *lst = disp_eval(list_expr);
+    disp_val *lst = disp_eval(NULL, list_expr);
 
     disp_val *old_sym = disp_find_symbol(NULL, var_name);
     disp_val *old_val = old_sym ? disp_get_symbol_value(old_sym) : NULL;
@@ -325,12 +325,12 @@ static disp_val* dolist_builtin(disp_val *expr) {
             disp_define_symbol(NULL, var_name, elem, 0);
             disp_val *b = body;
             while (b && T(b) == DISP_CONS) {
-                last_result = disp_eval(disp_car(b));
+                last_result = disp_eval(NULL, disp_car(b));
                 b = disp_cdr(b);
             }
         }
         if (result_expr)
-            last_result = disp_eval(result_expr);
+            last_result = disp_eval(NULL, result_expr);
         // 恢复
         if (old_sym) {
             disp_define_symbol(NULL, var_name, old_val ? old_val : NIL, 0);

@@ -168,7 +168,7 @@ static disp_val *try_recv(disp_val *ch, disp_val *body, int *executed) {
     disp_val *result = NIL;
     disp_val *body_it = body;
     while (body_it && T(body_it) == DISP_CONS) {
-        result = disp_eval(disp_car(body_it));
+        result = disp_eval(NULL, disp_car(body_it));
         body_it = disp_cdr(body_it);
     }
 
@@ -196,7 +196,7 @@ static disp_val *try_send(disp_val *ch, disp_val *val, disp_val *body, int *exec
     disp_val *result = NIL;
     disp_val *body_it = body;
     while (body_it && T(body_it) == DISP_CONS) {
-        result = disp_eval(disp_car(body_it));
+        result = disp_eval(NULL, disp_car(body_it));
         body_it = disp_cdr(body_it);
     }
     *executed = 1;
@@ -209,7 +209,7 @@ static disp_val *try_after(case_info_t *info, int *executed) {
         disp_val *result = NIL;
         disp_val *body_it = info->body;
         while (body_it && T(body_it) == DISP_CONS) {
-            result = disp_eval(disp_car(body_it));
+            result = disp_eval(NULL, disp_car(body_it));
             body_it = disp_cdr(body_it);
         }
         *executed = 1;
@@ -311,7 +311,7 @@ static disp_val *handle_ready_cases(case_info_t *infos, int count, disp_val *cur
                 disp_val *body_it = info->body;
                 result = NIL;
                 while (body_it && T(body_it) == DISP_CONS) {
-                    result = disp_eval(disp_car(body_it));
+                    result = disp_eval(NULL, disp_car(body_it));
                     body_it = disp_cdr(body_it);
                 }
 
@@ -338,7 +338,7 @@ static disp_val *handle_ready_cases(case_info_t *infos, int count, disp_val *cur
                 disp_val *body_it = info->body;
                 result = NIL;
                 while (body_it && T(body_it) == DISP_CONS) {
-                    result = disp_eval(disp_car(body_it));
+                    result = disp_eval(NULL, disp_car(body_it));
                     body_it = disp_cdr(body_it);
                 }
                 executed = 1;
@@ -356,7 +356,7 @@ static disp_val *handle_ready_cases(case_info_t *infos, int count, disp_val *cur
             disp_val *body_it = info->body;
             result = NIL;
             while (body_it && T(body_it) == DISP_CONS) {
-                result = disp_eval(disp_car(body_it));
+                result = disp_eval(NULL, disp_car(body_it));
                 body_it = disp_cdr(body_it);
             }
             executed = 1;
@@ -374,7 +374,7 @@ static disp_val *handle_ready_cases(case_info_t *infos, int count, disp_val *cur
 }
 
 /* ======================== select 主函数 ======================== */
-static disp_val *select_builtin(disp_val *expr) {
+static disp_val *select_builtin(disp_scope_t *scope, disp_val *expr) {
     disp_val *clauses = disp_cdr(expr);
     if (!clauses || T(clauses) != DISP_CONS)
         ERET(NIL, "select: missing clauses");
@@ -429,7 +429,7 @@ static disp_val *select_builtin(disp_val *expr) {
                 ERET(NIL, "select: recv expects (recv ch)");
             }
             disp_val *ch_expr = disp_car(rest);
-            disp_val *ch_arg = disp_eval(ch_expr);
+            disp_val *ch_arg = disp_eval(NULL, ch_expr);
             if (T(ch_arg) != DISP_CHAN) {
                 gc_free(infos);
                 ERET(NIL, "select: recv argument must be a channel");
@@ -444,13 +444,13 @@ static disp_val *select_builtin(disp_val *expr) {
                 ERET(NIL, "select: send expects (send ch val)");
             }
             disp_val *ch_expr = disp_car(rest);
-            disp_val *ch_arg = disp_eval(ch_expr);
+            disp_val *ch_arg = disp_eval(NULL, ch_expr);
             if (T(ch_arg) != DISP_CHAN) {
                 gc_free(infos);
                 ERET(NIL, "select: send channel must be a channel");
             }
             disp_val *val_expr = disp_car(disp_cdr(rest));
-            disp_val *val_arg = disp_eval(val_expr);
+            disp_val *val_arg = disp_eval(NULL, val_expr);
             infos[i].type = CASE_SEND;
             infos[i].channel = ch_arg;
             infos[i].value = val_arg;
@@ -462,7 +462,7 @@ static disp_val *select_builtin(disp_val *expr) {
                 ERET(NIL, "select: after expects (after ms)");
             }
             disp_val *ms_expr = disp_car(rest);
-            disp_val *ms_val = disp_eval(ms_expr);
+            disp_val *ms_val = disp_eval(NULL, ms_expr);
             long ms = 0;
             if (T(ms_val) == DISP_INT)
                 ms = disp_get_int(ms_val);
@@ -506,7 +506,7 @@ static disp_val *select_builtin(disp_val *expr) {
         disp_val *body_it = infos[default_idx].body;
         result = NIL;
         while (body_it && T(body_it) == DISP_CONS) {
-            result = disp_eval(disp_car(body_it));
+            result = disp_eval(NULL, disp_car(body_it));
             body_it = disp_cdr(body_it);
         }
         gc_free(infos);
@@ -519,7 +519,7 @@ static disp_val *select_builtin(disp_val *expr) {
         if (reg == -1) {
             // 有 case 在注册过程中变得就绪，释放 info 并重试整个 select
             gc_free(infos);
-            return select_builtin(expr);
+            return select_builtin(scope, expr);
         }
         if (reg == -2) {
             gc_free(infos);

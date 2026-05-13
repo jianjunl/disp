@@ -16,18 +16,21 @@
 
 /* ======================== Evaluator ======================== */
 
-disp_val* disp_eval_body(disp_val *body) {
+disp_val* disp_eval_body(disp_scope_t *scope, disp_val *body) {
     disp_val *result = NIL;
     while (body && T(body) == DISP_CONS) {
-        result = disp_eval(disp_car(body));
+        result = disp_eval(scope, disp_car(body));
         body = disp_cdr(body);
     }
     return result;
 }
 
-disp_val* disp_eval(disp_val *expr) {
+extern disp_scope_t *global_scope;
+
+disp_val* disp_eval(disp_scope_t *scope, disp_val *expr) {
     if (!expr) return NIL;
     gc_add_root(&expr);   // 保护入口表达式
+    if (!scope) scope = global_scope;
     switch (T(expr)) {
         case DISP_BYTE:
         case DISP_SHORT:
@@ -39,31 +42,36 @@ disp_val* disp_eval(disp_val *expr) {
         case DISP_VOID:
             gc_remove_root(&expr);
             return expr;
-        case DISP_SYMBOL:
+        case DISP_SYMBOL: {
             if (V(expr) == QUIT) {
                 exit(0);
             }
-            DBG("eval symbol '%s' -> value %p (type %d)", S(expr), V(expr), V(expr) ? T(V(expr)) : -1);
-            return V(expr);
+            disp_val *val = disp_find_symbol(scope, S(expr));
+            if (!val || val == NIL) {
+                ERET(NIL, "undefined symbol: %s", S(expr));
+            }
+            disp_val *value = V(val);   // 注意：需要查找后取其 value
+            gc_remove_root(&expr);
+            return value;
+        }
         case DISP_CONS: {
             // Evaluate the function (car) – could be built‑in, closure, or macro
-            disp_val *func_val = disp_eval(disp_car(expr));
+            disp_val *func_val = disp_eval(scope, disp_car(expr));  // 函数、宏也是表达式
+            // 宏展开
             if (T(func_val) == DISP_MACRO) {
-                disp_val *expansion = disp_expand_macro(func_val, expr);
+                disp_val *expansion = disp_expand_macro(scope, func_val, expr);
                 if (expansion == NIL) {
                     gc_remove_root(&expr);
                     return NIL;
                 }
-                gc_add_root(&expansion);       // 保护展开结果
-                disp_val *result = disp_eval(expansion);
-                gc_remove_root(&expansion);
+                disp_val *result = disp_eval(scope, expansion);
                 gc_remove_root(&expr);
                 return result;
             }
 
             if (T(func_val) == DISP_BUILTIN) {
                 gc_remove_root(&expr);
-                return disp_get_builtin(func_val)(expr);
+                return disp_get_builtin(func_val)(scope, expr);
             }
 
             // Collect evaluated arguments
@@ -72,23 +80,17 @@ disp_val* disp_eval(disp_val *expr) {
             for (disp_val *a = arg_list; a && T(a) == DISP_CONS; a = disp_cdr(a))
                 arg_count++;
             disp_val **args = gc_typed_malloc(arg_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
-            gc_add_root(&args);                // 保护数组本身
             int i = 0;
             for (disp_val *a = arg_list; a && T(a) == DISP_CONS; a = disp_cdr(a)) {
-                args[i] = disp_eval(disp_car(a));
-                gc_add_root(&args[i]);         // 保护每个参数
-                i++;
+                args[i++] = disp_eval(scope, disp_car(a));
             }
 
             disp_val *result;
-            if (T(func_val) == DISP_SYSCALL) {
-                result = disp_get_syscall(func_val)(args, arg_count);
-            } else if (T(func_val) == DISP_CLOSURE) {
+            if (T(func_val) == DISP_CLOSURE) {
                 result = disp_apply_closure(func_val, args, arg_count);
+            } else if (T(func_val) == DISP_SYSCALL) {
+                result = disp_get_syscall(func_val)(args, arg_count);
             } else {
-                // 释放保护后报错
-                for (int k = 0; k < i; k++) gc_remove_root(&args[k]);
-                gc_remove_root(&args);
                 gc_free(args);
                 char *s = disp_string(func_val);
                 ERET(NIL, "%s is not a function or macro", s);
@@ -96,8 +98,6 @@ disp_val* disp_eval(disp_val *expr) {
                 gc_remove_root(&expr);
                 return NIL;
             }
-            for (int k = 0; k < i; k++) gc_remove_root(&args[k]);
-            gc_remove_root(&args);
             gc_free(args);
             gc_remove_root(&expr);
             return result;

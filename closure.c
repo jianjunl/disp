@@ -21,6 +21,7 @@ union disp_data {
     struct {
         disp_val *params;
         disp_val *body;
+        disp_scope_t *env;
     } closure;
 
     /* 类型 */
@@ -32,34 +33,37 @@ union disp_data {
 
 GC_UNION_TI(disp_data,
     GC_OFF(disp_data, closure.params),
-    GC_OFF(disp_data, closure.body)
+    GC_OFF(disp_data, closure.body),
+    GC_OFF(disp_data, closure.env)
 );
 
-static void intern_params(disp_val *params) {
+static void intern_params(disp_scope_t *env, disp_val *params) {
     for (disp_val *p = params; p && T(p) == DISP_CONS; p = disp_cdr(p)) {
         disp_val *sym = disp_car(p);
         if (T(sym) == DISP_SYMBOL) {
             const char *name = disp_get_symbol_name(sym);
-            if (!disp_find_symbol(NULL, name)) {
-                disp_define_symbol(NULL, name, NIL, 0);
+            if (!disp_find_symbol(env, name)) {
+                disp_define_symbol(env, name, NIL, 0);
             }
         }
     }
 }
 
-disp_val* disp_make_closure(disp_val *params, disp_val *body) {
-    intern_params(params);
+disp_val* disp_make_closure(disp_scope_t *env, disp_val *params, disp_val *body) {
+    intern_params(env, params);
     disp_val *v = DISP_ALLOC_TI(DISP_CLOSURE);
     v->data->closure.params = params;
-    v->data->closure.body = body;
+    v->data->closure.body   = body;
+    v->data->closure.env    = env;
     return v;
 }
 
-disp_val* disp_make_macro(disp_val *params, disp_val *body) {
-    intern_params(params);
+disp_val* disp_make_macro(disp_scope_t *env, disp_val *params, disp_val *body) {
+    intern_params(env, params);
     disp_val *v = DISP_ALLOC_TI(DISP_MACRO);
     v->data->closure.params = params;
-    v->data->closure.body = body;
+    v->data->closure.body   = body;
+    v->data->closure.env    = env;
     return v;
 }
 
@@ -77,6 +81,14 @@ disp_val* disp_get_closure_body(disp_val *closure) {
         return NIL;
     }
     return closure->data->closure.body;
+}
+
+disp_scope_t* disp_get_closure_env(disp_val *closure) {
+    if (T(closure) != DISP_CLOSURE && T(closure) != DISP_MACRO) {
+        ERRO("disp_get_closure_env: not a closure/macro\n");
+        return NULL;
+    }
+    return closure->data->closure.env;
 }
 
 char* disp_get_type_name(disp_val *v) {

@@ -13,7 +13,7 @@
 #include "../disp.h"
 
 // --- define ---
-static disp_val* define_builtin(disp_val *expr) {
+static disp_val* define_builtin(disp_scope_t *scope, disp_val *expr) {
     disp_val *cadr = disp_cdr(expr);
     if (!cadr || T(cadr) != DISP_CONS) 
         ERET(NIL, "define: missing first argument");
@@ -35,8 +35,8 @@ static disp_val* define_builtin(disp_val *expr) {
                 disp_val *params = second;              // 允许 NIL
                 disp_val *lambda_expr = disp_make_cons(LAMBDA, 
                                         disp_make_cons(params, body_rest));
-                disp_val *closure = disp_eval(lambda_expr);
-                disp_define_symbol(NULL, disp_get_symbol_name(first_arg), closure, 0);
+                disp_val *closure = disp_eval(scope, lambda_expr);
+                disp_define_symbol(scope, disp_get_symbol_name(first_arg), closure, 0);
                 return first_arg;
             }
         }
@@ -44,8 +44,8 @@ static disp_val* define_builtin(disp_val *expr) {
         // 普通 (define symbol expr)
         if (!rest || T(rest) != DISP_CONS) 
             ERET(NIL, "define: missing expression");
-        disp_val *value = disp_eval(disp_car(rest));
-        disp_define_symbol(NULL, disp_get_symbol_name(first_arg), value, 0);
+        disp_val *value = disp_eval(scope, disp_car(rest));
+        disp_define_symbol(scope, disp_get_symbol_name(first_arg), value, 0);
         return first_arg;
         
     } else if (T(first_arg) == DISP_CONS) {
@@ -57,8 +57,8 @@ static disp_val* define_builtin(disp_val *expr) {
         disp_val *rest = disp_cdr(cadr);
         if (!rest) ERET(NIL, "define: missing body");
         disp_val *lambda_expr = disp_make_cons(LAMBDA, disp_make_cons(params, rest));
-        disp_val *closure = disp_eval(lambda_expr);
-        disp_define_symbol(NULL, disp_get_symbol_name(name_sym), closure, 0);
+        disp_val *closure = disp_eval(scope, lambda_expr);
+        disp_define_symbol(scope, disp_get_symbol_name(name_sym), closure, 0);
         return name_sym;
         
     } else {
@@ -67,7 +67,7 @@ static disp_val* define_builtin(disp_val *expr) {
 }
 
 // --- set! ---
-static disp_val* setq_builtin(disp_val *expr) {
+static disp_val* setq_builtin(disp_scope_t *scope, disp_val *expr) {
     // (set! symbol expr)
     disp_val *cadr = disp_cdr(expr);
     if (!cadr || T(cadr) != DISP_CONS) ERET(NIL, "set!: missing symbol");
@@ -75,32 +75,32 @@ static disp_val* setq_builtin(disp_val *expr) {
     if (T(sym) != DISP_SYMBOL) ERET(NIL, "set!: first argument must be a symbol");
     disp_val *rest = disp_cdr(cadr);
     if (!rest || T(rest) != DISP_CONS) ERET(NIL, "set!: missing expression");
-    disp_val *value = disp_eval(disp_car(rest));
-    disp_define_symbol(NULL, disp_get_symbol_name(sym), value, 0); // define updates the symbol's value
+    disp_val *value = disp_eval(scope, disp_car(rest));
+    disp_define_symbol(scope, disp_get_symbol_name(sym), value, 0); // define updates the symbol's value
     return value;
 }
 
 // --- if ---
-static disp_val* if_builtin(disp_val *expr) {
+static disp_val* if_builtin(disp_scope_t *scope, disp_val *expr) {
     // (if cond then [else])
     disp_val *cadr = disp_cdr(expr);
     if (!cadr || T(cadr) != DISP_CONS) ERET(NIL, "if: missing condition");
-    disp_val *cond = disp_eval(disp_car(cadr));
+    disp_val *cond = disp_eval(scope, disp_car(cadr));
     disp_val *then_rest = disp_cdr(cadr);
     if (!then_rest || T(then_rest) != DISP_CONS) ERET(NIL, "if: missing then clause");
     if (cond != NIL) {
-        return disp_eval(disp_car(then_rest));
+        return disp_eval(scope, disp_car(then_rest));
     } else {
         disp_val *else_rest = disp_cdr(then_rest);
         if (else_rest && T(else_rest) == DISP_CONS)
-            return disp_eval(disp_car(else_rest));
+            return disp_eval(scope, disp_car(else_rest));
         else
             return NIL;
     }
 }
 
 // --- cond ---
-static disp_val* cond_builtin(disp_val *expr) {
+static disp_val* cond_builtin(disp_scope_t *scope, disp_val *expr) {
     // (cond (test expr) ...)
     disp_val *clauses = disp_cdr(expr);
     while (clauses && T(clauses) == DISP_CONS) {
@@ -108,7 +108,7 @@ static disp_val* cond_builtin(disp_val *expr) {
         if (T(clause) != DISP_CONS) {
             ERET(NIL, "cond: malformed clause");
         }
-        disp_val *test = disp_eval(disp_car(clause));
+        disp_val *test = disp_eval(scope, disp_car(clause));
         if (test != NIL) {
             // evaluate the rest of the clause (one or more expressions)
             disp_val *body = disp_cdr(clause);
@@ -116,7 +116,7 @@ static disp_val* cond_builtin(disp_val *expr) {
             // evaluate all but return the last
             disp_val *last = NIL;
             while (body && T(body) == DISP_CONS) {
-                last = disp_eval(disp_car(body));
+                last = disp_eval(scope, disp_car(body));
                 body = disp_cdr(body);
             }
             return last;
@@ -127,7 +127,7 @@ static disp_val* cond_builtin(disp_val *expr) {
 }
 
 // --- while ---
-static disp_val* while_builtin(disp_val *expr) {
+static disp_val* while_builtin(disp_scope_t *scope, disp_val *expr) {
     // (while test body...)
     disp_val *rest = disp_cdr(expr);
     if (!rest || T(rest) != DISP_CONS) ERET(NIL, "while: missing test");
@@ -136,12 +136,12 @@ static disp_val* while_builtin(disp_val *expr) {
     if (!body) return NIL;
     disp_val *last = NIL;
     while (1) {
-        disp_val *cond = disp_eval(test_form);
+        disp_val *cond = disp_eval(scope, test_form);
         if (cond == NIL) break;
         // evaluate body forms
         disp_val *body_it = body;
         while (body_it && T(body_it) == DISP_CONS) {
-            last = disp_eval(disp_car(body_it));
+            last = disp_eval(scope, disp_car(body_it));
             body_it = disp_cdr(body_it);
         }
     }
@@ -149,11 +149,11 @@ static disp_val* while_builtin(disp_val *expr) {
 }
 
 // --- and ---
-static disp_val* and_builtin(disp_val *expr) {
+static disp_val* and_builtin(disp_scope_t *scope, disp_val *expr) {
     disp_val *args = disp_cdr(expr);
     disp_val *last = TRUE;
     while (args && T(args) == DISP_CONS) {
-        disp_val *val = disp_eval(disp_car(args));
+        disp_val *val = disp_eval(scope, disp_car(args));
         if (val == NIL) return NIL;
         last = val;
         args = disp_cdr(args);
@@ -162,10 +162,10 @@ static disp_val* and_builtin(disp_val *expr) {
 }
 
 // --- or ---
-static disp_val* or_builtin(disp_val *expr) {
+static disp_val* or_builtin(disp_scope_t *scope, disp_val *expr) {
     disp_val *args = disp_cdr(expr);
     while (args && T(args) == DISP_CONS) {
-        disp_val *val = disp_eval(disp_car(args));
+        disp_val *val = disp_eval(scope, disp_car(args));
         if (val != NIL) return val;
             args = disp_cdr(args);
         }
@@ -173,25 +173,25 @@ static disp_val* or_builtin(disp_val *expr) {
 }
 
 // --- begin ---
-static disp_val* begin_builtin(disp_val *expr) {
+static disp_val* begin_builtin(disp_scope_t *scope, disp_val *expr) {
     // (begin expr1 expr2 ...)
     disp_val *body = disp_cdr(expr);
     if (!body) return NIL;           // 空 begin 返回 nil
     // 顺序求值所有表达式，返回最后一个的值
     disp_val *last = NIL;
     while (body && T(body) == DISP_CONS) {
-        last = disp_eval(disp_car(body));
+        last = disp_eval(scope, disp_car(body));
         body = disp_cdr(body);
     }
     return last;
 }
 
-static disp_val* repeat_builtin(disp_val *expr) {
+static disp_val* repeat_builtin(disp_scope_t *scope, disp_val *expr) {
     // 语法: (repeat count body ...)
     disp_val *rest = disp_cdr(expr);
     if (!rest || T(rest) != DISP_CONS) 
         ERET(NIL, "repeat: missing count");
-    disp_val *count_val = disp_eval(disp_car(rest));
+    disp_val *count_val = disp_eval(scope, disp_car(rest));
     long n = (T(count_val) == DISP_INT) ? disp_get_int(count_val) 
             : (T(count_val) == DISP_LONG) ? disp_get_long(count_val) 
             : 0;
@@ -202,7 +202,7 @@ static disp_val* repeat_builtin(disp_val *expr) {
     for (long i = 0; i < n; i++) {
         disp_val *body_it = body;
         while (body_it && T(body_it) == DISP_CONS) {
-            last = disp_eval(disp_car(body_it));
+            last = disp_eval(scope, disp_car(body_it));
             body_it = disp_cdr(body_it);
         }
     }

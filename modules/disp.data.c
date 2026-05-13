@@ -110,7 +110,7 @@ static disp_val* eq_syscall(disp_val **args, int count) {
 
     // Compare numbers, with type promotion
     long double a = 0, b = 0;
-    disp_val *v = disp_eval(args[0]);
+    disp_val *v = disp_eval(NULL, args[0]);
     switch (T(v)) {
         case DISP_INT: a = disp_get_int(v); break;
         case DISP_LONG: a = disp_get_long(v); break;
@@ -118,7 +118,7 @@ static disp_val* eq_syscall(disp_val **args, int count) {
         case DISP_DOUBLE: a = disp_get_double(v); break;
         default: ERRO("=: left operand not numeric");
     }
-    v = disp_eval(args[1]);
+    v = disp_eval(NULL, args[1]);
     switch (T(v)) {
         case DISP_INT: b = disp_get_int(v); break;
         case DISP_LONG: b = disp_get_long(v); break;
@@ -135,7 +135,7 @@ static disp_val* eval_syscall(disp_val **args, int count) {
         ERET(NIL, "eval: expected one argument");
     }
     // 对参数表达式进行求值
-    return disp_eval(args[0]);
+    return disp_eval(NULL, args[0]);
 }
 
 /* ----- 类型谓词 ----- */

@@ -90,10 +90,10 @@ static disp_val* error_syscall(disp_val **args, int count) {
  * catch 内置特殊形式
  * ------------------------------------------------------------------------- */
 __attribute__((optimize("O0")))
-static disp_val* catch_builtin(disp_val *expr) {
+static disp_val* catch_builtin(disp_scope_t *scope, disp_val *expr) {
     disp_val *rest = disp_cdr(expr);
     if (!rest || T(rest) != DISP_CONS) ERET(NIL, "catch: missing tag");
-    disp_val *tag = disp_eval(disp_car(rest));
+    disp_val *tag = disp_eval(scope, disp_car(rest));
     disp_val *body = disp_cdr(rest);
     if (!body) ERET(NIL, "catch: missing body");
 
@@ -108,7 +108,7 @@ static disp_val* catch_builtin(disp_val *expr) {
     TRY {
         disp_val *last = NIL;
         while (body && T(body) == DISP_CONS) {
-            last = disp_eval(disp_car(body));
+            last = disp_eval(scope, disp_car(body));
             body = disp_cdr(body);
         }
         current_frame = frame.prev;
@@ -134,7 +134,7 @@ static disp_val* catch_builtin(disp_val *expr) {
  * block 内置特殊形式
  * ------------------------------------------------------------------------- */
 __attribute__((optimize("O0")))
-static disp_val* block_builtin(disp_val *expr) {
+static disp_val* block_builtin(disp_scope_t *scope, disp_val *expr) {
     disp_val *rest = disp_cdr(expr);
     if (!rest || T(rest) != DISP_CONS) ERET(NIL, "block: missing name");
     disp_val *name = disp_car(rest);
@@ -158,7 +158,7 @@ static disp_val* block_builtin(disp_val *expr) {
     TRY {
         disp_val *last = NIL;
         while (body && T(body) == DISP_CONS) {
-            last = disp_eval(disp_car(body));
+            last = disp_eval(scope, disp_car(body));
             body = disp_cdr(body);
         }
         current_frame = frame.prev;
@@ -183,7 +183,7 @@ static disp_val* block_builtin(disp_val *expr) {
 /* -------------------------------------------------------------------------
  * unwind-protect 内置特殊形式
  * ------------------------------------------------------------------------- */
-static disp_val* unwind_protect_builtin(disp_val *expr) {
+static disp_val* unwind_protect_builtin(disp_scope_t *scope, disp_val *expr) {
     disp_val *rest = disp_cdr(expr);
     if (!rest || T(rest) != DISP_CONS) ERET(NIL, "unwind-protect: missing protected form");
     disp_val *protected_form = disp_car(rest);
@@ -199,11 +199,11 @@ static disp_val* unwind_protect_builtin(disp_val *expr) {
     current_frame = &frame;
 
     TRY {
-        disp_val *result = disp_eval(protected_form);
+        disp_val *result = disp_eval(scope, protected_form);
         /* 正常路径：先执行清理，再弹帧并返回 */
         disp_val *cl = cleanup_forms;
         while (cl && T(cl) == DISP_CONS) {
-            disp_eval(disp_car(cl));
+            disp_eval(scope, disp_car(cl));
             cl = disp_cdr(cl);
         }
         current_frame = frame.prev;
@@ -213,7 +213,7 @@ static disp_val* unwind_protect_builtin(disp_val *expr) {
         /* 异常路径：执行清理，然后继续传播 */
         disp_val *cl = frame.cleanup;
         while (cl && T(cl) == DISP_CONS) {
-            disp_eval(disp_car(cl));
+            disp_eval(scope, disp_car(cl));
             cl = disp_cdr(cl);
         }
         current_frame = frame.prev;
@@ -224,7 +224,7 @@ static disp_val* unwind_protect_builtin(disp_val *expr) {
 }
 
 __attribute__((optimize("O0")))
-static disp_val* return_from_builtin(disp_val *expr) {
+static disp_val* return_from_builtin(disp_scope_t *scope, disp_val *expr) {
     disp_val *rest = disp_cdr(expr);
     if (!rest || T(rest) != DISP_CONS)
         ERET(NIL, "return-from: missing name");
@@ -234,7 +234,7 @@ static disp_val* return_from_builtin(disp_val *expr) {
 
     disp_val *value_rest = disp_cdr(rest);
     disp_val *value = (value_rest && T(value_rest) == DISP_CONS)
-                      ? disp_eval(disp_car(value_rest))
+                      ? disp_eval(scope, disp_car(value_rest))
                       : NIL;
 
     frame_t *target = NULL;
@@ -253,10 +253,10 @@ static disp_val* return_from_builtin(disp_val *expr) {
 }
 
 __attribute__((optimize("O0")))
-static disp_val* return_builtin(disp_val *expr) {
+static disp_val* return_builtin(disp_scope_t *scope, disp_val *expr) {
     disp_val *rest = disp_cdr(expr);
     disp_val *value = (rest && T(rest) == DISP_CONS)
-                      ? disp_eval(disp_car(rest))
+                      ? disp_eval(scope, disp_car(rest))
                       : NIL;
 
     frame_t *target = NULL;

@@ -43,7 +43,7 @@ typedef struct disp_val {
 
 /* Function pointer type for built‑in functions */
 typedef disp_val* (*disp_syscall_t)(disp_val** args, int arg_count);
-typedef disp_val* (*disp_builtin_t)(disp_val* arg);
+typedef disp_val* (*disp_builtin_t)(disp_scope_t *scope, disp_val* arg);
 
 /* --- Value constructors --- */
 void disp_lock_table(void);
@@ -100,8 +100,9 @@ bool disp_is_integer_literal(const char *s);
 disp_val* disp_parse_number(const char *s);
 
 /* --- Evaluation --- */
-disp_val* disp_eval(disp_val *expr);
-disp_val* disp_eval_body(disp_val *body);
+disp_val* disp_eval(disp_scope_t *scope, disp_val *expr);
+disp_val* disp_eval_body(disp_scope_t *scope, disp_val *body);
+disp_scope_t* disp_get_closure_env(disp_val *closure);
 
 /* --- Garbage collection --- */
 void disp_init_symbol(void);
@@ -131,15 +132,15 @@ disp_val* disp_make_socket(int fd);
 int disp_get_socket_fd(disp_val *v);
 
 /* --- Loading --- */
-disp_val* disp_load(const char *filename);
+disp_val* disp_load(disp_scope_t *env, const char *filename);
 
 /* --- Closures and macros --- */
-disp_val* disp_make_closure(disp_val *params, disp_val *body);
-disp_val* disp_make_macro(disp_val *params, disp_val *body);
+disp_val* disp_make_closure(disp_scope_t *env, disp_val *params, disp_val *body);
+disp_val* disp_make_macro(disp_scope_t *env, disp_val *params, disp_val *body);
 disp_val* disp_get_closure_params(disp_val *closure);
 disp_val* disp_get_closure_body(disp_val *closure);
 disp_val* disp_apply_closure(disp_val *closure, disp_val **args, int arg_count);
-disp_val* disp_expand_macro(disp_val *macro, disp_val *expr);
+disp_val* disp_expand_macro(disp_scope_t *call_scope, disp_val *macro, disp_val *expr);
 
 // disp_info_t 定义
 typedef struct disp_info {

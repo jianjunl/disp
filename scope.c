@@ -20,14 +20,12 @@ GC_STRUCT_TI(disp_val,
 
 union disp_data {
     struct {
-        disp_scope_t *scope;
         char *name;
         disp_val *value;
     } symbol;
 };
 
 GC_UNION_TI(disp_data,
-    GC_OFF(disp_data, symbol.scope),
     GC_OFF(disp_data, symbol.name),
     GC_OFF(disp_data, symbol.value)
 );
@@ -60,7 +58,7 @@ GC_STRUCT_TI(disp_scope,
     GC_OFF(disp_scope, parent)
 );
 
-static const disp_scope_t *global_scope = NULL;
+const disp_scope_t *global_scope = NULL;
 
 static unsigned int hash(const char *s) {
     unsigned int h = 0;
@@ -100,21 +98,26 @@ static disp_val* make_symbol(const char *name) {
 }
 
 disp_val* disp_find_symbol(const disp_scope_t *scope, const char *name) {
-    scope_lock(scope);
-    unsigned int idx = hash(name);
-    struct sym_entry *e = global_scope->buckets[idx];
-    while (e) {
-        if (strcmp(e->name, name) == 0) {
-            scope_unlock(scope);
-            return e->symbol;
+    if (!scope) scope = global_scope;
+    while (scope) {
+        scope_lock(scope);
+        unsigned int idx = hash(name);
+        struct sym_entry *e = scope->buckets[idx];
+        while (e) {
+            if (strcmp(e->name, name) == 0) {
+                scope_unlock(scope);
+                return e->symbol;
+            }
+            e = e->next;
         }
-        e = e->next;
+        scope_unlock(scope);
+        scope = scope->parent;
     }
-    scope_unlock(scope);
     return NULL;
 }
 
 disp_val* disp_define_symbol(const disp_scope_t *scope, const char *name, disp_val *value, int final) {
+    if (!scope) scope = global_scope;
     DBG("disp_define_symbol: %s\n", name);
     scope_lock(scope);
     unsigned int idx = hash(name);
@@ -149,6 +152,7 @@ disp_val* disp_define_symbol(const disp_scope_t *scope, const char *name, disp_v
 }
 
 disp_val* disp_intern_symbol(const disp_scope_t *scope, const char *name) {
+    if (!scope) scope = global_scope;
     scope_lock(scope);
     unsigned int idx = hash(name);
     struct sym_entry *e = global_scope->buckets[idx];

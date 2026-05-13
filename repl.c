@@ -68,7 +68,7 @@ void disp_repl() {
             continue;
         }
 
-        disp_val *result = disp_eval(expr);
+        disp_val *result = disp_eval(NULL, expr);
         disp_print(result);
         printf("\n");
 

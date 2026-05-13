@@ -14,198 +14,59 @@
 #endif
 #include "disp.h"
 
-// Helper: bind parameters to evaluated arguments, return saved bindings
-typedef struct saved_binding {
-    char *name;
-    disp_val *old_value;
-    int existed;   /* 1 if the symbol existed before binding */
-} saved_binding;
-
-GC_STRUCT_TI(saved_binding,
-    GC_OFF(saved_binding, name),
-    GC_OFF(saved_binding, old_value)
-);
-
-static saved_binding* bind_params(disp_val *params, disp_val **args, int arg_count) {
-    // Count fixed parameters and detect rest symbol
-    int fixed_count = 0;
+static void bind_arguments_to_scope(disp_scope_t *scope, disp_val *params, disp_val **args, int arg_count) {
+    // 处理固定参数和 rest 参数（与原来类似，但直接在 scope 上 define）
+    int fixed = 0;
     disp_val *rest_sym = NIL;
-    disp_val *p = params;
-    while (p && T(p) == DISP_CONS) {
-        fixed_count++;
-        p = disp_cdr(p);
-    }
-    if (p && p != NIL) {
-        // p is a symbol (the rest parameter)
-        rest_sym = p;
-    }
+    for (disp_val *p = params; p && T(p) == DISP_CONS; p = disp_cdr(p)) fixed++;
+    if (params && T(params) != DISP_CONS) rest_sym = params;
 
-    // Validate argument count
-    if (rest_sym == NIL) {
-        if (fixed_count != arg_count) {
-            ERRO("lambda: argument count mismatch (expected %d, got %d)\n", fixed_count, arg_count);
-            return NULL;
-        }
-    } else {
-        if (arg_count < fixed_count) {
-            ERRO("lambda: too few arguments (need at least %d)\n", fixed_count);
-            return NULL;
-        }
+    int idx = 0;
+    for (disp_val *p = params; p && T(p) == DISP_CONS; p = disp_cdr(p)) {
+        const char *name = disp_get_symbol_name(disp_car(p));
+        disp_define_symbol(scope, name, args[idx++], 0);
     }
-
-    // Allocate saved bindings: fixed parameters + optionally rest
-    int total_bindings = fixed_count + (rest_sym != NIL ? 1 : 0);
-    saved_binding *saved = gc_typed_malloc(total_bindings * sizeof(saved_binding), &struct_saved_binding_ti);
-    if (!saved) return NULL;
-
-    int i = 0;
-    p = params;
-    // Bind fixed parameters
-    while (p && T(p) == DISP_CONS) {
-        disp_val *sym = disp_car(p);
-        if (T(sym) != DISP_SYMBOL) {
-            gc_free(saved);
-            ERRO("lambda: parameter not a symbol\n");
-            return NULL;
-        }
-        const char *name = disp_get_symbol_name(sym);
-        disp_val *old_sym = disp_find_symbol(NULL, name);
-        saved[i].name = gc_strdup(name);
-        saved[i].existed = (old_sym != NULL);
-        saved[i].old_value = saved[i].existed ? disp_get_symbol_value(old_sym) : NIL;
-        /* 将旧值注册为 GC 精确根，防止被回收 */
-        if (saved[i].existed && saved[i].old_value != NULL) {
-            gc_add_root(&saved[i].old_value);
-        }
-        disp_define_symbol(NULL, name, args[i], 0);
-        i++;
-        p = disp_cdr(p);
-    }
-
-    // Bind rest parameter if present
     if (rest_sym != NIL) {
+        // 收集剩余参数为列表
         const char *rest_name = disp_get_symbol_name(rest_sym);
-        // Collect remaining arguments into a list
         disp_val *rest_list = NIL;
-        for (int j = arg_count - 1; j >= fixed_count; j--) {
+        for (int j = arg_count - 1; j >= fixed; j--) {
             rest_list = disp_make_cons(args[j], rest_list);
         }
-        // 临时保护 rest_list，防止在绑定前被 GC 回收
-        gc_add_root(&rest_list);
-
-        disp_val *old_rest_sym = disp_find_symbol(NULL, rest_name);
-        saved[i].name = gc_strdup(rest_name);
-        saved[i].existed = (old_rest_sym != NULL);
-        saved[i].old_value = saved[i].existed ? disp_get_symbol_value(old_rest_sym) : NIL;
-        if (saved[i].existed && saved[i].old_value != NULL) {
-            gc_add_root(&saved[i].old_value);
-        }
-        disp_define_symbol(NULL, rest_name, rest_list, 0);
-        // 绑定完成，rest_list 现在由符号表持有，可解除保护
-        gc_remove_root(&rest_list);
+        disp_define_symbol(scope, rest_name, rest_list, 0);
     }
-
-    return saved;
-}
-
-static void restore_bindings(saved_binding *saved, int count) {
-    for (int i = 0; i < count; i++) {
-        /* 移除旧值的根保护 */
-        if (saved[i].existed && saved[i].old_value != NULL) {
-            gc_remove_root(&saved[i].old_value);
-        }
-        if (saved[i].existed)
-            disp_define_symbol(NULL, saved[i].name, saved[i].old_value, 0);
-        else
-            disp_define_symbol(NULL, saved[i].name, NIL, 0);  //disp_remove_symbol(saved[i].name);
-        gc_free(saved[i].name);
-    }
-    gc_free(saved);
 }
 
 disp_val* disp_apply_closure(disp_val *closure, disp_val **args, int arg_count) {
-    disp_val *params = disp_get_closure_params(closure);
-    disp_val *body = disp_get_closure_body(closure);
-    
-    // 如果没有参数且参数列表为空，直接执行 body
-    if (arg_count == 0 && params == NIL) {
-        return disp_eval_body(body);
-    }
-    
-    saved_binding *saved = bind_params(params, args, arg_count);
-    if (!saved) return NIL;
-    // 计算参数个数（用于恢复）
-    int param_count = 0;
-    for (disp_val *p = params; p && T(p) == DISP_CONS; p = disp_cdr(p)) param_count++;
-    if (params != NIL && T(params) != DISP_CONS) param_count++; // rest param case
-    disp_val *result = disp_eval_body(body);
-    restore_bindings(saved, param_count);
-    return result;
+    // --- 关键：创建新作用域，父作用域为闭包的环境 ---
+    disp_scope_t *new_scope = disp_new_scope(disp_get_closure_env(closure));
+    // 绑定形参与实参到新作用域
+    bind_arguments_to_scope(new_scope, disp_get_closure_params(closure), args, arg_count);
+    // 在新作用域中求值函数体
+    return disp_eval_body(new_scope, disp_get_closure_body(closure));
 }
 
-disp_val* disp_expand_macro(disp_val *macro, disp_val *expr) {
-    disp_val *args = disp_cdr(expr);                     // unevaluated arguments
+// 宏展开时使用定义环境求值宏体
+disp_val* disp_expand_macro(disp_scope_t *call_scope, disp_val *macro, disp_val *expr) {
+    disp_val *args = disp_cdr(expr);
     disp_val *params = disp_get_closure_params(macro);
     disp_val *body = disp_get_closure_body(macro);
+    disp_scope_t *macro_env = disp_get_closure_env(macro);   // 需要新增 getter
 
-    // Count fixed parameters and detect rest symbol
-    int fixed_count = 0;
-    disp_val *p = params;
-    while (p && T(p) == DISP_CONS) {
-        fixed_count++;
-        p = disp_cdr(p);
-    }
-    int has_rest = (p != NULL && p != NIL);   // p is a symbol (the rest parameter)
-
-    // Count actual arguments
+    // 创建新作用域：children of macro_env
+    disp_scope_t *expand_scope = disp_new_scope(macro_env);
+    // 将实际参数（未求值）绑定到 expand_scope
     int arg_count = 0;
-    for (disp_val *a = args; a && T(a) == DISP_CONS; a = disp_cdr(a))
-        arg_count++;
-
-    // Validate argument count
-    if (has_rest) {
-        if (arg_count < fixed_count) {
-            ERRO("macro: too few arguments (need at least %d)\n", fixed_count);
-            return NIL;
-        }
-    } else {
-        if (fixed_count != arg_count) {
-            ERRO("macro: argument count mismatch\n");
-            return NIL;
-        }
-    }
-
-    // Collect all argument forms into an array
+    for (disp_val *a = args; a && T(a) == DISP_CONS; a = disp_cdr(a)) arg_count++;
     disp_val **arg_forms = gc_typed_malloc(arg_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
     int i = 0;
     for (disp_val *a = args; a && T(a) == DISP_CONS; a = disp_cdr(a)) {
         arg_forms[i] = disp_car(a);
-        // 临时保护表达式节点，防止 GC 回收
-        gc_add_root(&arg_forms[i]);
         i++;
     }
-
-    // Bind parameters (including rest)
-    saved_binding *saved = bind_params(params, arg_forms, arg_count);
-    if (!saved) {
-        // 出错时移除保护
-        for (int idx = 0; idx < i; idx++) gc_remove_root(&arg_forms[idx]);
-        gc_free(arg_forms);
-        return NIL;
-    }
-
-    // Expand the macro body
-    disp_val *expansion = disp_eval_body(body);
-    // 保护展开结果
-    gc_add_root(&expansion);
-
-    // Restore bindings (total = fixed parameters + optional rest)
-    int total_bindings = fixed_count + (has_rest ? 1 : 0);
-    restore_bindings(saved, total_bindings);
-    // 移除表达式保护
-    for (int idx = 0; idx < arg_count; idx++) {
-        gc_remove_root(&arg_forms[idx]);
-    }
+    bind_arguments_to_scope(expand_scope, params, arg_forms, arg_count);
+    // 在 expand_scope 中求值宏体，得到展开式
+    disp_val *expansion = disp_eval_body(expand_scope, body);
     gc_free(arg_forms);
     return expansion;
 }

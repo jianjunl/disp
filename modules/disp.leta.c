@@ -42,7 +42,7 @@ static disp_val* letf(disp_val *expr) {
     // 获取 letrec* 符号（确保存在）
     disp_val *letrec_star = disp_find_symbol(NULL, "letrec*");
     if (!letrec_star || letrec_star == NIL)
-        ERET(NIL, "named let: letrec* not defined (load disp.lamb.so)");
+        ERET(NIL, "named let: letrec* not defined (load disp.leta.so)");
     
     // 构造参数列表和参数名
     int var_count = 0;
@@ -99,10 +99,10 @@ static disp_val* letf(disp_val *expr) {
     disp_val *letrec_expr = disp_make_cons(letrec_star,
                            disp_make_cons(binding,
                            disp_make_cons(call_expr, NIL)));
-    return disp_eval(letrec_expr);
+    return disp_eval(NULL, letrec_expr);
 }
 
-static disp_val* let_builtin(disp_val *expr) {
+static disp_val* let_builtin(disp_scope_t *scope, disp_val *expr) {
     disp_val *rest = disp_cdr(expr);
     if (!rest || T(rest) != DISP_CONS) ERET(NIL, "let: missing binding list");
 
@@ -127,7 +127,7 @@ static disp_val* let_builtin(disp_val *expr) {
     for (disp_val *b = bindings; b && T(b) == DISP_CONS; b = disp_cdr(b)) var_count++;
     if (var_count == 0) {
         gc_remove_root(&rest);
-        return disp_eval_body(body);
+        return disp_eval_body(NULL, body);
     }
 
     char **var_names = gc_typed_malloc(var_count * sizeof(char*), &GC_TYPE_PTR_ARRAY);
@@ -165,14 +165,14 @@ static disp_val* let_builtin(disp_val *expr) {
     // 求值并绑定
     if (disp_car(expr) == LETA) {   // let*
         for (int j = 0; j < var_count; j++) {
-            disp_val *val = disp_eval(expr_vals[j]);
+            disp_val *val = disp_eval(NULL, expr_vals[j]);
             disp_define_symbol(NULL, var_names[j], val, 0);
         }
     } else {
         disp_val **values = gc_typed_malloc(var_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
         gc_add_root(&values);
         for (int j = 0; j < var_count; j++) {
-            values[j] = disp_eval(expr_vals[j]);
+            values[j] = disp_eval(NULL, expr_vals[j]);
             gc_add_root(&values[j]);
         }
         for (int j = 0; j < var_count; j++) {
@@ -187,7 +187,7 @@ static disp_val* let_builtin(disp_val *expr) {
     disp_val *result = NIL;
     volatile int normal_exit = 0;
     TRY {
-        result = disp_eval_body(body);
+        result = disp_eval_body(NULL, body);
         normal_exit = 1;
     } CATCH {
         // 异常路径：恢复绑定，释放资源，然后继续传播
@@ -228,7 +228,7 @@ static disp_val* let_builtin(disp_val *expr) {
     return NIL;
 }
 
-static disp_val* letrec_builtin(disp_val *expr) {
+static disp_val* letrec_builtin(disp_scope_t *scope, disp_val *expr) {
     disp_val *rest = disp_cdr(expr);
     if (!rest || T(rest) != DISP_CONS) ERET(NIL, "letrec: missing binding list");
 
@@ -250,7 +250,7 @@ static disp_val* letrec_builtin(disp_val *expr) {
     for (disp_val *b = bindings; b && T(b) == DISP_CONS; b = disp_cdr(b)) var_count++;
     if (var_count == 0) {
         gc_remove_root(&rest);
-        return disp_eval_body(body);
+        return disp_eval_body(NULL, body);
     }
 
     char **var_names = gc_typed_malloc(var_count * sizeof(char*), &GC_TYPE_PTR_ARRAY);
@@ -292,14 +292,14 @@ static disp_val* letrec_builtin(disp_val *expr) {
     // 求值并赋值
     if (disp_car(expr) == LETRECA) {   // letrec*
         for (int j = 0; j < var_count; j++) {
-            disp_val *val = disp_eval(expr_vals[j]);
+            disp_val *val = disp_eval(NULL, expr_vals[j]);
             disp_define_symbol(NULL, var_names[j], val, 0);
         }
     } else {
         disp_val **values = gc_typed_malloc(var_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
         gc_add_root(&values);                   // 保护 values 数组本身
         for (int j = 0; j < var_count; j++) {
-            values[j] = disp_eval(expr_vals[j]);
+            values[j] = disp_eval(NULL, expr_vals[j]);
             gc_add_root(&values[j]);            // 保护每个元素
         }
         for (int j = 0; j < var_count; j++) {
@@ -314,7 +314,7 @@ static disp_val* letrec_builtin(disp_val *expr) {
     disp_val *result = NIL;
     volatile int normal_exit = 0;
     TRY {
-        result = disp_eval_body(body);
+        result = disp_eval_body(NULL, body);
         normal_exit = 1;
     } CATCH {
         // 异常路径：恢复绑定，移除所有保护，释放资源

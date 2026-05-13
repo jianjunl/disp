@@ -18,12 +18,20 @@
 disp_val* __attribute__((section("gc_roots"))) disp_builtin_roots[NUM_BUILTIN_ROOTS] = { NULL };
 
 /* ======================== Built‑in 'load' ======================== */
-static disp_val* load_syscall(disp_val **args, int argc) {
-    if (argc != 1 || T(args[0]) != DISP_STRING) {
+static disp_val* load_builtin(disp_scope_t *env, disp_val *expr) {
+   disp_val *rest = disp_cdr(expr);
+    if (rest == NIL) {
         ERET(NIL, "load expects a string filename\n");
     }
-    DBG("load_syscall: about to load '%s'\n", disp_get_str(args[0]));
-    return disp_load(disp_get_str(args[0]));
+    if (disp_cdr(rest) != NIL) {
+        ERRO("load: warning - extra arguments ignored");
+    }
+    disp_val* arg0 = disp_eval(env, disp_car(rest));
+    if (T(arg0) != DISP_STRING) {
+        ERET(NIL, "load expects a string filename\n");
+    }
+    DBG("load_builtin: about to load '%s'\n", disp_get_str(args0));
+    return disp_load(env, disp_get_str(arg0));
 }
 
 
@@ -90,7 +98,7 @@ void disp_init_globals() {
     DEF("stdout" , disp_make_file(stdout,"w"), 1);
     DEF("stderr" , disp_make_file(stderr,"w"), 1);
 
-    DEF("load"  , MKF(load_syscall , "<load>" ), 1);
+    DEF("load"  , MKB(load_builtin , "<#load>"), 1);
     DEF("gc"    , MKF(gc_syscall   , "<gc>"   ), 1);
     DEF("info"  , MKF(info_syscall , "<info>" ), 1);
     DEF("trace" , MKF(trace_syscall, "<trace>"), 1);
@@ -98,29 +106,29 @@ void disp_init_globals() {
     // make else evaluate to true (so cond's default clause works)
     DEF("else", TRUE, 1);
 
-    disp_load("disp.data.so");
+    disp_load(NULL, "disp.data.so");
     CONS              = disp_find_symbol(NULL, "cons");
     LIST              = disp_find_symbol(NULL, "list");
-    disp_load("disp.quote.so");
+    disp_load(NULL, "disp.quote.so");
     APPEND            = disp_find_symbol(NULL, "append");
     QUOTE             = disp_find_symbol(NULL, "quote");
     QUASIQUOTE        = disp_find_symbol(NULL, "quasiquote");
     UNQUOTE           = disp_find_symbol(NULL, "unquote");
     UNQUOTE_SPLICING  = disp_find_symbol(NULL, "unquote-splicing");
-    disp_load("disp.lamb.so");
+    disp_load(NULL, "disp.lamb.so");
     LAMBDA  = disp_find_symbol(NULL, "lambda");
-    disp_load("disp.leta.so");
+    disp_load(NULL, "disp.leta.so");
     LETA    = disp_find_symbol(NULL, "let*");
     LETRECA = disp_find_symbol(NULL, "letrec*");
 
-    disp_load("disp.flow.so");
-    disp_load("disp.loop.so");
-    disp_load("disp.throw.so");
+    disp_load(NULL, "disp.flow.so");
+    disp_load(NULL, "disp.loop.so");
+    disp_load(NULL, "disp.throw.so");
 
-    disp_load("disp.math.so");
-    disp_load("disp.string.so");
-    disp_load("disp.file.so");
-    disp_load("disp.os.so");
-    disp_load("disp.coro.so");
-    disp_load("disp.thread.so");
+    disp_load(NULL, "disp.math.so");
+    disp_load(NULL, "disp.string.so");
+    disp_load(NULL, "disp.file.so");
+    disp_load(NULL, "disp.os.so");
+    disp_load(NULL, "disp.coro.so");
+    disp_load(NULL, "disp.thread.so");
 }

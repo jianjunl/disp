@@ -16,8 +16,11 @@
 
 extern void disp_push_source(const char *filename);
 extern void disp_pop_source(void);
+extern disp_scope_t *global_scope;
 
-static disp_val* load_lisp(const char *filename) {
+
+static disp_val* load_lisp(disp_scope_t *env, const char *filename) {
+    if (!env) env = global_scope;
     if (!strchr(filename, '/')) {
         char fn[PATH_MAX]; 
         strcpy(fn, disp_get_str(MODPATH));
@@ -30,7 +33,7 @@ static disp_val* load_lisp(const char *filename) {
     disp_val *last = NIL;
     disp_val *expr;
     while ((expr = disp_read(f)) != NULL) {
-        last = disp_eval(expr);
+        last = disp_eval(env, expr);
     }
     fclose(f);
     // 弹栈恢复外层
@@ -38,7 +41,8 @@ static disp_val* load_lisp(const char *filename) {
     return last;
 }
 
-static disp_val* load_so(const char *filename) {
+static disp_val* load_so(disp_scope_t *env, const char *filename) {
+    if (!env) env = global_scope;
     if (!strchr(filename, '/')) {
         char fn[PATH_MAX]; 
         strcpy(fn, disp_get_str(MODPATH));
@@ -64,20 +68,14 @@ static disp_val* load_so(const char *filename) {
     return TRUE;
 }
 
-static disp_val* load_mir(const char *filename) {
-    (void)filename;
-    ERET(NIL, "MIR support not yet implemented\n");
-}
-
-disp_val* disp_load(const char *filename) {
+disp_val* disp_load(disp_scope_t *env, const char *filename) {
+    if (!env) env = global_scope;
     const char *ext = strrchr(filename, '.');
     if (ext && strcmp(ext, ".lisp") == 0)
-        return load_lisp(filename);
+        return load_lisp(env, filename);
     if (ext && strcmp(ext, ".disp") == 0)
-        return load_lisp(filename);
+        return load_lisp(env, filename);
     if (ext && strcmp(ext, ".so") == 0)
-        return load_so(filename);
-    if (ext && strcmp(ext, ".mir") == 0)
-        return load_mir(filename);
+        return load_so(env, filename);
     ERET(NIL, "unknown extension: %s\n", filename);
 }

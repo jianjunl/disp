@@ -18,7 +18,7 @@ static disp_val* append(disp_val *a, disp_val *b) {
     return disp_make_cons(disp_car(a), append(disp_cdr(a), b));
 }
 
-static disp_val* append_builtin(disp_val *expr) {
+static disp_val* append_builtin(disp_scope_t *scope, disp_val *expr) {
     disp_val *a = disp_cdr(expr);
     if (!a || a == NIL) return NIL;
     disp_val *b = disp_cdr(a);
@@ -54,7 +54,7 @@ static disp_val* append_syscall(disp_val **args, int count) {
 
 // --- quote ---
 // 特殊处理 quote
-static disp_val* quote_builtin(disp_val *expr) {
+static disp_val* quote_builtin(disp_scope_t *scope, disp_val *expr) {
     // 返回第二个元素，不求值
     disp_val *quoted = disp_cdr(expr);
     if (quoted && T(quoted) == DISP_CONS) {
@@ -181,7 +181,7 @@ static disp_val* expand_list(disp_val* list, int level) {
 /*
  *Level Management: The level ensures that nested backticks only unquote at the appropriate depth
  */
-static disp_val* quasiquote_builtin(disp_val *expr) {
+static disp_val* quasiquote_builtin(disp_scope_t *scope, disp_val *expr) {
     disp_val *cdr = disp_cdr(expr);
     if (!cdr || T(cdr) != DISP_CONS) return NIL;
     
@@ -191,31 +191,31 @@ static disp_val* quasiquote_builtin(disp_val *expr) {
     disp_val *expanded_code = qq_expand(tmpl, 1);
     
     // 2. Evaluate that code to get the final list
-    return disp_eval(expanded_code);
+    return disp_eval(scope, expanded_code);
 }
 
 /*
  * (unquote x) -> evaluates x and returns the result
  */
-static disp_val* unquote_builtin(disp_val *expr) {
+static disp_val* unquote_builtin(disp_scope_t *scope, disp_val *expr) {
     disp_val *cdr = disp_cdr(expr);
     if (!cdr) ERET(NIL, "unquote: expects one argument");
-    if (T(cdr) != DISP_CONS) return disp_eval(cdr);
+    if (T(cdr) != DISP_CONS) return disp_eval(scope, cdr);
     if (disp_cdr(cdr) != NIL)
         ERET(NIL, "unquote: expects exactly one argument");
-    return disp_eval(disp_car(cdr));
+    return disp_eval(scope, disp_car(cdr));
 }
 
 /*
  * (unquote-splice x) -> evaluates x, which MUST result in a list
  */
-static disp_val* unquote_splicing_builtin(disp_val *expr) {
+static disp_val* unquote_splicing_builtin(disp_scope_t *scope, disp_val *expr) {
     // expr contains the expression to unquote-splicing
     disp_val *cdr = disp_cdr(expr);
     if (!cdr || T(cdr) != DISP_CONS)
         ERET(NIL, "unquote-splicing: expects cons argument");
 
-    disp_val *result = disp_eval(cdr);
+    disp_val *result = disp_eval(scope, cdr);
 
     // Requirement: result of splicing must be a list
     if (T(result) != DISP_CONS)

@@ -2,7 +2,7 @@
 ;; gc.lisp - 后台线程定期触发 GC，使用通道确保可靠循环
 ;;
 ;; 用法: (load "gc.lisp")
-;;       (start-gc-thread 5.0)
+;;       (start-gc-thread 1.0)
 ;;       (stop-gc-thread)
 
 (define null? (lambda (x) (eq? x nil)))
@@ -48,7 +48,7 @@
                            (gc)
                            (fprintln stderr ";; [GC] performed.")
                            ;; 设置定时器，interval 秒后向通道发送 'tick
-                           (thread-sleep 1.0)
+                           (thread-sleep interval);1.0)
                            (send *gc-chan* 'tick)
                            (loop))))))))
         ;; 启动循环：发送第一个 tick
@@ -59,5 +59,5 @@
 (if (not *gc-auto-started*)
     (begin
       (set! *gc-auto-started* #t)
-      (start-gc-thread 5.0)
+      (start-gc-thread 1.0)
       (fprintln stderr ";; Auto GC thread started (every 5 sec). Use (stop-gc-thread) to stop.")))
