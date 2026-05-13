@@ -117,8 +117,7 @@ static void restore_bindings(saved_binding *saved, int count) {
         if (saved[i].existed)
             disp_define_symbol(saved[i].name, saved[i].old_value, 0);
         else
-            disp_define_symbol(saved[i].name, NIL, 0);
-            //disp_remove_symbol(saved[i].name);
+            disp_define_symbol(saved[i].name, NIL, 0);  //disp_remove_symbol(saved[i].name);
         gc_free(saved[i].name);
     }
     gc_free(saved);

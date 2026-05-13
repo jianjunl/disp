@@ -20,12 +20,14 @@ GC_STRUCT_TI(disp_val,
 
 union disp_data {
     struct {
+        disp_scope_t *scope;
         char *name;
         disp_val *value;
     } symbol;
 };
 
 GC_UNION_TI(disp_data,
+    GC_OFF(disp_data, symbol.scope),
     GC_OFF(disp_data, symbol.name),
     GC_OFF(disp_data, symbol.value)
 );
@@ -46,19 +48,19 @@ GC_STRUCT_TI(sym_entry,
     GC_OFF(sym_entry, next)
 );
 
-typedef struct disp_sym_table {
+struct disp_scope {
     struct sym_entry **buckets;
     gc_mutex_t *lock;
-    struct disp_sym_table *parent;
-} disp_sym_table_t;
+    struct disp_scope *parent;
+};
 
-GC_STRUCT_TI(disp_sym_table,
-    GC_OFF(disp_sym_table, buckets),
-    GC_OFF(disp_sym_table, lock),
-    GC_OFF(disp_sym_table, parent)
+GC_STRUCT_TI(disp_scope,
+    GC_OFF(disp_scope, buckets),
+    GC_OFF(disp_scope, lock),
+    GC_OFF(disp_scope, parent)
 );
 
-disp_sym_table_t *disp_global_sym_table = NULL;
+disp_scope_t *disp_global_scope = NULL;
 
 static unsigned int hash(const char *s) {
     unsigned int h = 0;
@@ -67,11 +69,11 @@ static unsigned int hash(const char *s) {
 }
 
 void disp_lock_table(void) {
-    gc_pthread_mutex_lock(disp_global_sym_table->lock);
+    gc_pthread_mutex_lock(disp_global_scope->lock);
 }
 
 void disp_unlock_table(void) {
-    gc_pthread_mutex_unlock(disp_global_sym_table->lock);
+    gc_pthread_mutex_unlock(disp_global_scope->lock);
 }
 
 /* ======================== 对象分配 ======================== */
@@ -98,7 +100,7 @@ static disp_val* make_symbol(const char *name) {
 disp_val* disp_find_symbol(const char *name) {
     disp_lock_table();
     unsigned int idx = hash(name);
-    struct sym_entry *e = disp_global_sym_table->buckets[idx];
+    struct sym_entry *e = disp_global_scope->buckets[idx];
     while (e) {
         if (strcmp(e->name, name) == 0) {
             disp_unlock_table();
@@ -114,7 +116,7 @@ disp_val* disp_define_symbol(const char *name, disp_val *value, int final) {
     DBG("disp_define_symbol: %s\n", name);
     disp_lock_table();
     unsigned int idx = hash(name);
-    struct sym_entry *e = disp_global_sym_table->buckets[idx];
+    struct sym_entry *e = disp_global_scope->buckets[idx];
     while (e) {
         if (strcmp(e->name, name) == 0) {
             if (e->final) {
@@ -137,8 +139,8 @@ disp_val* disp_define_symbol(const char *name, disp_val *value, int final) {
     GC_ASSIGN_PTR(new_entry->name, gc_strdup(name));
     GC_ASSIGN_PTR(new_entry->symbol, sym);
     new_entry->final = final;
-    GC_ASSIGN_PTR(new_entry->next, disp_global_sym_table->buckets[idx]);
-    GC_ASSIGN_PTR(disp_global_sym_table->buckets[idx], new_entry);
+    GC_ASSIGN_PTR(new_entry->next, disp_global_scope->buckets[idx]);
+    GC_ASSIGN_PTR(disp_global_scope->buckets[idx], new_entry);
     
     disp_unlock_table();
     return sym;
@@ -147,7 +149,7 @@ disp_val* disp_define_symbol(const char *name, disp_val *value, int final) {
 disp_val* disp_intern_symbol(const char *name) {
     disp_lock_table();
     unsigned int idx = hash(name);
-    struct sym_entry *e = disp_global_sym_table->buckets[idx];
+    struct sym_entry *e = disp_global_scope->buckets[idx];
     while (e) {
         if (strcmp(e->name, name) == 0) {
             disp_unlock_table();
@@ -163,8 +165,8 @@ disp_val* disp_intern_symbol(const char *name) {
     GC_ASSIGN_PTR(new_entry->name, gc_strdup(name));
     GC_ASSIGN_PTR(new_entry->symbol, sym);
     new_entry->final = 0;
-    GC_ASSIGN_PTR(new_entry->next, disp_global_sym_table->buckets[idx]);
-    GC_ASSIGN_PTR(disp_global_sym_table->buckets[idx], new_entry);
+    GC_ASSIGN_PTR(new_entry->next, disp_global_scope->buckets[idx]);
+    GC_ASSIGN_PTR(disp_global_scope->buckets[idx], new_entry);
     
     disp_unlock_table();
     return sym;
@@ -184,8 +186,8 @@ disp_val* disp_get_symbol_value(disp_val *v) {
     return v->data->symbol.value;
 }
 
-disp_sym_table_t* disp_new_sym_table(disp_sym_table_t *parent) {
-    disp_sym_table_t *t = gc_typed_malloc(sizeof(struct disp_sym_table), &struct_disp_sym_table_ti);
+disp_scope_t* disp_new_scope(disp_scope_t *parent) {
+    disp_scope_t *t = gc_typed_malloc(sizeof(struct disp_scope), &struct_disp_scope_ti);
 
     if(gc_pthread_mutex_init(&t->lock, NULL) != 0) return NULL;
 
@@ -198,9 +200,9 @@ disp_sym_table_t* disp_new_sym_table(disp_sym_table_t *parent) {
 
 void disp_init_symbol() {
 
-    disp_global_sym_table = disp_new_sym_table(NULL);
+    disp_global_scope = disp_new_scope(NULL);
 
-    gc_add_root(&disp_global_sym_table);
+    gc_add_root(&disp_global_scope);
 
     NIL  = DISP_ALLOC_TI(DISP_VOID);
     TRUE = DISP_ALLOC_TI(DISP_VOID);

@@ -32,17 +32,15 @@ typedef enum {
 } disp_flag_t;
 
 /* Opaque types */
+typedef struct disp_scope disp_scope_t;
+
 typedef union disp_data disp_data;
 
 typedef struct disp_val {
     disp_flag_t flag;
     disp_data *data;
 } disp_val;
-/*
-GC_STRUCT_TI(disp_val,
-    GC_OFF(disp_val, data)
-);
-*/
+
 /* Function pointer type for built‑in functions */
 typedef disp_val* (*disp_syscall_t)(disp_val** args, int arg_count);
 typedef disp_val* (*disp_builtin_t)(disp_val* arg);
@@ -91,7 +89,6 @@ void disp_set_cdr(disp_val *cons, disp_val *cdr);
 /* --- Symbol table --- */
 disp_val* disp_find_symbol(const char *name);
 disp_val* disp_define_symbol(const char *name, disp_val *value, int final);
-void disp_remove_symbol(const char *name);
 disp_val* disp_intern_symbol(const char *name);
 
 /* --- numbers --- */
