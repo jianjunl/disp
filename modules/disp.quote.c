@@ -19,6 +19,7 @@ static disp_val* append(disp_val *a, disp_val *b) {
 }
 
 static disp_val* append_builtin(disp_scope_t *scope, disp_val *expr) {
+    ((void)scope);
     disp_val *a = disp_cdr(expr);
     if (!a || a == NIL) return NIL;
     disp_val *b = disp_cdr(a);
@@ -55,6 +56,7 @@ static disp_val* append_syscall(disp_val **args, int count) {
 // --- quote ---
 // 特殊处理 quote
 static disp_val* quote_builtin(disp_scope_t *scope, disp_val *expr) {
+    ((void)scope);
     // 返回第二个元素，不求值
     disp_val *quoted = disp_cdr(expr);
     if (quoted && T(quoted) == DISP_CONS) {

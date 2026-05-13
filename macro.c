@@ -47,7 +47,7 @@ disp_val* disp_apply_closure(disp_val *closure, disp_val **args, int arg_count) 
 }
 
 // 宏展开时使用定义环境求值宏体
-disp_val* disp_expand_macro(disp_scope_t *call_scope, disp_val *macro, disp_val *expr) {
+disp_val* disp_expand_macro(disp_val *macro, disp_val *expr) {
     disp_val *args = disp_cdr(expr);
     disp_val *params = disp_get_closure_params(macro);
     disp_val *body = disp_get_closure_body(macro);

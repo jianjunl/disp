@@ -59,7 +59,7 @@ disp_val* disp_eval(disp_scope_t *scope, disp_val *expr) {
             disp_val *func_val = disp_eval(scope, disp_car(expr));  // 函数、宏也是表达式
             // 宏展开
             if (T(func_val) == DISP_MACRO) {
-                disp_val *expansion = disp_expand_macro(scope, func_val, expr);
+                disp_val *expansion = disp_expand_macro(func_val, expr);
                 if (expansion == NIL) {
                     gc_remove_root(&expr);
                     return NIL;
