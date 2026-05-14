@@ -25,12 +25,10 @@ disp_val* disp_eval_body(disp_scope_t *scope, disp_val *body) {
     return result;
 }
 
-extern disp_scope_t *global_scope;
-
 disp_val* disp_eval(disp_scope_t *scope, disp_val *expr) {
     if (!expr) return NIL;
     //gc_add_root(&expr);   // 保护入口表达式
-    if (!scope) scope = global_scope;
+    if (!scope) scope = disp_global_scope;
     switch (T(expr)) {
         case DISP_BYTE:
         case DISP_SHORT:

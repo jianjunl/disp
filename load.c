@@ -16,10 +16,9 @@
 
 extern void disp_push_source(const char *filename);
 extern void disp_pop_source(void);
-extern disp_scope_t *global_scope;
 
 static disp_val* load_lisp(disp_scope_t *env, const char *filename) {
-    if (!env) env = global_scope;
+    if (!env) env = disp_global_scope;
     if (!strchr(filename, '/')) {
         char fn[PATH_MAX]; 
         strcpy(fn, disp_get_str(MODPATH));
@@ -80,8 +79,8 @@ disp_val* disp_import(const char *filename) {
     if (ext && strcmp(ext, ".so") == 0)
         return load_so(filename);
     if (ext && strcmp(ext, ".lisp") == 0)
-        return load_lisp(global_scope, filename);
+        return load_lisp(disp_global_scope, filename);
     if (ext && strcmp(ext, ".disp") == 0)
-        return load_lisp(global_scope, filename);
+        return load_lisp(disp_global_scope, filename);
     ERET(NIL, "unknown extension: %s\n", filename);
 }

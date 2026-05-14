@@ -36,7 +36,10 @@ static disp_val* define_builtin(disp_scope_t *scope, disp_val *expr) {
                 disp_val *lambda_expr = disp_make_cons(LAMBDA, 
                                         disp_make_cons(params, body_rest));
                 disp_val *closure = disp_eval(scope, lambda_expr);
-                disp_define_symbol(scope, disp_get_symbol_name(first_arg), closure, 0);
+                if(!disp_find_symbol(scope, S(first_arg)))
+                    disp_define_symbol(disp_global_scope, S(first_arg), closure, 0);
+                else
+                    disp_set_symbol_value(first_arg, closure);
                 return first_arg;
             }
         }
@@ -45,7 +48,10 @@ static disp_val* define_builtin(disp_scope_t *scope, disp_val *expr) {
         if (!rest || T(rest) != DISP_CONS) 
             ERET(NIL, "define: missing expression");
         disp_val *value = disp_eval(scope, disp_car(rest));
-        disp_define_symbol(scope, disp_get_symbol_name(first_arg), value, 0);
+        if(!disp_find_symbol(scope, S(first_arg)))
+            disp_define_symbol(disp_global_scope, S(first_arg), value, 0);
+        else
+            disp_set_symbol_value(first_arg, value);
         return first_arg;
         
     } else if (T(first_arg) == DISP_CONS) {
@@ -58,7 +64,10 @@ static disp_val* define_builtin(disp_scope_t *scope, disp_val *expr) {
         if (!rest) ERET(NIL, "define: missing body");
         disp_val *lambda_expr = disp_make_cons(LAMBDA, disp_make_cons(params, rest));
         disp_val *closure = disp_eval(scope, lambda_expr);
-        disp_define_symbol(scope, disp_get_symbol_name(name_sym), closure, 0);
+        if(!disp_find_symbol(scope, S(name_sym)))
+            disp_define_symbol(disp_global_scope, S(name_sym), closure, 0);
+        else
+            disp_set_symbol_value(name_sym, closure);
         return name_sym;
         
     } else {
@@ -66,18 +75,23 @@ static disp_val* define_builtin(disp_scope_t *scope, disp_val *expr) {
     }
 }
 
-// --- set! ---
 static disp_val* setq_builtin(disp_scope_t *scope, disp_val *expr) {
-    // (set! symbol expr)
     disp_val *cadr = disp_cdr(expr);
     if (!cadr || T(cadr) != DISP_CONS) ERET(NIL, "set!: missing symbol");
     disp_val *sym = disp_car(cadr);
     if (T(sym) != DISP_SYMBOL) ERET(NIL, "set!: first argument must be a symbol");
+    const char *name = disp_get_symbol_name(sym);
+    
     disp_val *rest = disp_cdr(cadr);
     if (!rest || T(rest) != DISP_CONS) ERET(NIL, "set!: missing expression");
-    disp_val *value = disp_eval(scope, disp_car(rest));
-    disp_define_symbol(scope, disp_get_symbol_name(sym), value, 0); // define updates the symbol's value
-    return value;
+    disp_val *new_value = disp_eval(scope, disp_car(rest));
+    
+    disp_val *found_sym = disp_find_symbol(scope, name);
+    if (!found_sym) {
+        ERET(NIL, "set!: undefined variable '%s'", name);
+    }
+    disp_set_symbol_value(found_sym, new_value);
+    return new_value;
 }
 
 /* Initialisation function called when the shared library is loaded */

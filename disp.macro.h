@@ -135,6 +135,12 @@
 #define ERRO(M, ...) DISP_INFO(ERRO,stderr, M, ##__VA_ARGS__)
 #endif
 
+#ifdef FATAL 
+# error "FATAL has been defined before " #__FILENAME__
+#else 
+#define FATAL(M, ...) DISP_INFO(FATAL,stderr, M, ##__VA_ARGS__);exit(1)
+#endif
+
 #ifdef ERET 
 # error "ERET has been defined before " #__FILENAME__
 #else 

@@ -58,7 +58,7 @@ GC_STRUCT_TI(disp_scope,
     GC_OFF(disp_scope, parent)
 );
 
-const disp_scope_t *global_scope = NULL;
+disp_scope_t *disp_global_scope = NULL;
 
 static unsigned int hash(const char *s) {
     unsigned int h = 0;
@@ -68,12 +68,12 @@ static unsigned int hash(const char *s) {
 
 static void scope_lock(const disp_scope_t *scope) {
     if(scope) gc_pthread_mutex_lock(scope->lock);
-    else gc_pthread_mutex_lock(global_scope->lock);
+    else gc_pthread_mutex_lock(disp_global_scope->lock);
 }
 
 static void scope_unlock(const disp_scope_t *scope) {
     if(scope) gc_pthread_mutex_unlock(scope->lock);
-    else gc_pthread_mutex_unlock(global_scope->lock);
+    else gc_pthread_mutex_unlock(disp_global_scope->lock);
 }
 
 /* ======================== 对象分配 ======================== */
@@ -97,8 +97,36 @@ static disp_val* make_symbol(const char *name) {
     return v;
 }
 
+// 在 scope.c 中添加
+disp_val* disp_lookup_symbol(const disp_scope_t *scope, const char *name, disp_scope_t **out_scope) {
+    if (!scope) scope = disp_global_scope;
+    if (out_scope) *out_scope = NULL;
+    while (scope) {
+        scope_lock(scope);
+        unsigned int idx = hash(name);
+        struct sym_entry *e = scope->buckets[idx];
+        while (e) {
+            if (strcmp(e->name, name) == 0) {
+                scope_unlock(scope);
+                if (out_scope) *out_scope = (disp_scope_t *)scope;
+                return e->symbol;
+            }
+            e = e->next;
+        }
+        scope_unlock(scope);
+        scope = scope->parent;
+    }
+    return NULL;
+}
+
+/*
 disp_val* disp_find_symbol(const disp_scope_t *scope, const char *name) {
-    if (!scope) scope = global_scope;
+    disp_scope_t *found_scope = NULL;
+    return disp_lookup_symbol(scope, name, &found_scope);
+}
+*/
+disp_val* disp_find_symbol(const disp_scope_t *scope, const char *name) {
+    if (!scope) scope = disp_global_scope;
     while (scope) {
         scope_lock(scope);
         unsigned int idx = hash(name);
@@ -116,12 +144,21 @@ disp_val* disp_find_symbol(const disp_scope_t *scope, const char *name) {
     return NULL;
 }
 
+// 在 scope.c 中
+void disp_set_symbol_value(disp_val *sym, disp_val *value) {
+    if (!sym || T(sym) != DISP_SYMBOL) {
+        ERRO("disp_set_symbol_value: not a symbol");
+        return;
+    }
+    GC_ASSIGN_PTR(sym->data->symbol.value, value);
+}
+
 disp_val* disp_define_symbol(const disp_scope_t *scope, const char *name, disp_val *value, int final) {
-    if (!scope) scope = global_scope;
+    if (!scope) scope = disp_global_scope;
     DBG("disp_define_symbol: %s\n", name);
     scope_lock(scope);
     unsigned int idx = hash(name);
-    struct sym_entry *e = global_scope->buckets[idx];
+    struct sym_entry *e = disp_global_scope->buckets[idx];
     while (e) {
         if (strcmp(e->name, name) == 0) {
             if (e->final) {
@@ -144,18 +181,18 @@ disp_val* disp_define_symbol(const disp_scope_t *scope, const char *name, disp_v
     GC_ASSIGN_PTR(new_entry->name, gc_strdup(name));
     GC_ASSIGN_PTR(new_entry->symbol, sym);
     new_entry->final = final;
-    GC_ASSIGN_PTR(new_entry->next, global_scope->buckets[idx]);
-    GC_ASSIGN_PTR(global_scope->buckets[idx], new_entry);
+    GC_ASSIGN_PTR(new_entry->next, disp_global_scope->buckets[idx]);
+    GC_ASSIGN_PTR(disp_global_scope->buckets[idx], new_entry);
     
     scope_unlock(scope);
     return sym;
 }
 
 disp_val* disp_intern_symbol(const disp_scope_t *scope, const char *name) {
-    if (!scope) scope = global_scope;
+    if (!scope) scope = disp_global_scope;
     scope_lock(scope);
     unsigned int idx = hash(name);
-    struct sym_entry *e = global_scope->buckets[idx];
+    struct sym_entry *e = disp_global_scope->buckets[idx];
     while (e) {
         if (strcmp(e->name, name) == 0) {
             scope_unlock(scope);
@@ -171,8 +208,8 @@ disp_val* disp_intern_symbol(const disp_scope_t *scope, const char *name) {
     GC_ASSIGN_PTR(new_entry->name, gc_strdup(name));
     GC_ASSIGN_PTR(new_entry->symbol, sym);
     new_entry->final = 0;
-    GC_ASSIGN_PTR(new_entry->next, global_scope->buckets[idx]);
-    GC_ASSIGN_PTR(global_scope->buckets[idx], new_entry);
+    GC_ASSIGN_PTR(new_entry->next, disp_global_scope->buckets[idx]);
+    GC_ASSIGN_PTR(disp_global_scope->buckets[idx], new_entry);
     
     scope_unlock(scope);
     return sym;
@@ -193,10 +230,9 @@ disp_val* disp_get_symbol_value(disp_val *v) {
 }
 
 disp_scope_t* disp_new_scope(disp_scope_t *parent) {
+    if (!parent) parent = disp_global_scope;
     disp_scope_t *t = gc_typed_malloc(sizeof(struct disp_scope), &struct_disp_scope_ti);
-
-    if(gc_pthread_mutex_init(&t->lock, NULL) != 0) return NULL;
-
+    gc_pthread_mutex_init(&t->lock, NULL);
     t->buckets = gc_typed_calloc(SYM_TABLE_SIZE, sizeof(void*), &GC_TYPE_PTR_ARRAY);;
     t->parent = parent;
     return t;
@@ -206,9 +242,11 @@ disp_scope_t* disp_new_scope(disp_scope_t *parent) {
 
 void disp_init_symbol() {
 
-    global_scope = disp_new_scope(NULL);
+    disp_global_scope = gc_typed_calloc(1, sizeof(struct disp_scope), &struct_disp_scope_ti);
+    gc_pthread_mutex_init(&disp_global_scope->lock, NULL);
+    disp_global_scope->buckets = gc_typed_calloc(SYM_TABLE_SIZE, sizeof(void*), &GC_TYPE_PTR_ARRAY);;
 
-    gc_add_root(&global_scope);
+    gc_add_root(&disp_global_scope);
 
     NIL  = DISP_ALLOC_TI(DISP_VOID);
     TRUE = DISP_ALLOC_TI(DISP_VOID);

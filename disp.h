@@ -87,6 +87,9 @@ void disp_set_car(disp_val *cons, disp_val *car);   /* use with care – immutab
 void disp_set_cdr(disp_val *cons, disp_val *cdr);
 
 /* --- Symbol table --- */
+extern disp_scope_t *disp_global_scope;                     // 全局作用域指针
+disp_val* disp_lookup_symbol(const disp_scope_t *scope, const char *name, disp_scope_t **out_scope);
+void disp_set_symbol_value(disp_val *sym, disp_val *value);
 disp_scope_t* disp_new_scope(disp_scope_t *parent);
 disp_val* disp_find_symbol(const disp_scope_t *scope, const char *name);
 disp_val* disp_define_symbol(const disp_scope_t *scope, const char *name, disp_val *value, int final);
