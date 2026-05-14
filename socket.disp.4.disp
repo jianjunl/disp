@@ -1,7 +1,7 @@
 ;; 加载基础库
-(load "disp.data.so")   ;; 提供 list, cons, car, cdr, append, eq? 等
-(load "disp.flow.so")   ;; 提供 define-macro, block, return, if, begin 等
-(load "disp.lisp")
+(import "disp.data.so")   ;; 提供 list, cons, car, cdr, append, eq? 等
+(import "disp.flow.so")   ;; 提供 define-macro, block, return, if, begin 等
+(import "init.disp")
 
 ;; 手动定义 append（如果 disp.data.so 中没有）
 (define append

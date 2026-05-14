@@ -1,6 +1,6 @@
 ;; gc.lisp - 后台线程定期触发 GC，用于调试
 ;;
-;; 用法: (load "gc.lisp")
+;; 用法: (import "gc.lisp")
 ;;       (start-gc-thread 1.0)   ; 每 1 秒 GC 一次
 ;;       (stop-gc-thread)        ; 停止后台 GC 线程
 ;;

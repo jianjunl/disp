@@ -1,6 +1,6 @@
-(load "disp.data.so")   ;; 提供 list, cons, car, cdr, append 等
-(load "disp.flow.so")   ;; 提供 macro, block, return, if, begin 等
-(load "disp.lisp")      ;; 提供一些辅助函数（如 append 可能已定义，但我们手动再定义一次以确保）
+(import "disp.data.so")   ;; 提供 list, cons, car, cdr, append 等
+(import "disp.flow.so")   ;; 提供 macro, block, return, if, begin 等
+(import "init.disp")      ;; 提供一些辅助函数（如 append 可能已定义，但我们手动再定义一次以确保）
 
 ;; 确保 append 可用
 (define append

@@ -1,7 +1,7 @@
 
 ;; gc.lisp - 后台线程定期触发 GC，使用通道确保可靠循环
 ;;
-;; 用法: (load "gc.lisp")
+;; 用法: (import "gc.lisp")
 ;;       (start-gc-thread 1.0)
 ;;       (stop-gc-thread)
 

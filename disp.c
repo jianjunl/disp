@@ -18,6 +18,14 @@
 disp_val* __attribute__((section("gc_roots"))) disp_builtin_roots[NUM_BUILTIN_ROOTS] = { NULL };
 
 /* ======================== Built‑in 'load' ======================== */
+static disp_val* import_syscall(disp_val **args, int argc) {
+    if (argc != 1 || T(args[0]) != DISP_STRING) {
+        ERET(NIL, "import expects a string filename\n");
+    }
+    DBG("import_syscall: about to load '%s'\n", disp_get_str(args[0]));
+    return disp_import(disp_get_str(args[0]));
+}
+
 static disp_val* load_builtin(disp_scope_t *env, disp_val *expr) {
    disp_val *rest = disp_cdr(expr);
     if (rest == NIL) {
@@ -98,37 +106,41 @@ void disp_init_globals() {
     DEF("stdout" , disp_make_file(stdout,"w"), 1);
     DEF("stderr" , disp_make_file(stderr,"w"), 1);
 
-    DEF("load"  , MKB(load_builtin , "<#load>"), 1);
-    DEF("gc"    , MKF(gc_syscall   , "<gc>"   ), 1);
+    DEF("import", MKF(import_syscall , "<import>"), 1);
+    DEF("load"  , MKB(load_builtin   , "<#load>"), 1);
+    DEF("gc"    , MKF(gc_syscall     , "<gc>"   ), 1);
     DEF("info"  , MKF(info_syscall , "<info>" ), 1);
     DEF("trace" , MKF(trace_syscall, "<trace>"), 1);
 
     // make else evaluate to true (so cond's default clause works)
     DEF("else", TRUE, 1);
 
-    disp_load(NULL, "disp.data.so");
+    disp_import("disp.data.so");
     CONS              = disp_find_symbol(NULL, "cons");
     LIST              = disp_find_symbol(NULL, "list");
-    disp_load(NULL, "disp.quote.so");
+    disp_import("disp.quote.so");
     APPEND            = disp_find_symbol(NULL, "append");
     QUOTE             = disp_find_symbol(NULL, "quote");
     QUASIQUOTE        = disp_find_symbol(NULL, "quasiquote");
     UNQUOTE           = disp_find_symbol(NULL, "unquote");
     UNQUOTE_SPLICING  = disp_find_symbol(NULL, "unquote-splicing");
-    disp_load(NULL, "disp.lamb.so");
+    disp_import("disp.lambda.so");
     LAMBDA  = disp_find_symbol(NULL, "lambda");
-    disp_load(NULL, "disp.leta.so");
+    disp_import("disp.let.so");
     LETA    = disp_find_symbol(NULL, "let*");
     LETRECA = disp_find_symbol(NULL, "letrec*");
 
-    disp_load(NULL, "disp.flow.so");
-    disp_load(NULL, "disp.loop.so");
-    disp_load(NULL, "disp.throw.so");
+    disp_import("disp.define.so");
+    disp_import("disp.flow.so");
+    disp_import("disp.do.so");
+    disp_import("disp.dotimes.so");
+    disp_import("disp.dolist.so");
+    disp_import("disp.throw.so");
 
-    disp_load(NULL, "disp.math.so");
-    disp_load(NULL, "disp.string.so");
-    disp_load(NULL, "disp.file.so");
-    disp_load(NULL, "disp.os.so");
-    disp_load(NULL, "disp.coro.so");
-    disp_load(NULL, "disp.thread.so");
+    disp_import("disp.math.so");
+    disp_import("disp.string.so");
+    disp_import("disp.file.so");
+    disp_import("disp.os.so");
+    disp_import("disp.coro.so");
+    disp_import("disp.thread.so");
 }

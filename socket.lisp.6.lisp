@@ -1,7 +1,7 @@
 ;; 加载基础库
-(load "disp.data.so")
-(load "disp.flow.so")
-(load "disp.lisp")   ;; 现在提供了 define-macro
+(import "disp.data.so")
+(import "disp.flow.so")
+(import "init.disp")   ;; 现在提供了 define-macro
 
 ;; 使用 define-macro 定义 go 宏
 (define-macro (go expr)

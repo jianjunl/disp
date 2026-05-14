@@ -1,5 +1,5 @@
-(load "disp.flow.so")   ;; 提供 define-macro, block, return, if, begin 等
-;(load "disp.lisp")
+(import "disp.flow.so")   ;; 提供 define-macro, block, return, if, begin 等
+;(import "init.disp")
 
 ;; 定义 go 宏：将 (go expr) 展开为 (go-func (lambda () expr))
 (define-macro (go expr)

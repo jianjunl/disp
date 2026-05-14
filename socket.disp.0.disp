@@ -1,7 +1,7 @@
 ;; 加载必要模块
-;(load "disp.coro.chan.so")
-;(load "disp.coro.net.so")
-;(load "disp.coro.nio.so")   ; 提供 go / sleep-ms
+;(import "disp.coro.chan.so")
+;(import "disp.coro.net.so")
+;(import "disp.coro.nio.so")   ; 提供 go / sleep-ms
 
 ;; 定义处理单个客户端连接的协程
 (define (handle-client client-sock)

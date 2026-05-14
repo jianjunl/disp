@@ -279,10 +279,10 @@ void disp_init_module(void) {
     DEF("resume"        , MKF(resume_syscall         , "<resume>"        ), 1);
     DEF("current-coro"  , MKF(current_coro_syscall   , "<current-coro>"  ), 1);
     DEF("event-loop"    , MKF(event_loop_run_syscall , "<event-loop>"    ), 1);
-    disp_load(NULL, "disp.coro.chan.so");
-    disp_load(NULL, "disp.coro.poll.so");
-    disp_load(NULL, "disp.coro.nio.so");
-    disp_load(NULL, "disp.coro.net.so");
+    disp_import("disp.coro.chan.so");
+    disp_import("disp.coro.poll.so");
+    disp_import("disp.coro.nio.so");
+    disp_import("disp.coro.net.so");
 } 
 
 #endif /* DISP_CORO_C */

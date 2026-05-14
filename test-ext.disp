@@ -1,4 +1,4 @@
-(load "disp.lisp")
+(import "init.disp")
 
 (define a (make-channel 0))   ; 无缓冲通道
 (define b (make-channel 0))

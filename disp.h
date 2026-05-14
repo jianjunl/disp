@@ -132,6 +132,7 @@ disp_val* disp_make_socket(int fd);
 int disp_get_socket_fd(disp_val *v);
 
 /* --- Loading --- */
+disp_val* disp_import(const char *filename);
 disp_val* disp_load(disp_scope_t *env, const char *filename);
 
 /* --- Closures and macros --- */

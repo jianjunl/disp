@@ -1,4 +1,4 @@
-(load "disp.lisp")
+(import "init.disp")
 #| 这是多行注释
    可以跨行
     嵌套注释 #
