@@ -12,6 +12,8 @@
 #endif
 #include "../disp.h"
 
+extern void bind_arguments_to_scope(disp_scope_t *scope, disp_val *params, disp_val **args, int arg_count);
+
 // ======================== dotimes 循环 ========================
 static disp_val* dotimes_builtin(disp_scope_t *scope, disp_val *expr) {
     disp_val *rest = disp_cdr(expr);
@@ -31,12 +33,13 @@ static disp_val* dotimes_builtin(disp_scope_t *scope, disp_val *expr) {
     disp_val *rest_binding = disp_cdr(disp_cdr(binding));
     if (rest_binding && T(rest_binding) == DISP_CONS)
         result_expr = disp_car(rest_binding);
-    disp_val *body = disp_cdr(rest);  // 剩余 body
+    disp_val *body = disp_cdr(rest);
 
-    // 保护 body 表达式以及用到的临时对象
-    gc_add_root(&rest);                // 保护整个尾部
-    // 求值 count
-    disp_val *count_val = disp_eval(NULL, count_expr);
+    // 保护尾部
+    gc_add_root(&rest);
+
+    // 求值 count（在当前作用域中）
+    disp_val *count_val = disp_eval(scope, count_expr);
     long limit;
     disp_flag_t ct = T(count_val);
     if (ct == DISP_INT) {
@@ -48,54 +51,51 @@ static disp_val* dotimes_builtin(disp_scope_t *scope, disp_val *expr) {
         ERET(NIL, "dotimes: count must be an integer");
     }
 
-    // 保存旧值并保护
-    disp_val *old_sym = disp_find_symbol(NULL, var_name);
-    disp_val *old_val = old_sym ? disp_get_symbol_value(old_sym) : NULL;
-    if (old_val != NULL) gc_add_root(&old_val);
+    // 创建新作用域
+    disp_scope_t *loop_scope = disp_new_scope(scope);
+    gc_add_root(&loop_scope);
+
+    // 先绑定变量为 NIL（占位）
+    disp_define_symbol(loop_scope, var_name, NIL, 0);
 
     disp_val * volatile last_result = NIL;
     volatile int normal_exit = 0;
     TRY {
         if (limit <= 0) {
+            // 直接求值 result 表达式（如果有）
             if (result_expr)
-                last_result = disp_eval(NULL, result_expr);
+                last_result = disp_eval(loop_scope, result_expr);
             else
                 last_result = NIL;
         } else {
             for (long i = 0; i < limit; i++) {
-                disp_define_symbol(NULL, var_name, disp_make_long(i), 0);
+                disp_val *i_val = disp_make_long(i);
+                // 更新循环作用域中的变量绑定
+                disp_define_symbol(loop_scope, var_name, i_val, 0);
+                // 执行 body
                 disp_val *b = body;
                 while (b && T(b) == DISP_CONS) {
-                    last_result = disp_eval(NULL, disp_car(b));
+                    last_result = disp_eval(loop_scope, disp_car(b));
                     b = disp_cdr(b);
                 }
             }
-            // 循环正常结束，取 result 表达式
+            // 循环结束后，result 表达式（变量值为最后一次迭代的值，即 limit-1）
             if (result_expr)
-                last_result = disp_eval(NULL, result_expr);
+                last_result = disp_eval(loop_scope, result_expr);
         }
-        // 恢复旧值，清理保护
-        if (old_sym) {
-            disp_define_symbol(NULL, var_name, old_val ? old_val : NIL, 0);
-        } else {
-            disp_define_symbol(NULL, var_name, NIL, 0);
-        }
-        if (old_val != NULL) gc_remove_root(&old_val);
-        gc_remove_root(&rest);
         normal_exit = 1;
     } CATCH {
-        // 异常：恢复绑定
-        if (old_sym) {
-            disp_define_symbol(NULL, var_name, old_val ? old_val : NIL, 0);
-        } else {
-            disp_define_symbol(NULL, var_name, NIL, 0);
-        }
-        if (old_val != NULL) gc_remove_root(&old_val);
+        gc_remove_root(&loop_scope);
         gc_remove_root(&rest);
         THROW_THROWN();
     }
     END_TRY;
-    if (normal_exit) return last_result;
+
+    if (normal_exit) {
+        gc_remove_root(&loop_scope);
+        gc_remove_root(&rest);
+        return last_result;
+    }
     return NIL;
 }
 

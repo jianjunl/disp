@@ -26,7 +26,7 @@ int main(int argc, char **argv) {
     // 为 REPL 压入伪源文件
     disp_push_source("<stdin>");
 
-    disp_load(NULL, argc > 1 ? argv[1] : "init.disp");
+    disp_import(argc > 1 ? argv[1] : "init.disp");
 
     disp_repl();
 

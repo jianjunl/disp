@@ -14,7 +14,7 @@
 #endif
 #include "disp.h"
 
-static void bind_arguments_to_scope(disp_scope_t *scope, disp_val *params, disp_val **args, int arg_count) {
+void bind_arguments_to_scope(disp_scope_t *scope, disp_val *params, disp_val **args, int arg_count) {
     // 处理固定参数和 rest 参数（与原来类似，但直接在 scope 上 define）
     int fixed = 0;
     disp_val *rest_sym = NIL;

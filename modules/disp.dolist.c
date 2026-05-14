@@ -12,6 +12,8 @@
 #endif
 #include "../disp.h"
 
+extern void bind_arguments_to_scope(disp_scope_t *scope, disp_val *params, disp_val **args, int arg_count);
+
 // ======================== dolist 循环 ========================
 static disp_val* dolist_builtin(disp_scope_t *scope, disp_val *expr) {
     disp_val *rest = disp_cdr(expr);
@@ -33,49 +35,57 @@ static disp_val* dolist_builtin(disp_scope_t *scope, disp_val *expr) {
         result_expr = disp_car(rest_binding);
     disp_val *body = disp_cdr(rest);
 
-    // 保护
+    // 保护整个尾部
     gc_add_root(&rest);
-    disp_val *lst = disp_eval(NULL, list_expr);
 
-    disp_val *old_sym = disp_find_symbol(NULL, var_name);
-    disp_val *old_val = old_sym ? disp_get_symbol_value(old_sym) : NULL;
-    if (old_val != NULL) gc_add_root(&old_val);
+    // 求值列表表达式（在当前作用域中）
+    disp_val *lst = disp_eval(scope, list_expr);
+    if (!lst) {
+        gc_remove_root(&rest);
+        ERET(NIL, "dolist: list expression evaluation failed");
+    }
+
+    // 创建新作用域（子作用域，父作用域为当前 scope）
+    disp_scope_t *loop_scope = disp_new_scope(scope);
+    gc_add_root(&loop_scope);
+
+    // 先绑定变量为 NIL（占位）
+    disp_define_symbol(loop_scope, var_name, NIL, 0);
 
     disp_val * volatile last_result = NIL;
     volatile int normal_exit = 0;
     TRY {
-        for (disp_val *p = lst; p && T(p) == DISP_CONS; p = disp_cdr(p)) {
+        // 遍历列表
+        for (disp_val * volatile p = lst; p && T(p) == DISP_CONS; p = disp_cdr(p)) {
             disp_val *elem = disp_car(p);
-            disp_define_symbol(NULL, var_name, elem, 0);
+            // 更新循环作用域中的变量绑定
+            disp_define_symbol(loop_scope, var_name, elem, 0);
+            // 执行 body（在 loop_scope 中）
             disp_val *b = body;
             while (b && T(b) == DISP_CONS) {
-                last_result = disp_eval(NULL, disp_car(b));
+                last_result = disp_eval(loop_scope, disp_car(b));
                 b = disp_cdr(b);
             }
         }
+        // 求值 result 表达式（仍在 loop_scope 中，变量最后一次迭代的值仍绑定）
         if (result_expr)
-            last_result = disp_eval(NULL, result_expr);
-        // 恢复
-        if (old_sym) {
-            disp_define_symbol(NULL, var_name, old_val ? old_val : NIL, 0);
-        } else {
-            disp_define_symbol(NULL, var_name, NIL, 0);
-        }
-        if (old_val != NULL) gc_remove_root(&old_val);
-        gc_remove_root(&rest);
+            last_result = disp_eval(loop_scope, result_expr);
+        else
+            last_result = NIL;
         normal_exit = 1;
     } CATCH {
-        if (old_sym) {
-            disp_define_symbol(NULL, var_name, old_val ? old_val : NIL, 0);
-        } else {
-            disp_define_symbol(NULL, var_name, NIL, 0);
-        }
-        if (old_val != NULL) gc_remove_root(&old_val);
+        // 异常：释放保护后传播
+        gc_remove_root(&loop_scope);
         gc_remove_root(&rest);
         THROW_THROWN();
     }
     END_TRY;
-    if (normal_exit) return last_result;
+
+    if (normal_exit) {
+        gc_remove_root(&loop_scope);
+        gc_remove_root(&rest);
+        return last_result;
+    }
     return NIL;
 }
 
