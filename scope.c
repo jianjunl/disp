@@ -238,6 +238,15 @@ disp_scope_t* disp_new_scope(disp_scope_t *parent) {
     return t;
 }
 
+disp_scope_t* disp_dup_scope(disp_scope_t *old) {
+    if (!old) return old;
+    disp_scope_t *t = gc_typed_malloc(sizeof(struct disp_scope), &struct_disp_scope_ti);
+    t->lock    = old->lock;
+    t->buckets = old->buckets;
+    t->parent  = old->parent;
+    return t;
+}
+
 /* ======================== GC 初始化和全局常量 ======================== */
 
 void disp_init_symbol() {

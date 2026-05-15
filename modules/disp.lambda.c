@@ -21,7 +21,7 @@ static disp_val* lambda_builtin(disp_scope_t *scope, disp_val *expr) {
     disp_val *params = disp_car(rest);
     disp_val *body = disp_cdr(rest);
     if (!body) ERET(NIL, "lambda: missing body");
-    return disp_make_closure(scope, params, body);
+    return disp_make_closure(scope, params, body, 1);
 }
 
 // --- macro ---
@@ -32,7 +32,7 @@ static disp_val* macro_builtin(disp_scope_t *scope, disp_val *expr) {
     disp_val *params = disp_car(rest);
     disp_val *body = disp_cdr(rest);
     if (!body) ERET(NIL, "macro: missing body");
-    return disp_make_macro(scope, params, body);
+    return disp_make_macro(scope, params, body, 1);
 }
 
 /* ----- apply ----- */

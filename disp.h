@@ -91,6 +91,7 @@ extern disp_scope_t *disp_global_scope;                     // 全局作用域�
 disp_val* disp_lookup_symbol(const disp_scope_t *scope, const char *name, disp_scope_t **out_scope);
 void disp_set_symbol_value(disp_val *sym, disp_val *value);
 disp_scope_t* disp_new_scope(disp_scope_t *parent);
+disp_scope_t* disp_dup_scope(disp_scope_t *old);
 disp_val* disp_find_symbol(const disp_scope_t *scope, const char *name);
 disp_val* disp_define_symbol(const disp_scope_t *scope, const char *name, disp_val *value, int final);
 disp_val* disp_intern_symbol(const disp_scope_t *scope, const char *name);
@@ -139,8 +140,9 @@ disp_val* disp_import(const char *filename);
 disp_val* disp_load(disp_scope_t *env, const char *filename);
 
 /* --- Closures and macros --- */
-disp_val* disp_make_closure(disp_scope_t *env, disp_val *params, disp_val *body);
-disp_val* disp_make_macro(disp_scope_t *env, disp_val *params, disp_val *body);
+void disp_closure_reuse(disp_val *closure);
+disp_val* disp_make_closure(disp_scope_t *env, disp_val *params, disp_val *body, int reuse_scope);
+disp_val* disp_make_macro(disp_scope_t *env, disp_val *params, disp_val *body, int reuse_scope);
 disp_val* disp_get_closure_params(disp_val *closure);
 disp_val* disp_get_closure_body(disp_val *closure);
 disp_val* disp_apply_closure(disp_val *closure, disp_val **args, int arg_count);
