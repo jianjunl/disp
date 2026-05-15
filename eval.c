@@ -68,16 +68,15 @@ disp_val* disp_eval(disp_scope_t *scope, disp_val *expr) {
             gc_remove_root(&expr);
             return expr;
         case DISP_SYMBOL: {
-            if (V(expr) == QUIT) {
-                exit(0);
-            }
-            disp_val *val = disp_find_symbol(scope, S(expr));
-            if (!val || val == NIL) {
+            if (V(expr) == QUIT) exit(0);
+            disp_val *sym = NULL;
+            disp_val *val = disp_lookup_symbol_full(S(expr), &sym);
+            if (!val) {
                 ERET(NIL, "undefined symbol: %s", S(expr));
-            }
-            disp_val *value = V(val);   // 注意：需要查找后取其 value
+             }
             gc_remove_root(&expr);
-            return value;
+            return val;
+
         }
         case DISP_CONS: {
             // Evaluate the function (car) – could be built‑in, closure, or macro
@@ -115,6 +114,16 @@ disp_val* disp_eval(disp_scope_t *scope, disp_val *expr) {
                 result = disp_apply_closure(func_val, args, arg_count);
             } else if (T(func_val) == DISP_SYSCALL) {
                 result = disp_get_syscall(func_val)(args, arg_count);
+            } else if (T(func_val) == DISP_MACRO) {
+                /* 宏展开已在前面处理，此处理论上不会进入；保留以防万一 */
+                disp_val *expansion = expand_macro(func_val, expr);
+                gc_free(args);
+                if (expansion == NIL) {
+                    gc_remove_root(&expr);
+                    return NIL;
+                }
+                gc_remove_root(&expr);
+                return disp_eval(scope, expansion);
             } else {
                 gc_free(args);
                 char *s = disp_string(func_val);

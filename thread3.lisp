@@ -1,0 +1,28 @@
+;; 条件变量示例：生产者-消费者
+(define queue '())
+(define q-mutex (make-mutex))
+(define q-cond (make-condition))
+
+(define producer (lambda ()
+  (dotimes (i 5)
+    (lock q-mutex)
+    (set! queue (cons i queue))
+    (println "Produced:" i)
+    (condition-signal q-cond)
+    (unlock q-mutex)
+    (thread-sleep 0.1))))
+
+(define consumer (lambda ()
+  (dotimes (i 5)
+    (lock q-mutex)
+    (while (null? queue)
+      (condition-wait q-cond q-mutex))
+    (let ((item (car queue)))
+      (set! queue (cdr queue))
+      (println "Consumed:" item))
+    (unlock q-mutex))))
+
+(define pt (make-thread producer))
+(define ct (make-thread consumer))
+(thread-join pt)
+(thread-join ct)

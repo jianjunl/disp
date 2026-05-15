@@ -30,6 +30,9 @@ GC_UNION_TI(disp_data,
     GC_OFF(disp_data, symbol.value)
 );
 
+/* 线程局部当前帧指针 */
+__thread disp_frame_t *disp_current_frame = NULL;
+
 /* ======================== 符号表 ======================== */
 #define SYM_TABLE_SIZE 1024
 
@@ -118,14 +121,10 @@ disp_val* disp_lookup_symbol(const disp_scope_t *scope, const char *name, disp_s
     }
     return NULL;
 }
-
-/*
+ 
 disp_val* disp_find_symbol(const disp_scope_t *scope, const char *name) {
-    disp_scope_t *found_scope = NULL;
-    return disp_lookup_symbol(scope, name, &found_scope);
-}
-*/
-disp_val* disp_find_symbol(const disp_scope_t *scope, const char *name) {
+    /* 为了兼容已有代码，保留原作用域链查找，但不再搜索帧栈 */
+    /* 推荐使用 disp_lookup_symbol_full 以获得完整查找能力 */
     if (!scope) scope = disp_global_scope;
     while (scope) {
         scope_lock(scope);
@@ -144,7 +143,26 @@ disp_val* disp_find_symbol(const disp_scope_t *scope, const char *name) {
     return NULL;
 }
 
-// 在 scope.c 中
+/* 完整符号查找：先查临时帧栈，再查持久作用域 */
+disp_val* disp_lookup_symbol_full(const char *name, disp_val **out_sym) {
+    /* 1. 从当前帧栈顶向下搜索 */
+    for (disp_frame_t *frame = disp_current_frame; frame; frame = frame->prev) {
+        for (int i = 0; i < frame->binding_count; i++) {
+            if (strcmp(frame->bindings[i].name, name) == 0) {
+                if (out_sym) *out_sym = NULL;   /* 临时帧无符号对象 */
+                return frame->bindings[i].value;
+            }
+        }
+    }
+    /* 2. 在持久作用域中查找 */
+    disp_val *sym = disp_find_symbol(disp_global_scope, name);
+    if (sym) {
+        if (out_sym) *out_sym = sym;
+        return disp_get_symbol_value(sym);
+    }
+    return NULL;
+}
+
 void disp_set_symbol_value(disp_val *sym, disp_val *value) {
     if (!sym || T(sym) != DISP_SYMBOL) {
         ERRO("disp_set_symbol_value: not a symbol");
