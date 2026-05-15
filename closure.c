@@ -9,7 +9,6 @@
 #include <unistd.h>
 #include <errno.h>
 #include <ucontext.h>
-#include <alloca.h>
 #ifndef DEBUG
 //#define DEBUG
 #endif
@@ -110,66 +109,6 @@ void bind_arguments_to_scope(disp_scope_t *scope, disp_val *params, disp_val **a
 }
 
 disp_val* disp_apply_closure(disp_val *closure, disp_val **args, int arg_count) {
-    disp_scope_t *env = disp_get_closure_env(closure);
-    disp_val *params = disp_get_closure_params(closure);
-    disp_val *body   = disp_get_closure_body(closure);
-
-    /* 优化：若闭包的环境是全局作用域（没有捕获任何非全局变量），
-       则使用栈上分配的临时帧来绑定参数，避免堆分配作用域链。 */
-    if (env == disp_global_scope) {
-        /* 统计固定参数个数及 rest 参数 */
-        int fixed = 0;
-        disp_val *rest_sym = NIL;
-        for (disp_val *p = params; p && T(p) == DISP_CONS; p = disp_cdr(p)) fixed++;
-        if (params && T(params) != DISP_CONS) rest_sym = params;
-
-        int bind_count = fixed + (rest_sym != NIL ? 1 : 0);
-        /* 分配临时帧（使用 malloc，实际生产可改用 alloca 以进一步提高速度） */
-        size_t frame_size = sizeof(disp_frame_t) + bind_count * sizeof(disp_frame_binding_t);
-        disp_frame_t *frame = (disp_frame_t*)alloca(frame_size);
-        //disp_frame_t *frame = (disp_frame_t*)malloc(frame_size);
-        if (!frame) {
-            ERRO("disp_apply_closure: failed to allocate frame");
-            return NIL;
-        }
-        frame->prev = disp_current_frame;
-        frame->binding_count = bind_count;
-
-        int idx = 0;
-        /* 固定参数绑定 */
-        for (disp_val *p = params; p && T(p) == DISP_CONS; p = disp_cdr(p)) {
-            const char *name = disp_get_symbol_name(disp_car(p));
-            frame->bindings[idx].name = (char*)name;
-            frame->bindings[idx].value = args[idx];
-            idx++;
-        }
-        /* rest 参数绑定 */
-        if (rest_sym != NIL) {
-            const char *rest_name = disp_get_symbol_name(rest_sym);
-            disp_val *rest_list = NIL;
-            for (int j = arg_count - 1; j >= fixed; j--) {
-                rest_list = disp_make_cons(args[j], rest_list);
-            }
-            frame->bindings[idx].name = (char*)rest_name;
-            frame->bindings[idx].value = rest_list;
-        }
-
-        disp_current_frame = frame;
-        disp_val *result = disp_eval_body(env, body);  /* 注意：此处环境为全局作用域，函数体内的自由变量将通过帧栈查找 */
-        disp_current_frame = frame->prev;
-
-        //free(frame);
-        return result;
-    } else {
-        /* 回退到原有的堆作用域方式（适用于捕获了非全局变量的闭包） */
-        disp_scope_t *new_scope = disp_new_scope(env);
-        bind_arguments_to_scope(new_scope, params, args, arg_count);
-        return disp_eval_body(new_scope, body);
-    }
-}
-
-/*
-disp_val* disp_apply_closure(disp_val *closure, disp_val **args, int arg_count) {
     // --- 关键：创建新作用域，父作用域为闭包的环境 ---
     disp_scope_t *new_scope = disp_new_scope(disp_get_closure_env(closure));
     // 绑定形参与实参到新作用域
@@ -177,4 +116,3 @@ disp_val* disp_apply_closure(disp_val *closure, disp_val **args, int arg_count) 
     // 在新作用域中求值函数体
     return disp_eval_body(new_scope, disp_get_closure_body(closure));
 }
-*/

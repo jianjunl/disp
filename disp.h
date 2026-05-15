@@ -155,27 +155,6 @@ typedef struct disp_info {
     struct disp_info *next;
 } disp_info_t;
 
- /* 前向声明 */
-struct disp_frame;
- 
-/* 临时帧中的绑定项类型 */
-typedef struct disp_frame_binding {
-    char *name;
-    disp_val *value;
-} disp_frame_binding_t;
-
-/* 临时调用帧（栈分配） */
-typedef struct disp_frame {
-    struct disp_frame *prev;            /* 上一帧 */
-    int binding_count;                  /* 绑定数量 */
-    disp_frame_binding_t bindings[];    /* 柔性数组 */
-} disp_frame_t;
-
-extern __thread struct disp_frame *disp_current_frame;
-
-/* 完整的符号查找（先查帧栈，再查持久作用域） */
-disp_val* disp_lookup_symbol_full(const char *name, disp_val **out_sym);
-
 // 线程局部信息管理（栈式）
 void disp_init_info(void);                     // 初始化（确保 current_info 为 NULL）
 disp_info_t* disp_get_current_info(void);      // 返回栈顶指针
