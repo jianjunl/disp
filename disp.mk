@@ -28,8 +28,8 @@ LIBDIR := $(PREFIX)/lib
 INCLUDEDIR := $(PREFIX)/include
 MODDIR := $(PREFIX)/share/disp/modules
 
-LIB_SRCS := disp.c number.c print.c parse.c load.c eval.c macro.c scope.c \
-            prim.c string.c cons.c func.c closure.c file.c info.c repl.c
+LIB_SRCS := disp.c number.c print.c parse.c load.c closure.c eval.c scope.c \
+            prim.c string.c cons.c func.c file.c info.c repl.c type.c
 LIB_OBJS := $(LIB_SRCS:.c=.o)
 MAIN_SRC := main.c
 MAIN_OBJ := main.o

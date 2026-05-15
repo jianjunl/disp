@@ -16,6 +16,33 @@
 
 /* ======================== Evaluator ======================== */
 
+extern void bind_arguments_to_scope(disp_scope_t *scope, disp_val *params, disp_val **args, int arg_count);
+
+// 宏展开时使用定义环境求值宏体
+static disp_val* expand_macro(disp_val *macro, disp_val *expr) {
+    disp_val *args = disp_cdr(expr);
+    disp_val *params = disp_get_closure_params(macro);
+    disp_val *body = disp_get_closure_body(macro);
+    disp_scope_t *macro_env = disp_get_closure_env(macro);
+
+    // 创建新作用域：children of macro_env
+    disp_scope_t *expand_scope = disp_new_scope(macro_env);
+    // 将实际参数（未求值）绑定到 expand_scope
+    int arg_count = 0;
+    for (disp_val *a = args; a && T(a) == DISP_CONS; a = disp_cdr(a)) arg_count++;
+    disp_val **arg_forms = gc_typed_malloc(arg_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
+    int i = 0;
+    for (disp_val *a = args; a && T(a) == DISP_CONS; a = disp_cdr(a)) {
+        arg_forms[i] = disp_car(a);
+        i++;
+    }
+    bind_arguments_to_scope(expand_scope, params, arg_forms, arg_count);
+    // 在 expand_scope 中求值宏体，得到展开式
+    disp_val *expansion = disp_eval_body(expand_scope, body);
+    gc_free(arg_forms);
+    return expansion;
+}
+
 disp_val* disp_eval_body(disp_scope_t *scope, disp_val *body) {
     disp_val *result = NIL;
     while (body && T(body) == DISP_CONS) {
@@ -27,7 +54,7 @@ disp_val* disp_eval_body(disp_scope_t *scope, disp_val *body) {
 
 disp_val* disp_eval(disp_scope_t *scope, disp_val *expr) {
     if (!expr) return NIL;
-    //gc_add_root(&expr);   // 保护入口表达式
+    gc_add_root(&expr);   // 保护入口表达式
     if (!scope) scope = disp_global_scope;
     switch (T(expr)) {
         case DISP_BYTE:
@@ -57,7 +84,7 @@ disp_val* disp_eval(disp_scope_t *scope, disp_val *expr) {
             disp_val *func_val = disp_eval(scope, disp_car(expr));  // 函数、宏也是表达式
             // 宏展开
             if (T(func_val) == DISP_MACRO) {
-                disp_val *expansion = disp_expand_macro(func_val, expr);
+                disp_val *expansion = expand_macro(func_val, expr);
                 if (expansion == NIL) {
                     gc_remove_root(&expr);
                     return NIL;
