@@ -47,34 +47,35 @@ static disp_val* letf(disp_scope_t *scope, disp_val *expr) {
         idx++;
         b = disp_cdr(b);
     }
-    
-    // 创建循环作用域（父作用域为当前 scope）
+
+    // 创建循环作用域
     disp_scope_t *loop_scope = disp_new_scope(scope);
-    //gc_add_root(&loop_scope);
     
-    // 计算初值并绑定到循环变量
+    // 1. 先绑定所有变量初值（此时闭包尚未创建）
     for (int i = 0; i < var_count; i++) {
         disp_val *init_val = disp_eval(scope, init_exprs[i]);
         const char *vname = disp_get_symbol_name(var_syms[i]);
         disp_define_symbol(loop_scope, vname, init_val, 0);
     }
     
-    // 创建闭包：参数列表就是这些变量符号，body 是原 body
-    disp_val *params = NIL;
-    for (int i = var_count - 1; i >= 0; i--) params = disp_make_cons(var_syms[i], params);
-    disp_val *closure = disp_make_closure(loop_scope, params, body, 1);  // 直接创建带 reuse_scope 的闭包
-    disp_define_symbol(loop_scope, S(name), closure, 0);
-    
-    // 准备参数（当前循环变量的值）
+    // 2. 提取当前变量的值作为调用闭包的初始参数（此时所有变量都是初值）
     disp_val **args = gc_typed_malloc(var_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
-    //gc_add_root(&args);
     for (int i = 0; i < var_count; i++) {
         const char *vname = disp_get_symbol_name(var_syms[i]);
         disp_val *sym = disp_find_symbol(loop_scope, vname);
         args[i] = disp_get_symbol_value(sym);
     }
     
-    // 调用闭包，执行 body（由于闭包设置了 reuse_scope，它会直接在 loop_scope 中更新绑定，而不会创建新作用域）
+    // 3. 创建闭包（参数列表为变量符号，body 为原 body）
+    disp_val *params = NIL;
+    for (int i = var_count - 1; i >= 0; i--) 
+        params = disp_make_cons(var_syms[i], params);
+    disp_val *closure = disp_make_closure(loop_scope, name, params, body, 1);
+    
+    // 4. 将闭包绑定到 loop_scope 中的同名符号
+    disp_define_symbol(loop_scope, S(name), closure, 1);
+    
+    // 5. 调用闭包（传入初始参数，这些参数不会覆盖闭包自身的绑定）
     disp_val *result = disp_apply_closure(closure, args, var_count);
     
     // 清理
