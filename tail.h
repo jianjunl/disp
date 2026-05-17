@@ -27,4 +27,6 @@ typedef struct eval_result {
     };
 } eval_result_t;
 
-extern eval_result_t disp_eval_tail(disp_scope_t *env, disp_val *expr, int is_tail, disp_val *current_closure);
+extern eval_result_t* result_nil();
+
+extern eval_result_t* disp_eval_tail(disp_scope_t *env, disp_val *expr, int is_tail, disp_val *current_closure);

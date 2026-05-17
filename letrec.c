@@ -14,21 +14,9 @@
 #endif
 #include "disp.h"
 
-// 在 closure.c 或单独的头文件中定义
-typedef struct eval_result {
-    int kind;   // 0 = normal, 1 = tail_recurse
-    union {
-        disp_val *normal;
-        struct {
-            disp_val **new_args;
-            int arg_count;
-        } tail;
-    };
-} eval_result_t;
+#include "tail.h"
 
-extern eval_result_t disp_eval_tail(disp_scope_t *env, disp_val *expr, int is_tail, disp_val *current_closure);
-
-eval_result_t disp_eval_tail_letrec(disp_scope_t *env, disp_val *expr, int is_tail, disp_val *current_closure) {
+eval_result_t* disp_eval_tail_letrec(disp_scope_t *env, disp_val *expr, int is_tail, disp_val *current_closure) {
     disp_val *op = disp_car(expr);
     disp_val *args = disp_cdr(expr);
 
@@ -40,13 +28,13 @@ eval_result_t disp_eval_tail_letrec(disp_scope_t *env, disp_val *expr, int is_ta
         if (strcmp(opname, "letrec") == 0) {
             if (!args || T(args) != DISP_CONS) {
                 ERRO("malformed letrec");
-                return (eval_result_t){.kind = 0, .normal = NIL};
+                return result_nil();
             }
             disp_val *bindings = disp_car(args);
             disp_val *body_exprs = disp_cdr(args);
             if (!body_exprs) {
                 ERRO("letrec: missing body");
-                return (eval_result_t){.kind = 0, .normal = NIL};
+                return result_nil();
             }
 
             // 统计绑定数量
@@ -63,7 +51,7 @@ eval_result_t disp_eval_tail_letrec(disp_scope_t *env, disp_val *expr, int is_ta
                         disp_eval(env, cur);
                     body_exprs = next;
                 }
-                return (eval_result_t){.kind = 0, .normal = NIL};
+                return result_nil();
             }
 
             // 分配临时数组并加入 GC 根
@@ -83,7 +71,7 @@ eval_result_t disp_eval_tail_letrec(disp_scope_t *env, disp_val *expr, int is_ta
                     gc_free(init_exprs);
                     gc_free(var_syms);
                     ERRO("malformed letrec binding");
-                    return (eval_result_t){.kind = 0, .normal = NIL};
+                    return result_nil();
                 }
                 var_syms[idx] = disp_car(pair);
                 init_exprs[idx] = disp_car(disp_cdr(pair));
@@ -93,6 +81,7 @@ eval_result_t disp_eval_tail_letrec(disp_scope_t *env, disp_val *expr, int is_ta
 
             // 创建新作用域
             disp_scope_t *new_scope = disp_new_scope(env);
+            gc_add_root(&new_scope);
             // 先绑定所有变量为 NIL（占位符）
             for (int i = 0; i < var_count; i++) {
                 const char *name = disp_get_symbol_name(var_syms[i]);
@@ -135,11 +124,11 @@ eval_result_t disp_eval_tail_letrec(disp_scope_t *env, disp_val *expr, int is_ta
                     body_exprs = next;
                 }
             }
-            return (eval_result_t){.kind = 0, .normal = NIL};
+            return result_nil();
         }
         ERRO("not letrec branch");
-        return (eval_result_t){.kind = 0, .normal = NIL};
+        return result_nil();
     }
     ERRO("not letrec branch");
-    return (eval_result_t){.kind = 0, .normal = NIL};
+    return result_nil();
 }

@@ -13,7 +13,7 @@
 #endif
 #include "../disp.h"
 
-extern disp_val* letf(disp_scope_t *scope, disp_val *expr);
+extern disp_val* disp_letf(disp_scope_t *scope, disp_val *expr);
 
 static disp_val* letrec_builtin(disp_scope_t *scope, disp_val *expr) {
     disp_val *rest = disp_cdr(expr);
@@ -24,7 +24,7 @@ static disp_val* letrec_builtin(disp_scope_t *scope, disp_val *expr) {
     if (T(first) == DISP_SYMBOL) {
         disp_val *second_rest = disp_cdr(rest);
         if (second_rest && T(second_rest) == DISP_CONS)
-            return letf(scope, expr);
+            return disp_letf(scope, expr);
     }
 
     disp_val *bindings = disp_car(rest);

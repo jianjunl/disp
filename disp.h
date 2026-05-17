@@ -141,8 +141,8 @@ disp_val* disp_load(disp_scope_t *env, const char *filename);
 
 /* --- Closures and macros --- */
 void disp_closure_reuse(disp_val *closure);
-disp_val* disp_make_closure(disp_scope_t *env, disp_val *name, disp_val *params, disp_val *body, int reuse_scope);
-disp_val* disp_make_macro(disp_scope_t *env, disp_val *name, disp_val *params, disp_val *body, int reuse_scope);
+disp_val* disp_make_closure(disp_scope_t *env, disp_val *params, disp_val *body, int reuse_scope);
+disp_val* disp_make_macro(disp_scope_t *env, disp_val *params, disp_val *body, int reuse_scope);
 disp_val* disp_get_closure_params(disp_val *closure);
 disp_val* disp_get_closure_body(disp_val *closure);
 disp_val* disp_apply_closure(disp_val *closure, disp_val **args, int arg_count);
@@ -166,7 +166,6 @@ disp_info_t* disp_get_current_info(void);      // 返回栈顶指针
 void disp_init_globals(void);
 void disp_repl(void);
 
-/* --- Global constants --- */
 extern disp_val* disp_builtin_roots[];
 
 #define NUM_BUILTIN_ROOTS 22

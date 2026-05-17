@@ -9,23 +9,12 @@
 #include <unistd.h>
 #include <errno.h>
 #include <ucontext.h>
-#include <alloca.h>
 #ifndef DEBUG
 //#define DEBUG
 #endif
 #include "disp.h"
 
-// 在 closure.c 或单独的头文件中定义
-typedef struct eval_result {
-    int kind;   // 0 = normal, 1 = tail_recurse
-    union {
-        disp_val *normal;
-        struct {
-            disp_val **new_args;
-            int arg_count;
-        } tail;
-    };
-} eval_result_t;
+#include "tail.h"
 
 // 辅助：判断表达式是否为自求值原子
 static int is_self_evaluating(disp_val *expr) {
@@ -42,25 +31,59 @@ static disp_val** eval_args_for_tail(disp_scope_t *env, disp_val *arg_list, int 
         (*arg_count)++;
     if (*arg_count == 0) return NULL;
     disp_val **args = gc_typed_malloc(*arg_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
+    gc_add_root(&args);   // 临时保护
     int i = 0;
     for (disp_val *a = arg_list; a && T(a) == DISP_CONS; a = disp_cdr(a)) {
-        args[i++] = disp_eval(env, disp_car(a));  // 非尾位置求值参数
+        args[i++] = disp_eval(env, disp_car(a));
     }
+    gc_remove_root(&args); // 移除保护，返回值将在调用者中成为根
     return args;
 }
 
-extern eval_result_t disp_eval_tail_let(disp_scope_t *env, disp_val *expr, int is_tail, disp_val *current_closure);
-extern eval_result_t disp_eval_tail_leta(disp_scope_t *env, disp_val *expr, int is_tail, disp_val *current_closure);
-extern eval_result_t disp_eval_tail_letrec(disp_scope_t *env, disp_val *expr, int is_tail, disp_val *current_closure);
-extern eval_result_t disp_eval_tail_letreca(disp_scope_t *env, disp_val *expr, int is_tail, disp_val *current_closure);
+extern eval_result_t* disp_eval_tail_let(disp_scope_t *env, disp_val *expr, int is_tail, disp_val *current_closure);
+extern eval_result_t* disp_eval_tail_leta(disp_scope_t *env, disp_val *expr, int is_tail, disp_val *current_closure);
+extern eval_result_t* disp_eval_tail_letrec(disp_scope_t *env, disp_val *expr, int is_tail, disp_val *current_closure);
+extern eval_result_t* disp_eval_tail_letreca(disp_scope_t *env, disp_val *expr, int is_tail, disp_val *current_closure);
+
+eval_result_t* result_nil() {
+    static eval_result_t ret  = (eval_result_t){.kind = 0, .normal = NULL};
+    if(!ret.normal) ret.normal = NIL;
+    return &ret;
+}
+
+static eval_result_t* result_true() {
+    static eval_result_t ret  = (eval_result_t){.kind = 0, .normal = NULL};
+    if(!ret.normal) ret.normal = TRUE;
+    return &ret;
+}
+
+GC_TYPE_INFO(eval_result_ti, eval_result_t,
+    offsetof(eval_result_t, normal),       // disp_val*
+    offsetof(eval_result_t, tail.new_args) // disp_val**
+);
+
+static eval_result_t* result_normal(disp_val *normal) {
+    eval_result_t *res = gc_typed_malloc(sizeof(eval_result_t), &eval_result_ti);
+    res->kind = 0;
+    res->normal = normal;
+    return res;
+}
+
+static eval_result_t* result_tail(disp_val **new_argv, int new_argc) {
+    eval_result_t *res = gc_typed_malloc(sizeof(eval_result_t), &eval_result_ti);
+    res->kind = 1;
+    res->tail.new_args = new_argv;
+    res->tail.arg_count = new_argc;
+    return res;
+}
 
 // 核心尾位置求值函数
-eval_result_t disp_eval_tail(disp_scope_t *env, disp_val *expr, int is_tail, disp_val *current_closure) {
-    if (expr == NIL) return (eval_result_t){.kind = 0, .normal = NIL};
+eval_result_t* disp_eval_tail(disp_scope_t *env, disp_val *expr, int is_tail, disp_val *current_closure) {
+    if (expr == NIL) return result_nil();
 
     // 自求值原子
     if (is_self_evaluating(expr)) {
-        return (eval_result_t){.kind = 0, .normal = expr};
+        return result_normal(expr);
     }
 
     // 符号：查找变量
@@ -68,15 +91,15 @@ eval_result_t disp_eval_tail(disp_scope_t *env, disp_val *expr, int is_tail, dis
         disp_val *sym = disp_find_symbol(env, disp_get_symbol_name(expr));
         if (!sym) {
             ERRO("unbound symbol: %s", disp_get_symbol_name(expr));
-            return (eval_result_t){.kind = 0, .normal = NIL};
+            return result_nil();
         }
-        return (eval_result_t){.kind = 0, .normal = disp_get_symbol_value(sym)};
+        return result_normal(disp_get_symbol_value(sym));
     }
 
     // 不是 cons 则错误
     if (T(expr) != DISP_CONS) {
         ERRO("invalid expression");
-        return (eval_result_t){.kind = 0, .normal = NIL};
+        return result_nil();
     }
 
     disp_val *op = disp_car(expr);
@@ -89,7 +112,7 @@ eval_result_t disp_eval_tail(disp_scope_t *env, disp_val *expr, int is_tail, dis
         // quote
         if (strcmp(opname, "quote") == 0) {
             if (!args || T(args) != DISP_CONS) ERRO("malformed quote");
-            return (eval_result_t){.kind = 0, .normal = disp_car(args)};
+            return result_normal(disp_car(args));
         }
 
         // if
@@ -106,7 +129,7 @@ eval_result_t disp_eval_tail(disp_scope_t *env, disp_val *expr, int is_tail, dis
 
         // begin
         if (strcmp(opname, "begin") == 0) {
-            if (!args) return (eval_result_t){.kind = 0, .normal = NIL};
+            if (!args) return result_nil();
             disp_val *exprs = args;
             while (exprs && T(exprs) == DISP_CONS) {
                 disp_val *cur = disp_car(exprs);
@@ -120,12 +143,12 @@ eval_result_t disp_eval_tail(disp_scope_t *env, disp_val *expr, int is_tail, dis
                     exprs = next;
                 }
             }
-            return (eval_result_t){.kind = 0, .normal = NIL};
+            return result_nil();
         }
 
         // cond – 简单展开为嵌套 if
         if (strcmp(opname, "cond") == 0) {
-            if (!args) return (eval_result_t){.kind = 0, .normal = NIL};
+            if (!args) return result_nil();
             disp_val *clauses = args;
             while (clauses && T(clauses) == DISP_CONS) {
                 disp_val *clause = disp_car(clauses);
@@ -135,7 +158,7 @@ eval_result_t disp_eval_tail(disp_scope_t *env, disp_val *expr, int is_tail, dis
                 if (test == ELSE || disp_eval(env, test) != NIL) {
                     if (rest_exprs == NIL) {
                         // 返回 test 值（R5RS 风格）
-                        return (eval_result_t){.kind = 0, .normal = disp_eval(env, test)};
+                        return result_normal(disp_eval(env, test));
                     } else {
                         // 处理隐式 begin
                         disp_val *body = rest_exprs;
@@ -152,12 +175,12 @@ eval_result_t disp_eval_tail(disp_scope_t *env, disp_val *expr, int is_tail, dis
                 }
                 clauses = disp_cdr(clauses);
             }
-            return (eval_result_t){.kind = 0, .normal = NIL};
+            return result_nil();
         }
 
         // and / or
         if (strcmp(opname, "and") == 0) {
-            if (args == NIL) return (eval_result_t){.kind = 0, .normal = TRUE};
+            if (args == NIL) return result_true();
             disp_val *exprs = args;
             disp_val *last_val = TRUE;
             while (exprs && T(exprs) == DISP_CONS) {
@@ -165,17 +188,17 @@ eval_result_t disp_eval_tail(disp_scope_t *env, disp_val *expr, int is_tail, dis
                 disp_val *next = disp_cdr(exprs);
                 last_val = disp_eval(env, cur);
                 if (last_val == NIL) {
-                    return (eval_result_t){.kind = 0, .normal = last_val};
+                    return result_normal(last_val);
                 }
                 if (next == NIL) {
                     return disp_eval_tail(env, cur, is_tail, current_closure);
                 }
                 exprs = next;
             }
-            return (eval_result_t){.kind = 0, .normal = last_val};
+            return result_normal(last_val);
         }
         if (strcmp(opname, "or") == 0) {
-            if (args == NIL) return (eval_result_t){.kind = 0, .normal = NIL};
+            if (args == NIL) return result_nil();
             disp_val *exprs = args;
             disp_val *last_val = NIL;
             while (exprs && T(exprs) == DISP_CONS) {
@@ -190,7 +213,7 @@ eval_result_t disp_eval_tail(disp_scope_t *env, disp_val *expr, int is_tail, dis
                 }
                 exprs = next;
             }
-            return (eval_result_t){.kind = 0, .normal = last_val};
+            return result_normal(last_val);
         }
 
         // set!
@@ -202,7 +225,7 @@ eval_result_t disp_eval_tail(disp_scope_t *env, disp_val *expr, int is_tail, dis
             disp_val *sym = disp_find_symbol(env, varname);
             if (!sym) ERRO("set! on unbound variable: %s", varname);
             disp_set_symbol_value(sym, val);
-            return (eval_result_t){.kind = 0, .normal = val};
+            return result_normal(val);
         }
 
         // define (仅允许顶层，但这里按局部处理)
@@ -214,7 +237,7 @@ eval_result_t disp_eval_tail(disp_scope_t *env, disp_val *expr, int is_tail, dis
                 disp_val *val_expr = disp_car(disp_cdr(args));
                 disp_val *val = disp_eval(env, val_expr);
                 disp_define_symbol(env, name, val, 0);
-                return (eval_result_t){.kind = 0, .normal = val};
+                return result_normal(val);
             } else if (T(first) == DISP_CONS) {
                 // 函数定义 (define (f args) body)
                 // 简化：暂不实现
@@ -229,8 +252,8 @@ eval_result_t disp_eval_tail(disp_scope_t *env, disp_val *expr, int is_tail, dis
             if (!args || T(args) != DISP_CONS) ERRO("malformed lambda");
             disp_val *params = disp_car(args);
             disp_val *body = disp_cdr(args);
-            disp_val *closure = disp_make_closure(env, NIL, params, body, 0);
-            return (eval_result_t){.kind = 0, .normal = closure};
+            disp_val *closure = disp_make_closure(env, params, body, 0);
+            return result_normal(closure);
         }
 
         // let (简单形式，支持并行绑定)
@@ -249,6 +272,7 @@ eval_result_t disp_eval_tail(disp_scope_t *env, disp_val *expr, int is_tail, dis
         if (strcmp(opname, "letrec*") == 0) {
             return disp_eval_tail_letreca(env, expr, is_tail, current_closure);
         }
+
     }
 
     // 函数调用
@@ -259,16 +283,13 @@ eval_result_t disp_eval_tail(disp_scope_t *env, disp_val *expr, int is_tail, dis
         // 尾递归自调用：提取参数并返回重启标记
         int new_argc = 0;
         disp_val **new_argv = eval_args_for_tail(env, args, &new_argc);
-        return (eval_result_t){
-            .kind = 1,
-            .tail = { .new_args = new_argv, .arg_count = new_argc }
-        };
+        return result_tail(new_argv, new_argc);
     } else {
         // 正常调用：求值参数并应用
         disp_val *result;
         if (T(func) == DISP_BUILTIN) {
             result = disp_get_builtin(func)(env, expr);
-            return (eval_result_t){.kind = 0, .normal = result};
+            return result_normal(result);
         } else {
             int arg_count = 0;
             for (disp_val *a = args; a && T(a) == DISP_CONS; a = disp_cdr(a)) arg_count++;
@@ -285,10 +306,10 @@ eval_result_t disp_eval_tail(disp_scope_t *env, disp_val *expr, int is_tail, dis
                 gc_free(argv);
                 char *s = disp_string(func);
                 ERRO("%s is not a function or macro", s);
-                return (eval_result_t){.kind = 0, .normal = NIL};
+                return result_nil();
             }
             gc_free(argv);
-            return (eval_result_t){.kind = 0, .normal = result};
+            return result_normal(result);
         }
     }
 }

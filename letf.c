@@ -13,7 +13,7 @@
 #endif
 #include "../disp.h"
 
-disp_val* letf(disp_scope_t *scope, disp_val *expr) {
+disp_val* disp_letf(disp_scope_t *scope, disp_val *expr) {
     // 解析命名 let 语法
     disp_val *rest = disp_cdr(expr);
     if (!rest || T(rest) != DISP_CONS) ERET(NIL, "named let: missing name");
@@ -48,6 +48,7 @@ disp_val* letf(disp_scope_t *scope, disp_val *expr) {
 
     // 创建循环作用域
     disp_scope_t *loop_scope = disp_new_scope(scope);
+    gc_add_root(&loop_scope);
     
     // 1. 先绑定所有变量初值（此时闭包尚未创建）
     for (int i = 0; i < var_count; i++) {
@@ -68,7 +69,7 @@ disp_val* letf(disp_scope_t *scope, disp_val *expr) {
     disp_val *params = NIL;
     for (int i = var_count - 1; i >= 0; i--) 
         params = disp_make_cons(var_syms[i], params);
-    disp_val *closure = disp_make_closure(loop_scope, name, params, body, 1);
+    disp_val *closure = disp_make_closure(loop_scope, params, body, 1);
     
     // 4. 将闭包绑定到 loop_scope 中的同名符号
     disp_define_symbol(loop_scope, S(name), closure, 1);

@@ -14,21 +14,9 @@
 #endif
 #include "disp.h"
 
-// 在 closure.c 或单独的头文件中定义
-typedef struct eval_result {
-    int kind;   // 0 = normal, 1 = tail_recurse
-    union {
-        disp_val *normal;
-        struct {
-            disp_val **new_args;
-            int arg_count;
-        } tail;
-    };
-} eval_result_t;
+#include "tail.h"
 
-extern eval_result_t disp_eval_tail(disp_scope_t *env, disp_val *expr, int is_tail, disp_val *current_closure);
-
-eval_result_t disp_eval_tail_leta(disp_scope_t *env, disp_val *expr, int is_tail, disp_val *current_closure) {
+eval_result_t* disp_eval_tail_leta(disp_scope_t *env, disp_val *expr, int is_tail, disp_val *current_closure) {
     disp_val *op = disp_car(expr);
     disp_val *args = disp_cdr(expr);
 
@@ -39,17 +27,18 @@ eval_result_t disp_eval_tail_leta(disp_scope_t *env, disp_val *expr, int is_tail
         if (strcmp(opname, "let*") == 0) {
             if (!args || T(args) != DISP_CONS) {
                 ERRO("malformed let*");
-                return (eval_result_t){.kind = 0, .normal = NIL};
+                return result_nil();
             }
             disp_val *bindings = disp_car(args);
             disp_val *body_exprs = disp_cdr(args);
             if (!body_exprs) {
                 ERRO("let*: missing body");
-                return (eval_result_t){.kind = 0, .normal = NIL};
+                return result_nil();
             }
 
             // 创建新作用域，父作用域为当前 env
             disp_scope_t *new_scope = disp_new_scope(env);
+            gc_add_root(&new_scope);
 
             // 顺序处理每个绑定
             disp_val *b = bindings;
@@ -57,7 +46,7 @@ eval_result_t disp_eval_tail_leta(disp_scope_t *env, disp_val *expr, int is_tail
                 disp_val *pair = disp_car(b);
                 if (T(pair) != DISP_CONS || T(disp_car(pair)) != DISP_SYMBOL) {
                     ERRO("malformed let* binding");
-                    return (eval_result_t){.kind = 0, .normal = NIL};
+                    return result_nil();
                 }
                 disp_val *sym = disp_car(pair);
                 const char *name = disp_get_symbol_name(sym);
@@ -79,11 +68,11 @@ eval_result_t disp_eval_tail_leta(disp_scope_t *env, disp_val *expr, int is_tail
                     body_exprs = next;
                 }
             }
-            return (eval_result_t){.kind = 0, .normal = NIL};
+            return result_nil();
         }
         ERRO("not leta branch");
-        return (eval_result_t){.kind = 0, .normal = NIL};
+        return result_nil();
     }
     ERRO("not leta branch");
-    return (eval_result_t){.kind = 0, .normal = NIL};
+    return result_nil();
 }

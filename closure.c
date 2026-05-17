@@ -19,7 +19,6 @@
 union disp_data {
     /* 闭包 / 宏 */
     struct {
-        disp_val *name;
         disp_val *params;
         disp_val *body;
         disp_scope_t *env;
@@ -28,7 +27,6 @@ union disp_data {
 };
 
 GC_UNION_TI(disp_data,
-    GC_OFF(disp_data, closure.name),
     GC_OFF(disp_data, closure.params),
     GC_OFF(disp_data, closure.body),
     GC_OFF(disp_data, closure.env)
@@ -46,10 +44,9 @@ static void intern_params(disp_scope_t *env, disp_val *params) {
     }
 }
 
-disp_val* disp_make_closure(disp_scope_t *env, disp_val *name, disp_val *params, disp_val *body, int reuse_scope) {
+disp_val* disp_make_closure(disp_scope_t *env, disp_val *params, disp_val *body, int reuse_scope) {
     intern_params(env, params);
     disp_val *v = DISP_ALLOC_TI(DISP_CLOSURE);
-    v->data->closure.name   = name;
     v->data->closure.params = params;
     v->data->closure.body   = body;
     v->data->closure.env    = env;
@@ -57,10 +54,9 @@ disp_val* disp_make_closure(disp_scope_t *env, disp_val *name, disp_val *params,
     return v;
 }
 
-disp_val* disp_make_macro(disp_scope_t *env, disp_val *name, disp_val *params, disp_val *body, int reuse_scope) {
+disp_val* disp_make_macro(disp_scope_t *env, disp_val *params, disp_val *body, int reuse_scope) {
     intern_params(env, params);
     disp_val *v = DISP_ALLOC_TI(DISP_MACRO);
-    v->data->closure.name   = name;
     v->data->closure.params = params;
     v->data->closure.body   = body;
     v->data->closure.env    = env;
@@ -90,13 +86,6 @@ disp_scope_t* disp_get_closure_env(disp_val *closure) {
         return NULL;
     }
     return closure->data->closure.env;
-}
-
-// 设置闭包的 reuse_scope 标志
-void disp_set_reuse_scope(disp_val *closure) {
-    if (closure && (T(closure) == DISP_CLOSURE || T(closure) == DISP_MACRO)) {
-        closure->data->closure.reuse_scope = 1;
-    }
 }
 
 void bind_arguments_to_scope(disp_scope_t *scope, disp_val *params, disp_val **args, int arg_count) {
@@ -150,6 +139,7 @@ void bind_arguments_to_scope(disp_scope_t *scope, disp_val *params, disp_val **a
 
 #include "tail.h"
 
+/*
 disp_val* disp_apply_closure(disp_val *closure, disp_val **args, int arg_count) {
     if (!closure->data->closure.reuse_scope) {
         disp_scope_t *new_scope = disp_new_scope(closure->data->closure.env);
@@ -172,22 +162,77 @@ disp_val* disp_apply_closure(disp_val *closure, disp_val **args, int arg_count) 
             disp_val *expr = disp_car(exprs);
             disp_val *next = disp_cdr(exprs);
             int tail = (next == NIL);
-            eval_result_t res = disp_eval_tail(env, expr, tail, closure);
-            if (res.kind == 1) {
+            eval_result_t *res = disp_eval_tail(env, expr, tail, closure);
+            if (res->kind == 1) {
                 // 尾递归重启
                 // 释放旧参数数组（假设它是动态分配的）
                 if (current_args != args && current_args != NULL) {
                     gc_free(current_args);
                 }
-                current_args = res.tail.new_args;
-                current_argc = res.tail.arg_count;
+                current_args = res->tail.new_args;
+                current_argc = res->tail.arg_count;
                 goto restart;
             } else if (tail) {
-                return res.normal;
+                return res->normal;
             } else {
                 exprs = next;
             }
         }
+        restart:
+        continue;
+    }
+}
+*/
+disp_val* disp_apply_closure(disp_val *closure, disp_val **args, int arg_count) {
+    if (!closure->data->closure.reuse_scope) {
+        disp_scope_t *new_scope = disp_new_scope(closure->data->closure.env);
+        gc_add_root(&new_scope);
+        bind_arguments_to_scope(new_scope, closure->data->closure.params, args, arg_count);
+        disp_val *ret = disp_eval_body(new_scope, closure->data->closure.body);
+        gc_remove_root(&new_scope);
+        return ret;
+    }
+
+    disp_scope_t *env = closure->data->closure.env;
+    disp_val *params = closure->data->closure.params;
+    disp_val *body = closure->data->closure.body;
+    disp_val **current_args = args;
+    int current_argc = arg_count;
+    eval_result_t *res = NULL;   // 用于释放
+
+    while (1) {
+        bind_arguments_to_scope(env, params, current_args, current_argc);
+
+        disp_val *exprs = body;
+        while (exprs && T(exprs) == DISP_CONS) {
+            disp_val *expr = disp_car(exprs);
+            disp_val *next = disp_cdr(exprs);
+            int tail = (next == NIL);
+            res = disp_eval_tail(env, expr, tail, closure);
+            if (res->kind == 1) {
+                // 尾递归重启
+                if (current_args != args && current_args != NULL) {
+                    gc_free(current_args);
+                }
+                current_args = res->tail.new_args;
+                current_argc = res->tail.arg_count;
+                gc_free(res);          // 释放旧的 result 对象
+                goto restart;
+            } else if (tail) {
+                disp_val *result = res->normal;
+                gc_free(res);
+                return result;
+            } else {
+                // 非尾表达式，继续下一个
+                exprs = next;
+                gc_free(res);          // 释放非尾结果的 result 对象
+                res = NULL;
+            }
+        }
+        // body 为空时（理论上不应发生），返回 NIL
+        if (res) gc_free(res);
+        return NIL;
+
         restart:
         continue;
     }

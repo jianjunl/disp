@@ -43,7 +43,8 @@
                (lambda ()
                  (fprintf stderr ";; GC thread started, interval = %d %s\n" *gc-interval* "seconds")
                  ;; 使用 while 循环而非递归，避免栈溢出或求值问题
-                 (while (begin (lock *gc-mutex*) *gc-running* (unlock *gc-mutex*))
+                 ;(while (begin (lock *gc-mutex*) *gc-running* (unlock *gc-mutex*))
+                 (while *gc-running*
                    (thread-sleep *gc-interval*)
                    (gc)
                    (fprintln stderr ";; [GC] performed."))
