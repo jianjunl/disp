@@ -100,19 +100,45 @@ void disp_set_reuse_scope(disp_val *closure) {
 }
 
 void bind_arguments_to_scope(disp_scope_t *scope, disp_val *params, disp_val **args, int arg_count) {
-    // 处理固定参数和 rest 参数（与原来类似，但直接在 scope 上 define）
     int fixed = 0;
     disp_val *rest_sym = NIL;
-    for (disp_val *p = params; p && T(p) == DISP_CONS; p = disp_cdr(p)) fixed++;
-    if (params && T(params) != DISP_CONS) rest_sym = params;
 
-    int idx = 0;
-    for (disp_val *p = params; p && T(p) == DISP_CONS; p = disp_cdr(p)) {
-        const char *name = disp_get_symbol_name(disp_car(p));
-        disp_define_symbol(scope, name, args[idx++], 0);
+    // 遍历参数列表，计算固定参数个数，并找到可能的 rest 参数
+    disp_val *p = params;
+    while (p && T(p) == DISP_CONS) {
+        fixed++;
+        p = disp_cdr(p);
     }
+    if (p != NIL) {
+        if (T(p) == DISP_SYMBOL) {
+            rest_sym = p;
+        } else {
+            // 非法 rest 参数：打印详细信息以便调试
+            ERRO("bind_arguments_to_scope: rest parameter is not a symbol, got type %d", T(p));
+            // 可以在这里打印 params 的表示（若有 disp_to_string 函数）
+            // 然后直接返回，不执行绑定，避免后续段错误
+            return;
+        }
+    }
+
+    // 绑定固定参数
+    int idx = 0;
+    p = params;
+    while (p && T(p) == DISP_CONS && idx < fixed) {
+        disp_val *sym = disp_car(p);
+        if (T(sym) != DISP_SYMBOL) {
+            ERRO("bind_arguments_to_scope: parameter is not a symbol");
+            return;
+        }
+        const char *name = disp_get_symbol_name(sym);
+        disp_val *val = (idx < arg_count) ? args[idx] : NIL;
+        disp_define_symbol(scope, name, val, 0);
+        idx++;
+        p = disp_cdr(p);
+    }
+
+    // 绑定 rest 参数（如果有）
     if (rest_sym != NIL) {
-        // 收集剩余参数为列表
         const char *rest_name = disp_get_symbol_name(rest_sym);
         disp_val *rest_list = NIL;
         for (int j = arg_count - 1; j >= fixed; j--) {
@@ -122,94 +148,43 @@ void bind_arguments_to_scope(disp_scope_t *scope, disp_val *params, disp_val **a
     }
 }
 
-void bind_arguments_to_scope_skip(disp_scope_t *scope, disp_val *params, disp_val **args, int arg_count, const char *skip_name) {
-    int fixed = 0;
-    disp_val *rest_sym = NIL;
-    for (disp_val *p = params; p && T(p) == DISP_CONS; p = disp_cdr(p)) fixed++;
-    if (params && T(params) != DISP_CONS) rest_sym = params;
-
-    int idx = 0;
-    for (disp_val *p = params; p && T(p) == DISP_CONS; p = disp_cdr(p)) {
-        disp_val *sym = disp_car(p);
-        const char *name = disp_get_symbol_name(sym);
-        if (skip_name && strcmp(name, skip_name) == 0) {
-            idx++;  // 跳过绑定，但参数索引仍要前进
-            continue;
-        }
-        disp_define_symbol(scope, name, args[idx++], 0);
-    }
-    if (rest_sym != NIL) {
-        const char *rest_name = disp_get_symbol_name(rest_sym);
-        if (!(skip_name && strcmp(rest_name, skip_name) == 0)) {
-            disp_val *rest_list = NIL;
-            for (int j = arg_count - 1; j >= fixed; j--) {
-                rest_list = disp_make_cons(args[j], rest_list);
-            }
-            disp_define_symbol(scope, rest_name, rest_list, 0);
-        }
-    }
-}
+#include "tail.h"
 
 disp_val* disp_apply_closure(disp_val *closure, disp_val **args, int arg_count) {
-    disp_val *params = disp_get_closure_params(closure);
-    disp_val *body   = disp_get_closure_body(closure);
-    disp_scope_t *env = disp_get_closure_env(closure);
-    disp_val *result = NIL;
-    /* 如果闭包不允许复用作用域，则按标准方式：创建新作用域，执行一次 body 后返回 */
     if (!closure->data->closure.reuse_scope) {
-        disp_scope_t *new_scope = disp_new_scope(env);
-        bind_arguments_to_scope(new_scope, params, args, arg_count);
-        return disp_eval_body(new_scope, body);
+        disp_scope_t *new_scope = disp_new_scope(closure->data->closure.env);
+        bind_arguments_to_scope(new_scope, closure->data->closure.params, args, arg_count);
+        return disp_eval_body(new_scope, closure->data->closure.body);
     }
-    /* 支持尾递归优化的循环版本 */
-    const char *closure_name = NULL;
-    if (closure->data->closure.name && T(closure->data->closure.name) == DISP_SYMBOL) {
-        closure_name = disp_get_symbol_name(closure->data->closure.name);
-    }
+
+    disp_scope_t *env = closure->data->closure.env;
+    disp_val *params = closure->data->closure.params;
+    disp_val *body = closure->data->closure.body;
+    disp_val **current_args = args;
+    int current_argc = arg_count;
+
     while (1) {
-        /* 1. 将实参绑定到当前环境（更新已存在的符号值） */
-        /* 绑定参数时跳过闭包自身的名字 */
-        bind_arguments_to_scope_skip(env, params, args, arg_count, closure_name);
+        bind_arguments_to_scope(env, params, current_args, current_argc);
 
-
-        /* 2. 顺序执行 body 中的表达式，遇到自调用则立即重新开始 */
+        // 将 body 视为隐式 begin
         disp_val *exprs = body;
         while (exprs && T(exprs) == DISP_CONS) {
             disp_val *expr = disp_car(exprs);
             disp_val *next = disp_cdr(exprs);
-
-            /* 检测自调用（无论位置） */
-            if (T(expr) == DISP_CONS) {
-                disp_val *func = disp_car(expr);
-                //disp_val *func_expr = disp_car(expr);
-                //disp_val *func = disp_eval(env, func_expr);
-fprintf(stderr, "DEBUG: func=%p, closure=%p\n", func, closure);
-fprintf(stderr, "DEBUG: T(func)=%d, T(closure)=%d\n", T(func), T(closure));
-fprintf(stderr, "DEBUG: func == closure ? %d\n", func == closure);
-                if (T(func) == DISP_CLOSURE && func == closure) {
-                    /* 尾递归调用：提取新参数并求值 */
-                    disp_val *arg_list = disp_cdr(expr);
-                    int new_argc = 0;
-                    for (disp_val *a = arg_list; a && T(a) == DISP_CONS; a = disp_cdr(a))
-                        new_argc++;
-                    if (new_argc != arg_count) {
-                        ERET(NIL, "tail recursion: arity mismatch (%d vs %d)", new_argc, arg_count);
-                    }
-                    int i = 0;
-                    for (disp_val *a = arg_list; a && T(a) == DISP_CONS; a = disp_cdr(a)) {
-                        args[i++] = disp_eval(env, disp_car(a));
-                    }
-                    /* 跳过当前及后续所有表达式，重新开始循环 */
-                    goto restart;
+            int tail = (next == NIL);
+            eval_result_t res = disp_eval_tail(env, expr, tail, closure);
+            if (res.kind == 1) {
+                // 尾递归重启
+                // 释放旧参数数组（假设它是动态分配的）
+                if (current_args != args && current_args != NULL) {
+                    gc_free(current_args);
                 }
-            }
-
-            /* 非自调用：正常求值 */
-            if (next == NIL) {
-                result = disp_eval(env, expr);
-                return result;
+                current_args = res.tail.new_args;
+                current_argc = res.tail.arg_count;
+                goto restart;
+            } else if (tail) {
+                return res.normal;
             } else {
-                disp_eval(env, expr);
                 exprs = next;
             }
         }

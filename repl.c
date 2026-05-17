@@ -25,9 +25,35 @@
 
 /* ======================== REPL ======================== */
 
+void disp_repl() {
+
+    printf("disp Lisp (type :quit to exit)\n");
+
+    for (;;) {
+        disp_info_t *_info = disp_get_current_info();
+        if (_info && _info->filename) {
+            printf("disp:");
+            printf("%d", _info->line);
+        } else printf("disp:");
+        printf("> ");
+        fflush(stdout);
+
+        disp_val *expr = disp_read(stdin);
+        if (!expr) break;
+        disp_val *result = disp_eval(disp_global_scope, expr);
+        disp_print(result);
+        printf("\n");
+        static int gc_counter = 0;
+        if (++gc_counter > 1000) {
+//            disp_gc();
+            gc_counter = 0;
+        }
+    }
+}
+
 extern int parse_current_line;
 
-void disp_repl() {
+void disp_repl1() {
     printf("disp Lisp (type :quit to exit)\n");
 
     #include "keywords.h"
@@ -68,7 +94,7 @@ void disp_repl() {
             continue;
         }
 
-        disp_val *result = disp_eval(NULL, expr);
+        disp_val *result = disp_eval(disp_global_scope, expr);
         disp_print(result);
         printf("\n");
 

@@ -1,0 +1,87 @@
+
+#define _POSIX_C_SOURCE 200809L
+#include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <limits.h>
+#include <stdarg.h>
+#include <ctype.h>
+#include <inttypes.h>
+#include <errno.h>
+#ifndef DEBUG
+//#define DEBUG
+#endif
+#include "../disp.h"
+
+disp_val* letf(disp_scope_t *scope, disp_val *expr) {
+    // 解析命名 let 语法
+    disp_val *rest = disp_cdr(expr);
+    if (!rest || T(rest) != DISP_CONS) ERET(NIL, "named let: missing name");
+    disp_val *name = disp_car(rest);
+    if (T(name) != DISP_SYMBOL) ERET(NIL, "named let: name must be a symbol");
+    
+    disp_val *bindings_rest = disp_cdr(rest);
+    if (!bindings_rest || T(bindings_rest) != DISP_CONS) ERET(NIL, "named let: missing bindings");
+    disp_val *bindings = disp_car(bindings_rest);
+    disp_val *body = disp_cdr(bindings_rest);
+    if (!body) ERET(NIL, "named let: missing body");
+    
+    // 提取变量和初值
+    int var_count = 0;
+    for (disp_val *b = bindings; b && T(b) == DISP_CONS; b = disp_cdr(b)) var_count++;
+    disp_val **var_syms = gc_typed_malloc(var_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
+    disp_val **init_exprs = gc_typed_malloc(var_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
+    gc_add_root(&var_syms); gc_add_root(&init_exprs);
+    int idx = 0;
+    for (disp_val *b = bindings; b && T(b) == DISP_CONS; b = disp_cdr(b)) {
+        disp_val *pair = disp_car(b);
+        if (T(pair) != DISP_CONS || T(disp_car(pair)) != DISP_SYMBOL) {
+            gc_remove_root(&init_exprs); gc_remove_root(&var_syms);
+            gc_free(init_exprs); gc_free(var_syms);
+            ERET(NIL, "named let: malformed binding");
+        }
+        var_syms[idx] = disp_car(pair);
+        init_exprs[idx] = disp_car(disp_cdr(pair));
+        idx++;
+        b = disp_cdr(b);
+    }
+
+    // 创建循环作用域
+    disp_scope_t *loop_scope = disp_new_scope(scope);
+    
+    // 1. 先绑定所有变量初值（此时闭包尚未创建）
+    for (int i = 0; i < var_count; i++) {
+        disp_val *init_val = disp_eval(scope, init_exprs[i]);
+        const char *vname = disp_get_symbol_name(var_syms[i]);
+        disp_define_symbol(loop_scope, vname, init_val, 0);
+    }
+    
+    // 2. 提取当前变量的值作为调用闭包的初始参数（此时所有变量都是初值）
+    disp_val **args = gc_typed_malloc(var_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
+    for (int i = 0; i < var_count; i++) {
+        const char *vname = disp_get_symbol_name(var_syms[i]);
+        disp_val *sym = disp_find_symbol(loop_scope, vname);
+        args[i] = disp_get_symbol_value(sym);
+    }
+    
+    // 3. 创建闭包（参数列表为变量符号，body 为原 body）
+    disp_val *params = NIL;
+    for (int i = var_count - 1; i >= 0; i--) 
+        params = disp_make_cons(var_syms[i], params);
+    disp_val *closure = disp_make_closure(loop_scope, name, params, body, 1);
+    
+    // 4. 将闭包绑定到 loop_scope 中的同名符号
+    disp_define_symbol(loop_scope, S(name), closure, 1);
+    
+    // 5. 调用闭包（传入初始参数，这些参数不会覆盖闭包自身的绑定）
+    disp_val *result = disp_apply_closure(closure, args, var_count);
+    
+    // 清理
+    gc_remove_root(&args);
+    gc_free(args);
+    gc_remove_root(&loop_scope);
+    gc_remove_root(&var_syms); gc_remove_root(&init_exprs);
+    gc_free(var_syms); gc_free(init_exprs);
+    
+    return result;
+}

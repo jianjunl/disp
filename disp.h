@@ -169,13 +169,14 @@ void disp_repl(void);
 /* --- Global constants --- */
 extern disp_val* disp_builtin_roots[];
 
-#define NUM_BUILTIN_ROOTS 21
+#define NUM_BUILTIN_ROOTS 22
 
 enum disp_builtin_root_idx {
     IDX_NIL = 0, IDX_TRUE, IDX_QUIT,
     IDX_BYTE, IDX_SHORT, IDX_INT, IDX_LONG, IDX_FLOAT, IDX_DOUBLE, IDX_PNTR,
     IDX_LAMBDA, IDX_LETA, IDX_LETRECA,
     IDX_CONS, IDX_LIST, IDX_QUOTE, IDX_QUASIQUOTE, IDX_UNQUOTE, IDX_UNQUOTE_SPLICING, IDX_APPEND,
+    IDX_ELSE,
     IDX_MODPATH
 };
 
@@ -200,6 +201,7 @@ enum disp_builtin_root_idx {
 #define UNQUOTE          disp_builtin_roots[IDX_UNQUOTE]
 #define UNQUOTE_SPLICING disp_builtin_roots[IDX_UNQUOTE_SPLICING]
 #define APPEND           disp_builtin_roots[IDX_APPEND]
+#define ELSE             disp_builtin_roots[IDX_ELSE]
 #define MODPATH          disp_builtin_roots[IDX_MODPATH]
 
 #endif /* DISP_H */

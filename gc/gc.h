@@ -28,7 +28,7 @@ extern "C" {
  * Configuration Macros (define before including this header)
  * ------------------------------------------------------------------------- */
 #ifndef GC_OPT_MULTITHREAD
-#define GC_OPT_MULTITHREAD 0 /* set to 0 to disable multi-threading */
+#define GC_OPT_MULTITHREAD 1 /* set to 0 to disable multi-threading */
 #endif
 
 #ifndef GC_OPT_INCREMENTAL

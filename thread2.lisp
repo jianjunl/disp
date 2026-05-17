@@ -3,7 +3,7 @@
 (define m (make-mutex))
 
 (define inc (lambda ()
-  (dotimes (i 10)
+  (dotimes (i 1000)
     (lock m)
     (set! counter (+ counter 1))
     (unlock m))))

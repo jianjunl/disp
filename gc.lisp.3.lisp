@@ -8,7 +8,7 @@
 
 ;; 辅助函数：向 stderr 打印并换行
 (define null? (lambda (x) (eq? x nil)))
-(define fprintln (lambda (f s) (fprintf f "%s\n" s)))
+(define fprintln (lambda (f s) (safe-fprintf f "%s\n" s)))
 
 ;; 全局变量，用于控制后台线程
 (define *gc-thread* nil)          ; 当前运行的 GC 线程对象

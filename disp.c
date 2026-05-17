@@ -114,6 +114,7 @@ void disp_init_globals() {
 
     // make else evaluate to true (so cond's default clause works)
     DEF("else", TRUE, 1);
+    ELSE              = disp_find_symbol(NULL, "else");
 
     disp_import("disp.data.so");
     CONS              = disp_find_symbol(NULL, "cons");
@@ -128,6 +129,7 @@ void disp_init_globals() {
     LAMBDA  = disp_find_symbol(NULL, "lambda");
     disp_import("disp.let.so");
     LETA    = disp_find_symbol(NULL, "let*");
+    disp_import("disp.letrec.so");
     LETRECA = disp_find_symbol(NULL, "letrec*");
 
     disp_import("disp.define.so");
