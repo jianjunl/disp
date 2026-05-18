@@ -107,16 +107,15 @@ eval_result_t* disp_eval_tail(disp_scope_t *env, disp_val *expr, int is_tail, di
 
     // 特殊形式处理
     if (T(op) == DISP_SYMBOL) {
-        const char *opname = disp_get_symbol_name(op);
 
         // quote
-        if (strcmp(opname, "quote") == 0) {
+        if (op == QUOTE) {
             if (!args || T(args) != DISP_CONS) ERRO("malformed quote");
             return result_normal(disp_car(args));
         }
 
         // if
-        if (strcmp(opname, "if") == 0) {
+        if (op == IF) {
             if (!args || T(args) != DISP_CONS) ERRO("malformed if");
             disp_val *test = disp_car(args);
             disp_val *then_branch = disp_car(disp_cdr(args));
@@ -128,7 +127,7 @@ eval_result_t* disp_eval_tail(disp_scope_t *env, disp_val *expr, int is_tail, di
         }
 
         // begin
-        if (strcmp(opname, "begin") == 0) {
+        if (op == BEGIN || op == PROGN) {
             if (!args) return result_nil();
             disp_val *exprs = args;
             while (exprs && T(exprs) == DISP_CONS) {
@@ -147,7 +146,7 @@ eval_result_t* disp_eval_tail(disp_scope_t *env, disp_val *expr, int is_tail, di
         }
 
         // cond – 简单展开为嵌套 if
-        if (strcmp(opname, "cond") == 0) {
+        if (op == COND) {
             if (!args) return result_nil();
             disp_val *clauses = args;
             while (clauses && T(clauses) == DISP_CONS) {
@@ -178,8 +177,8 @@ eval_result_t* disp_eval_tail(disp_scope_t *env, disp_val *expr, int is_tail, di
             return result_nil();
         }
 
-        // and / or
-        if (strcmp(opname, "and") == 0) {
+        // and
+        if (op == AND) {
             if (args == NIL) return result_true();
             disp_val *exprs = args;
             disp_val *last_val = TRUE;
@@ -197,7 +196,8 @@ eval_result_t* disp_eval_tail(disp_scope_t *env, disp_val *expr, int is_tail, di
             }
             return result_normal(last_val);
         }
-        if (strcmp(opname, "or") == 0) {
+        // or
+        if (op == OR) {
             if (args == NIL) return result_nil();
             disp_val *exprs = args;
             disp_val *last_val = NIL;
@@ -217,7 +217,7 @@ eval_result_t* disp_eval_tail(disp_scope_t *env, disp_val *expr, int is_tail, di
         }
 
         // set!
-        if (strcmp(opname, "set!") == 0) {
+        if (op == SET || op == SETQ) {
             if (!args || T(args) != DISP_CONS || T(disp_car(args)) != DISP_SYMBOL) ERRO("malformed set!");
             const char *varname = disp_get_symbol_name(disp_car(args));
             disp_val *val_expr = disp_car(disp_cdr(args));
@@ -229,7 +229,7 @@ eval_result_t* disp_eval_tail(disp_scope_t *env, disp_val *expr, int is_tail, di
         }
 
         // define (仅允许顶层，但这里按局部处理)
-        if (strcmp(opname, "define") == 0) {
+        if (op == DEFINE) {
             if (!args || T(args) != DISP_CONS) ERRO("malformed define");
             disp_val *first = disp_car(args);
             if (T(first) == DISP_SYMBOL) {
@@ -248,7 +248,7 @@ eval_result_t* disp_eval_tail(disp_scope_t *env, disp_val *expr, int is_tail, di
         }
 
         // lambda
-        if (strcmp(opname, "lambda") == 0) {
+        if (op == LAMBDA) {
             if (!args || T(args) != DISP_CONS) ERRO("malformed lambda");
             disp_val *params = disp_car(args);
             disp_val *body = disp_cdr(args);
@@ -257,19 +257,19 @@ eval_result_t* disp_eval_tail(disp_scope_t *env, disp_val *expr, int is_tail, di
         }
 
         // let (简单形式，支持并行绑定)
-        if (strcmp(opname, "let") == 0) {
+        if (op == LET) {
             return disp_eval_tail_let(env, expr, is_tail, current_closure);
         }
         // let* : 顺序绑定，每个初值在扩展后的作用域中求值
-        if (strcmp(opname, "let*") == 0) {
+        if (op == LETA) {
             return disp_eval_tail_leta(env, expr, is_tail, current_closure);
         }
         // letrec : 并行绑定，所有初值在同一作用域内求值，变量可互相引用
-        if (strcmp(opname, "letrec") == 0) {
+        if (op == LETREC) {
             return disp_eval_tail_letrec(env, expr, is_tail, current_closure);
         }
         // letrec* : 顺序绑定，每个初值在已包含前面变量的作用域中求值
-        if (strcmp(opname, "letrec*") == 0) {
+        if (op == LETRECA) {
             return disp_eval_tail_letreca(env, expr, is_tail, current_closure);
         }
 

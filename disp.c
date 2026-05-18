@@ -128,8 +128,10 @@ void disp_init_globals() {
     disp_import("disp.lambda.so");
     LAMBDA  = disp_find_symbol(NULL, "lambda");
     disp_import("disp.let.so");
+    LET     = disp_find_symbol(NULL, "let");
     LETA    = disp_find_symbol(NULL, "let*");
     disp_import("disp.letrec.so");
+    LETREC  = disp_find_symbol(NULL, "letrec");
     LETRECA = disp_find_symbol(NULL, "letrec*");
 
     disp_import("disp.define.so");
@@ -145,4 +147,13 @@ void disp_init_globals() {
     disp_import("disp.os.so");
     disp_import("disp.coro.so");
     disp_import("disp.thread.so");
+    IF     = disp_find_symbol(NULL, "if");
+    BEGIN  = disp_find_symbol(NULL, "begin");
+    PROGN  = disp_find_symbol(NULL, "progn");
+    COND   = disp_find_symbol(NULL, "cond");
+    AND    = disp_find_symbol(NULL, "and");
+    OR     = disp_find_symbol(NULL, "or");
+    SET    = disp_find_symbol(NULL, "set!");
+    SETQ   = disp_find_symbol(NULL, "setq");
+    DEFINE = disp_find_symbol(NULL, "define");
 }

@@ -22,10 +22,9 @@ eval_result_t* disp_eval_tail_letreca(disp_scope_t *env, disp_val *expr, int is_
 
     // 特殊形式处理
     if (T(op) == DISP_SYMBOL) {
-        const char *opname = disp_get_symbol_name(op);
 
         // letrec* : 顺序绑定，每个初值在已包含前面变量的作用域中求值
-        if (strcmp(opname, "letrec*") == 0) {
+        if (op == LETRECA) {
             if (!args || T(args) != DISP_CONS) {
                 ERRO("malformed letrec*");
                 return result_nil();

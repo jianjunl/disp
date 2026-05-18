@@ -22,9 +22,8 @@ eval_result_t* disp_eval_tail_leta(disp_scope_t *env, disp_val *expr, int is_tai
 
     // 特殊形式处理
     if (T(op) == DISP_SYMBOL) {
-        const char *opname = disp_get_symbol_name(op);
         // let* : 顺序绑定，每个初值在扩展后的作用域中求值
-        if (strcmp(opname, "let*") == 0) {
+        if (op == LETA) {
             if (!args || T(args) != DISP_CONS) {
                 ERRO("malformed let*");
                 return result_nil();

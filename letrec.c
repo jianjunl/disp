@@ -22,10 +22,9 @@ eval_result_t* disp_eval_tail_letrec(disp_scope_t *env, disp_val *expr, int is_t
 
     // 特殊形式处理
     if (T(op) == DISP_SYMBOL) {
-        const char *opname = disp_get_symbol_name(op);
         // letrec : 并行绑定，所有初值在同一作用域内求值，变量可互相引用
         // letrec : 并行绑定（使用堆分配 + GC 根保护）
-        if (strcmp(opname, "letrec") == 0) {
+        if (op == LETREC) {
             if (!args || T(args) != DISP_CONS) {
                 ERRO("malformed letrec");
                 return result_nil();

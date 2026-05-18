@@ -22,9 +22,8 @@ eval_result_t* disp_eval_tail_let(disp_scope_t *env, disp_val *expr, int is_tail
 
     // 特殊形式处理
     if (T(op) == DISP_SYMBOL) {
-        const char *opname = disp_get_symbol_name(op);
         // let (简单形式，支持并行绑定)
-        if (strcmp(opname, "let") == 0) {
+        if (op == LET) {
             if (!args || T(args) != DISP_CONS) {
                 ERRO("malformed let");
                 return result_nil();
