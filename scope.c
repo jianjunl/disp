@@ -60,6 +60,10 @@ GC_STRUCT_TI(disp_scope,
 
 disp_scope_t *disp_global_scope = NULL;
 
+void gc_root_cleanup_disp_scope_t(disp_scope_t **ptr_addr) {
+    if (ptr_addr) gc_remove_root(ptr_addr);
+}
+
 static unsigned int hash(const char *s) {
     unsigned int h = 0;
     while (*s) h = h * 31 + (unsigned char)*s++;
@@ -95,28 +99,6 @@ static disp_val* make_symbol(const char *name) {
     GC_ASSIGN_PTR(v->data->symbol.value, NIL);
     
     return v;
-}
-
-// 在 scope.c 中添加
-disp_val* disp_lookup_symbol(const disp_scope_t *scope, const char *name, disp_scope_t **out_scope) {
-    if (!scope) scope = disp_global_scope;
-    if (out_scope) *out_scope = NULL;
-    while (scope) {
-        scope_lock(scope);
-        unsigned int idx = hash(name);
-        struct sym_entry *e = scope->buckets[idx];
-        while (e) {
-            if (strcmp(e->name, name) == 0) {
-                scope_unlock(scope);
-                if (out_scope) *out_scope = (disp_scope_t *)scope;
-                return e->symbol;
-            }
-            e = e->next;
-        }
-        scope_unlock(scope);
-        scope = scope->parent;
-    }
-    return NULL;
 }
 
 disp_val* disp_find_symbol(const disp_scope_t *scope, const char *name) {

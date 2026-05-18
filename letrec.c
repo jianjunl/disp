@@ -79,10 +79,8 @@ eval_result_t* disp_eval_tail_letrec(disp_scope_t *env, disp_val *expr, int is_t
             }
 
             // 创建新作用域
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wincompatible-pointer-types"
             GC_ROOT(disp_scope_t, new_scope) = disp_new_scope(env);
-#pragma GCC diagnostic pop
+
             // 先绑定所有变量为 NIL（占位符）
             for (int i = 0; i < var_count; i++) {
                 const char *name = disp_get_symbol_name(var_syms[i]);

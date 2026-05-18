@@ -36,10 +36,7 @@ eval_result_t* disp_eval_tail_leta(disp_scope_t *env, disp_val *expr, int is_tai
             }
 
             // 创建新作用域，父作用域为当前 env
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wincompatible-pointer-types"
             GC_ROOT(disp_scope_t, new_scope) = disp_new_scope(env);
-#pragma GCC diagnostic pop
 
             // 顺序处理每个绑定
             disp_val *b = bindings;

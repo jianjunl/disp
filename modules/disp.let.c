@@ -64,10 +64,7 @@ static disp_val* let_builtin(disp_scope_t *scope, disp_val *expr) {
     }
 
     /* 创建新作用域，父作用域为当前 scope */
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wincompatible-pointer-types"
     GC_ROOT(disp_scope_t, new_scope) = disp_new_scope(scope);
-#pragma GCC diagnostic pop
 
     disp_val *result = NIL;
 

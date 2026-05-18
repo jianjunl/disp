@@ -47,10 +47,7 @@ disp_val* disp_letf(disp_scope_t *scope, disp_val *expr) {
     }
 
     // 创建循环作用域
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wincompatible-pointer-types"
-            GC_ROOT(disp_scope_t, loop_scope) = disp_new_scope(scope);
-#pragma GCC diagnostic pop
+    GC_ROOT(disp_scope_t, loop_scope) = disp_new_scope(scope);
     
     // 1. 先绑定所有变量初值（此时闭包尚未创建）
     for (int i = 0; i < var_count; i++) {

@@ -222,12 +222,13 @@ void gc_root_assign(void *old, void *new);
  * attribute). Requires GCC or Clang.
  */
 #define GC_ROOT(type, ptr) \
-    type * ptr __attribute__((cleanup(gc_root_cleanup))) = NULL; \
+    type * ptr __attribute__((cleanup(gc_root_cleanup_##type))) = NULL; \
     gc_add_root(&ptr); \
     ptr
+#define GC_PROTECT(ptr) GC_ROOT(void, ptr)
 
 /* Internal helper for GC_ROOT; do not call directly. */
-void gc_root_cleanup(void **ptr_addr);
+void gc_root_cleanup_void(void **ptr_addr);
 
 #define GC_MALLOC_ROOT(ptr, type) GC_ROOT(type, ptr) = gc_malloc(sizeof(type))
 #define GC_CALLOC_ROOT(ptr, nmemb, type) GC_ROOT(type, ptr) = gc_calloc(nmemb, sizeof(type))

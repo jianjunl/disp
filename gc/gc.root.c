@@ -300,6 +300,6 @@ void gc_remove_root(void *ptr) {
     pthread_mutex_unlock(&gc_roots_lock);
 }
 
-void gc_root_cleanup(void **ptr_addr) {
+void gc_root_cleanup_void(void **ptr_addr) {
     if (ptr_addr) gc_remove_root(ptr_addr);
 }

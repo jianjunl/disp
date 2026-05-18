@@ -62,10 +62,7 @@ static disp_val* letrec_builtin(disp_scope_t *scope, disp_val *expr) {
     }
 
     /* 创建新作用域 */
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wincompatible-pointer-types"
     GC_ROOT(disp_scope_t, new_scope) = disp_new_scope(scope);
-#pragma GCC diagnostic pop
 
     /* 先在新作用域中绑定占位符 NIL */
     for (int i = 0; i < var_count; i++) {
