@@ -304,6 +304,9 @@ eval_result_t* disp_eval_tail(disp_scope_t *env, disp_val *expr, int is_tail, di
                 result = disp_get_syscall(func)(argv, arg_count);
             } else {
                 gc_free(argv);
+if (T(func) != DISP_CLOSURE && T(func) != DISP_BUILTIN && T(func) != DISP_SYSCALL) {
+    fprintf(stderr, "func type=%d, value=%p, symbol name=%s\n", T(func), func, disp_get_symbol_name(func));
+}
                 char *s = disp_string(func);
                 ERRO("%s is not a function or macro", s);
                 return result_nil();

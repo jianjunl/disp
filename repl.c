@@ -25,7 +25,7 @@
 
 /* ======================== REPL ======================== */
 
-void disp_repl() {
+void disp_repl2() {
 
     printf("disp Lisp (type :quit to exit)\n");
 
@@ -53,7 +53,7 @@ void disp_repl() {
 
 extern int parse_current_line;
 
-void disp_repl1() {
+void disp_repl() {
     printf("disp Lisp (type :quit to exit)\n");
 
     #include "keywords.h"
