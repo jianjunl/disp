@@ -185,11 +185,12 @@ disp_val* disp_apply_closure(disp_val *closure, disp_val **args, int arg_count) 
 */
 disp_val* disp_apply_closure(disp_val *closure, disp_val **args, int arg_count) {
     if (!closure->data->closure.reuse_scope) {
-        disp_scope_t *new_scope = disp_new_scope(closure->data->closure.env);
-        gc_add_root(&new_scope);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wincompatible-pointer-types"
+        GC_ROOT(disp_scope_t, new_scope) = disp_new_scope(closure->data->closure.env);
+#pragma GCC diagnostic pop
         bind_arguments_to_scope(new_scope, closure->data->closure.params, args, arg_count);
         disp_val *ret = disp_eval_body(new_scope, closure->data->closure.body);
-        gc_remove_root(&new_scope);
         return ret;
     }
 

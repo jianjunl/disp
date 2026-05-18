@@ -119,12 +119,6 @@ disp_val* disp_lookup_symbol(const disp_scope_t *scope, const char *name, disp_s
     return NULL;
 }
 
-/*
-disp_val* disp_find_symbol(const disp_scope_t *scope, const char *name) {
-    disp_scope_t *found_scope = NULL;
-    return disp_lookup_symbol(scope, name, &found_scope);
-}
-*/
 disp_val* disp_find_symbol(const disp_scope_t *scope, const char *name) {
     if (!scope) scope = disp_global_scope;
     while (scope) {

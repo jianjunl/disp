@@ -62,8 +62,10 @@ static disp_val* letrec_builtin(disp_scope_t *scope, disp_val *expr) {
     }
 
     /* 创建新作用域 */
-    disp_scope_t *new_scope = disp_new_scope(scope);
-    gc_add_root(&new_scope);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wincompatible-pointer-types"
+    GC_ROOT(disp_scope_t, new_scope) = disp_new_scope(scope);
+#pragma GCC diagnostic pop
 
     /* 先在新作用域中绑定占位符 NIL */
     for (int i = 0; i < var_count; i++) {
@@ -101,7 +103,6 @@ static disp_val* letrec_builtin(disp_scope_t *scope, disp_val *expr) {
         gc_remove_root(&values[i]);
     gc_remove_root(&values);
     gc_free(values);
-    gc_remove_root(&new_scope);
     gc_remove_root(&var_syms);
     gc_remove_root(&init_exprs);
     gc_free(var_syms);

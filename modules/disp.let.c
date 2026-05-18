@@ -64,8 +64,10 @@ static disp_val* let_builtin(disp_scope_t *scope, disp_val *expr) {
     }
 
     /* 创建新作用域，父作用域为当前 scope */
-    disp_scope_t *new_scope = disp_new_scope(scope);
-    gc_add_root(&new_scope);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wincompatible-pointer-types"
+    GC_ROOT(disp_scope_t, new_scope) = disp_new_scope(scope);
+#pragma GCC diagnostic pop
 
     disp_val *result = NIL;
 
@@ -101,7 +103,6 @@ static disp_val* let_builtin(disp_scope_t *scope, disp_val *expr) {
     }
 
     /* 清理资源 */
-    gc_remove_root(&new_scope);
     gc_remove_root(&var_syms);
     gc_remove_root(&init_exprs);
     gc_free(var_syms);

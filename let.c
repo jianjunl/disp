@@ -83,8 +83,10 @@ eval_result_t* disp_eval_tail_let(disp_scope_t *env, disp_val *expr, int is_tail
             }
 
             // 创建新作用域，父作用域为当前 env
-            disp_scope_t *new_scope = disp_new_scope(env);
-            gc_add_root(&new_scope);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wincompatible-pointer-types"
+            GC_ROOT(disp_scope_t, new_scope) = disp_new_scope(env);
+#pragma GCC diagnostic pop
             // 将所有变量绑定到新作用域（并行，一次性）
             for (int i = 0; i < var_count; i++) {
                 const char *name = disp_get_symbol_name(var_syms[i]);

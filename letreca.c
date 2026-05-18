@@ -37,8 +37,10 @@ eval_result_t* disp_eval_tail_letreca(disp_scope_t *env, disp_val *expr, int is_
             }
 
             // 创建新作用域
-            disp_scope_t *new_scope = disp_new_scope(env);
-            gc_add_root(&new_scope);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wincompatible-pointer-types"
+            GC_ROOT(disp_scope_t, new_scope) = disp_new_scope(env);
+#pragma GCC diagnostic pop
             // 顺序处理每个绑定
             disp_val *b = bindings;
             while (b && T(b) == DISP_CONS) {
