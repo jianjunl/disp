@@ -17,6 +17,10 @@
 #include "tail.h"
 
 eval_result_t* disp_eval_tail_let(disp_scope_t *env, disp_val *expr, int is_tail, disp_val *current_closure) {
+GC_ROOT_AUTO(expr);
+GC_ROOT_AUTO(env);
+GC_ROOT_AUTO(current_closure);
+
     disp_val *op = disp_car(expr);
     disp_val *args = disp_cdr(expr);
 
@@ -57,8 +61,8 @@ eval_result_t* disp_eval_tail_let(disp_scope_t *env, disp_val *expr, int is_tail
             // 分配临时数组并加入 GC 根
             disp_val **var_syms = gc_typed_malloc(var_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
             disp_val **init_vals = gc_typed_malloc(var_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
-            gc_add_root(&var_syms);
-            gc_add_root(&init_vals);
+            GC_ROOT_AUTO(var_syms);
+            GC_ROOT_AUTO(init_vals);
 
             // 解析绑定，并在旧环境中求值初值（并行绑定）
             int idx = 0;
@@ -66,8 +70,6 @@ eval_result_t* disp_eval_tail_let(disp_scope_t *env, disp_val *expr, int is_tail
             while (b && T(b) == DISP_CONS) {
                 disp_val *pair = disp_car(b);
                 if (T(pair) != DISP_CONS || T(disp_car(pair)) != DISP_SYMBOL) {
-                    gc_remove_root(&init_vals);
-                    gc_remove_root(&var_syms);
                     gc_free(init_vals);
                     gc_free(var_syms);
                     ERRO("malformed let binding");
@@ -76,14 +78,13 @@ eval_result_t* disp_eval_tail_let(disp_scope_t *env, disp_val *expr, int is_tail
                 var_syms[idx] = disp_car(pair);
                 // 在当前环境 env 中求值初值（并行）
                 init_vals[idx] = disp_eval(env, disp_car(disp_cdr(pair)));
-                // 保护每个初值（可选但安全）
-                gc_add_root(&init_vals[idx]);
                 idx++;
                 b = disp_cdr(b);
             }
 
             // 创建新作用域，父作用域为当前 env
-            GC_ROOT(disp_scope_t, new_scope) = disp_new_scope(env);
+            disp_scope_t *new_scope = disp_new_scope(env);
+            GC_ROOT_AUTO(new_scope);
 
             // 将所有变量绑定到新作用域（并行，一次性）
             for (int i = 0; i < var_count; i++) {
@@ -91,13 +92,7 @@ eval_result_t* disp_eval_tail_let(disp_scope_t *env, disp_val *expr, int is_tail
                 disp_define_symbol(new_scope, name, init_vals[i], 0);
             }
 
-            // 清理临时数组（先移除每个初值的保护，再释放数组）
-            for (int i = 0; i < var_count; i++) {
-                gc_remove_root(&init_vals[i]);
-            }
-            gc_remove_root(&init_vals);
             gc_free(init_vals);
-            gc_remove_root(&var_syms);
             gc_free(var_syms);
 
             // 对 body 序列进行尾求值（类似于 begin）

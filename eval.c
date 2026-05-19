@@ -16,8 +16,6 @@
 
 /* ======================== Evaluator ======================== */
 
-extern void bind_arguments_to_scope(disp_scope_t *scope, disp_val *params, disp_val **args, int arg_count);
-
 // 宏展开时使用定义环境求值宏体
 static disp_val* expand_macro(disp_val *macro, disp_val *expr) {
     disp_val *args = disp_cdr(expr);

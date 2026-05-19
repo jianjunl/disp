@@ -146,6 +146,8 @@ disp_val* disp_make_macro(disp_scope_t *env, disp_val *params, disp_val *body, i
 disp_val* disp_get_closure_params(disp_val *closure);
 disp_val* disp_get_closure_body(disp_val *closure);
 disp_val* disp_apply_closure(disp_val *closure, disp_val **args, int arg_count);
+disp_val* disp_letf(disp_scope_t *scope, disp_val *expr);
+void bind_arguments_to_scope(disp_scope_t *scope, disp_val *params, disp_val **args, int arg_count);
 
 // disp_info_t 定义
 typedef struct disp_info {

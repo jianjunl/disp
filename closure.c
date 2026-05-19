@@ -139,53 +139,10 @@ void bind_arguments_to_scope(disp_scope_t *scope, disp_val *params, disp_val **a
 
 #include "tail.h"
 
-/*
 disp_val* disp_apply_closure(disp_val *closure, disp_val **args, int arg_count) {
     if (!closure->data->closure.reuse_scope) {
         disp_scope_t *new_scope = disp_new_scope(closure->data->closure.env);
-        bind_arguments_to_scope(new_scope, closure->data->closure.params, args, arg_count);
-        return disp_eval_body(new_scope, closure->data->closure.body);
-    }
-
-    disp_scope_t *env = closure->data->closure.env;
-    disp_val *params = closure->data->closure.params;
-    disp_val *body = closure->data->closure.body;
-    disp_val **current_args = args;
-    int current_argc = arg_count;
-
-    while (1) {
-        bind_arguments_to_scope(env, params, current_args, current_argc);
-
-        // 将 body 视为隐式 begin
-        disp_val *exprs = body;
-        while (exprs && T(exprs) == DISP_CONS) {
-            disp_val *expr = disp_car(exprs);
-            disp_val *next = disp_cdr(exprs);
-            int tail = (next == NIL);
-            eval_result_t *res = disp_eval_tail(env, expr, tail, closure);
-            if (res->kind == 1) {
-                // 尾递归重启
-                // 释放旧参数数组（假设它是动态分配的）
-                if (current_args != args && current_args != NULL) {
-                    gc_free(current_args);
-                }
-                current_args = res->tail.new_args;
-                current_argc = res->tail.arg_count;
-                goto restart;
-            } else if (tail) {
-                return res->normal;
-            } else {
-                exprs = next;
-            }
-        }
-        restart:
-        continue;
-    }
-}
-*/
-disp_val* disp_apply_closure(disp_val *closure, disp_val **args, int arg_count) {
-    if (!closure->data->closure.reuse_scope) {
-        GC_ROOT(disp_scope_t, new_scope) = disp_new_scope(closure->data->closure.env);
+        GC_ROOT_AUTO(new_scope);
         bind_arguments_to_scope(new_scope, closure->data->closure.params, args, arg_count);
         disp_val *ret = disp_eval_body(new_scope, closure->data->closure.body);
         return ret;
@@ -195,6 +152,7 @@ disp_val* disp_apply_closure(disp_val *closure, disp_val **args, int arg_count) 
     disp_val *params = closure->data->closure.params;
     disp_val *body = closure->data->closure.body;
     disp_val **current_args = args;
+    GC_ROOT_AUTO(current_args);
     int current_argc = arg_count;
     eval_result_t *res = NULL;   // 用于释放
 

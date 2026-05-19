@@ -3,7 +3,7 @@
 (define *gc-mutex* (make-mutex))
 (define *gc-interval* 1.0)
 
-(define test (interval)
+(define (test interval)
   (let loop2 ()
     (thread-sleep *gc-interval*)
     (lock *gc-mutex*)

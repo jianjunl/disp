@@ -13,9 +13,6 @@
 #endif
 #include "../disp.h"
 
-extern disp_val* disp_letf(disp_scope_t *scope, disp_val *expr);
-extern void bind_arguments_to_scope(disp_scope_t *scope, disp_val *params, disp_val **args, int arg_count);
-
 static disp_val* let_builtin(disp_scope_t *scope, disp_val *expr) {
     disp_val *rest = disp_cdr(expr);
     if (!rest || T(rest) != DISP_CONS)
@@ -43,16 +40,14 @@ static disp_val* let_builtin(disp_scope_t *scope, disp_val *expr) {
     /* 提取变量符号和初值表达式 */
     disp_val **var_syms = gc_typed_malloc(var_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
     disp_val **init_exprs = gc_typed_malloc(var_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
-    gc_add_root(&var_syms);
-    gc_add_root(&init_exprs);
+    GC_ROOT_AUTO(var_syms);
+    GC_ROOT_AUTO(init_exprs);
 
     int idx = 0;
     disp_val *b = bindings;
     while (b && T(b) == DISP_CONS) {
         disp_val *pair = disp_car(b);
         if (T(pair) != DISP_CONS || T(disp_car(pair)) != DISP_SYMBOL) {
-            gc_remove_root(&init_exprs);
-            gc_remove_root(&var_syms);
             gc_free(init_exprs);
             gc_free(var_syms);
             ERET(NIL, "let: malformed binding (var expr)");
@@ -64,7 +59,8 @@ static disp_val* let_builtin(disp_scope_t *scope, disp_val *expr) {
     }
 
     /* 创建新作用域，父作用域为当前 scope */
-    GC_ROOT(disp_scope_t, new_scope) = disp_new_scope(scope);
+    disp_scope_t *new_scope = disp_new_scope(scope);
+    GC_ROOT_AUTO(new_scope);
 
     disp_val *result = NIL;
 
@@ -79,10 +75,10 @@ static disp_val* let_builtin(disp_scope_t *scope, disp_val *expr) {
     } else {                         /* let : 并行绑定 */
         /* 在当前作用域中计算所有初值 */
         disp_val **values = gc_typed_malloc(var_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
-        gc_add_root(&values);
+        GC_ROOT_AUTO(values);
         for (int i = 0; i < var_count; i++) {
             values[i] = disp_eval(scope, init_exprs[i]);
-            gc_add_root(&values[i]);
+            GC_ROOT_AUTO(values[i]);
         }
         /* 构造参数列表（符号列表） */
         disp_val *params = NIL;
@@ -93,15 +89,10 @@ static disp_val* let_builtin(disp_scope_t *scope, disp_val *expr) {
         /* 执行 body */
         result = disp_eval_body(new_scope, body);
         /* 清理 values 的保护 */
-        for (int i = 0; i < var_count; i++)
-            gc_remove_root(&values[i]);
-        gc_remove_root(&values);
         gc_free(values);
     }
 
     /* 清理资源 */
-    gc_remove_root(&var_syms);
-    gc_remove_root(&init_exprs);
     gc_free(var_syms);
     gc_free(init_exprs);
 

@@ -13,8 +13,6 @@
 #endif
 #include "../disp.h"
 
-extern disp_val* disp_letf(disp_scope_t *scope, disp_val *expr);
-
 static disp_val* letrec_builtin(disp_scope_t *scope, disp_val *expr) {
     disp_val *rest = disp_cdr(expr);
     if (!rest || T(rest) != DISP_CONS)
@@ -41,16 +39,14 @@ static disp_val* letrec_builtin(disp_scope_t *scope, disp_val *expr) {
 
     disp_val **var_syms = gc_typed_malloc(var_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
     disp_val **init_exprs = gc_typed_malloc(var_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
-    gc_add_root(&var_syms);
-    gc_add_root(&init_exprs);
+    GC_ROOT_AUTO(var_syms);
+    GC_ROOT_AUTO(init_exprs);
 
     int idx = 0;
     disp_val *b = bindings;
     while (b && T(b) == DISP_CONS) {
         disp_val *pair = disp_car(b);
         if (T(pair) != DISP_CONS || T(disp_car(pair)) != DISP_SYMBOL) {
-            gc_remove_root(&init_exprs);
-            gc_remove_root(&var_syms);
             gc_free(init_exprs);
             gc_free(var_syms);
             ERET(NIL, "letrec: malformed binding (var expr)");
@@ -62,7 +58,8 @@ static disp_val* letrec_builtin(disp_scope_t *scope, disp_val *expr) {
     }
 
     /* 创建新作用域 */
-    GC_ROOT(disp_scope_t, new_scope) = disp_new_scope(scope);
+    disp_scope_t *new_scope = disp_new_scope(scope);
+    GC_ROOT_AUTO(new_scope);
 
     /* 先在新作用域中绑定占位符 NIL */
     for (int i = 0; i < var_count; i++) {
@@ -72,11 +69,11 @@ static disp_val* letrec_builtin(disp_scope_t *scope, disp_val *expr) {
 
     /* 计算所有初值（在新作用域中，此时变量已存在但值为 NIL） */
     disp_val **values = gc_typed_malloc(var_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
-    gc_add_root(&values);
+    GC_ROOT_AUTO(values);
     if (disp_car(expr) == LETRECA) {   /* letrec* : 顺序初始化 */
         for (int i = 0; i < var_count; i++) {
             values[i] = disp_eval(new_scope, init_exprs[i]);
-            gc_add_root(&values[i]);
+            GC_ROOT_AUTO(values[i]);
             /* 立即更新绑定 */
             const char *name = disp_get_symbol_name(var_syms[i]);
             disp_define_symbol(new_scope, name, values[i], 0);
@@ -84,7 +81,7 @@ static disp_val* letrec_builtin(disp_scope_t *scope, disp_val *expr) {
     } else {                           /* letrec : 并行初始化 */
         for (int i = 0; i < var_count; i++) {
             values[i] = disp_eval(new_scope, init_exprs[i]);
-            gc_add_root(&values[i]);
+            GC_ROOT_AUTO(values[i]);
         }
         for (int i = 0; i < var_count; i++) {
             const char *name = disp_get_symbol_name(var_syms[i]);
@@ -96,12 +93,7 @@ static disp_val* letrec_builtin(disp_scope_t *scope, disp_val *expr) {
     disp_val *result = disp_eval_body(new_scope, body);
 
     /* 清理 */
-    for (int i = 0; i < var_count; i++)
-        gc_remove_root(&values[i]);
-    gc_remove_root(&values);
     gc_free(values);
-    gc_remove_root(&var_syms);
-    gc_remove_root(&init_exprs);
     gc_free(var_syms);
     gc_free(init_exprs);
 

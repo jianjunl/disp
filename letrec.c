@@ -56,8 +56,8 @@ eval_result_t* disp_eval_tail_letrec(disp_scope_t *env, disp_val *expr, int is_t
             // 分配临时数组并加入 GC 根
             disp_val **var_syms = gc_typed_malloc(var_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
             disp_val **init_exprs = gc_typed_malloc(var_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
-            gc_add_root(&var_syms);
-            gc_add_root(&init_exprs);
+            GC_ROOT_AUTO(var_syms);
+            GC_ROOT_AUTO(init_exprs);
 
             // 解析绑定
             int idx = 0;
@@ -65,8 +65,6 @@ eval_result_t* disp_eval_tail_letrec(disp_scope_t *env, disp_val *expr, int is_t
             while (b && T(b) == DISP_CONS) {
                 disp_val *pair = disp_car(b);
                 if (T(pair) != DISP_CONS || T(disp_car(pair)) != DISP_SYMBOL) {
-                    gc_remove_root(&init_exprs);
-                    gc_remove_root(&var_syms);
                     gc_free(init_exprs);
                     gc_free(var_syms);
                     ERRO("malformed letrec binding");
@@ -79,7 +77,8 @@ eval_result_t* disp_eval_tail_letrec(disp_scope_t *env, disp_val *expr, int is_t
             }
 
             // 创建新作用域
-            GC_ROOT(disp_scope_t, new_scope) = disp_new_scope(env);
+            disp_scope_t *new_scope = disp_new_scope(env);
+            GC_ROOT_AUTO(new_scope);
 
             // 先绑定所有变量为 NIL（占位符）
             for (int i = 0; i < var_count; i++) {
@@ -89,10 +88,9 @@ eval_result_t* disp_eval_tail_letrec(disp_scope_t *env, disp_val *expr, int is_t
 
             // 并行求值所有初值
             disp_val **init_vals = gc_typed_malloc(var_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
-            gc_add_root(&init_vals);
+            GC_ROOT_AUTO(init_vals);
             for (int i = 0; i < var_count; i++) {
                 init_vals[i] = disp_eval(new_scope, init_exprs[i]);
-                gc_add_root(&init_vals[i]);   // 每个值也要保护（可选，但安全）
             }
 
             // 更新绑定为实际值
@@ -102,14 +100,8 @@ eval_result_t* disp_eval_tail_letrec(disp_scope_t *env, disp_val *expr, int is_t
             }
 
             // 清理临时数组（先移除根再释放）
-            for (int i = 0; i < var_count; i++) {
-                gc_remove_root(&init_vals[i]);
-            }
-            gc_remove_root(&init_vals);
             gc_free(init_vals);
-            gc_remove_root(&init_exprs);
             gc_free(init_exprs);
-            gc_remove_root(&var_syms);
             gc_free(var_syms);
 
             // 对 body 序列进行尾求值

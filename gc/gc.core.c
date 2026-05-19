@@ -130,7 +130,7 @@ void* gc_typed_calloc(size_t nmemb, size_t size, const gc_type_info_t *type_info
     return ptr;
 }
 
-///*
+/*
 static bool remove_block_from_list(gc_block_t *blk) {
     gc_block_t *prev = NULL;
     for (gc_block_t *cur = gc_blocks; cur; prev = cur, cur = cur->next) {
@@ -176,15 +176,15 @@ void gc_free(void *ptr) {
 
     gc_pthread_mutex_unlock(&free_mutex);
 }
-//*/
-/*
+*/
+///*
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdiscarded-qualifiers"
 void gc_free(void *ptr) {
     (void)ptr; // conservative GC does not free immediately
 }
 #pragma GCC diagnostic pop
-*/
+//*/
 extern void gc_sweep(void);
 #if GC_MULTITHREAD
 extern volatile int  gc_stw_suspended_count;

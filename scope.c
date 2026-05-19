@@ -60,10 +60,6 @@ GC_STRUCT_TI(disp_scope,
 
 disp_scope_t *disp_global_scope = NULL;
 
-void gc_root_cleanup_disp_scope_t(disp_scope_t **ptr_addr) {
-    if (ptr_addr) gc_remove_root(ptr_addr);
-}
-
 static unsigned int hash(const char *s) {
     unsigned int h = 0;
     while (*s) h = h * 31 + (unsigned char)*s++;
