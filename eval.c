@@ -42,6 +42,7 @@ static disp_val* expand_macro(disp_val *macro, disp_val *expr) {
 }
 
 disp_val* disp_eval_body(disp_scope_t *scope, disp_val *body) {
+GC_ROOT(body);
     disp_val *result = NIL;
     while (body && T(body) == DISP_CONS) {
         result = disp_eval(scope, disp_car(body));

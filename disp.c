@@ -18,22 +18,12 @@
 disp_val* __attribute__((section("gc_roots"))) disp_builtin_roots[NUM_BUILTIN_ROOTS] = { NULL };
 
 /* ======================== Built‑in 'load' ======================== */
-
-static disp_val* import_builtin(disp_scope_t *env, disp_val *expr) {
-   GC_ROOT(env);
-   disp_val *rest = disp_cdr(expr);
-    if (rest == NIL) {
+static disp_val* import_syscall(disp_val **args, int argc) {
+    if (argc != 1 || T(args[0]) != DISP_STRING) {
         ERET(NIL, "import expects a string filename\n");
     }
-    if (disp_cdr(rest) != NIL) {
-        ERRO("import: warning - extra arguments ignored");
-    }
-    disp_val* arg0 = disp_eval(env, disp_car(rest));
-    if (T(arg0) != DISP_STRING) {
-        ERET(NIL, "load expects a string filename\n");
-    }
-    DBG("import_builtin: about to import '%s'\n", disp_get_str(arg0));
-    return disp_import(disp_get_str(arg0));
+    DBG("import_syscall: about to load '%s'\n", disp_get_str(args[0]));
+    return disp_import(disp_get_str(args[0]));
 }
 
 static disp_val* load_builtin(disp_scope_t *env, disp_val *expr) {
@@ -48,17 +38,15 @@ static disp_val* load_builtin(disp_scope_t *env, disp_val *expr) {
     if (T(arg0) != DISP_STRING) {
         ERET(NIL, "load expects a string filename\n");
     }
-    DBG("load_builtin: about to load '%s'\n", disp_get_str(arg0));
+    DBG("load_builtin: about to load '%s'\n", disp_get_str(args0));
     return disp_load(env, disp_get_str(arg0));
 }
 
 
-static disp_val* gc_builtin(disp_scope_t *env, disp_val *expr) {
-   (void)env;
-   disp_val *rest = disp_cdr(expr);
-    if (rest != NIL) {
-        ERRO("gc: warning - arguments ignored");
-    }
+static disp_val* gc_syscall(disp_val **args, int count) {
+    (void)args;
+    if (count != 0)
+        ERET(NIL, "gc expects no arguments");
     gc_collect();
     gc_dump_stats();
     return TRUE;
@@ -118,10 +106,9 @@ void disp_init_globals() {
     DEF("stdout" , disp_make_file(stdout,"w"), 1);
     DEF("stderr" , disp_make_file(stderr,"w"), 1);
 
-    DEF("import", MKB(import_builtin , "<#import>"), 1);
-    DEF("load"  , MKB(load_builtin   , "<#load>"  ), 1);
-    DEF("gc"    , MKB(gc_builtin     , "<#gc>"    ), 1);
-
+    DEF("import", MKF(import_syscall , "<import>"), 1);
+    DEF("load"  , MKB(load_builtin   , "<#load>"), 1);
+    DEF("gc"    , MKF(gc_syscall     , "<gc>"   ), 1);
     DEF("info"  , MKF(info_syscall , "<info>" ), 1);
     DEF("trace" , MKF(trace_syscall, "<trace>"), 1);
 
