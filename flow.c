@@ -20,13 +20,8 @@ extern eval_result_t* result_true();
 extern eval_result_t* result_normal(disp_val *normal);
 
 eval_result_t* disp_eval_tail_flow(disp_scope_t *env, disp_val *expr, int is_tail, disp_val *current_closure) {
-GC_ROOT_AUTO(expr);
-GC_ROOT_AUTO(env);
-GC_ROOT_AUTO(current_closure);
     disp_val *op = disp_car(expr);
     disp_val *args = disp_cdr(expr);
-GC_ROOT_AUTO(op);
-GC_ROOT_AUTO(args);
 
     // 特殊形式处理
     if (T(op) == DISP_SYMBOL) {

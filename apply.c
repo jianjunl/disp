@@ -30,8 +30,7 @@ static disp_val** eval_args_for_tail(disp_scope_t *env, disp_val *arg_list, int 
     for (disp_val *a = arg_list; a && T(a) == DISP_CONS; a = disp_cdr(a))
         (*arg_count)++;
     if (*arg_count == 0) return NULL;
-    disp_val **args = gc_typed_malloc(*arg_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
-    GC_ROOT_AUTO(args);   // 临时保护
+    GC_NEW(disp_val*, args) = gc_typed_malloc(*arg_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
     int i = 0;
     for (disp_val *a = arg_list; a && T(a) == DISP_CONS; a = disp_cdr(a)) {
         args[i++] = disp_eval(env, disp_car(a));
@@ -63,7 +62,6 @@ GC_TYPE_INFO(eval_result_ti, eval_result_t,
 );
 
 eval_result_t* result_normal(disp_val *normal) {
-    GC_ROOT_AUTO(normal);   // 临时保护
     eval_result_t *res = gc_typed_malloc(sizeof(eval_result_t), &eval_result_ti);
     res->kind = 0;
     res->normal = normal;
@@ -71,9 +69,7 @@ eval_result_t* result_normal(disp_val *normal) {
 }
 
 static eval_result_t* result_tail(disp_val **new_argv, int new_argc) {
-    GC_ROOT_AUTO(new_argv);   // 临时保护
     eval_result_t *res = gc_typed_malloc(sizeof(eval_result_t), &eval_result_ti);
-    GC_ROOT_AUTO(res);   // 临时保护
     res->kind = 1;
     res->tail.new_args = new_argv;
     res->tail.arg_count = new_argc;
@@ -82,10 +78,6 @@ static eval_result_t* result_tail(disp_val **new_argv, int new_argc) {
 
 // 核心尾位置求值函数
 eval_result_t* disp_eval_tail(disp_scope_t *env, disp_val *expr, int is_tail, disp_val *current_closure) {
-GC_ROOT_AUTO(expr);
-GC_ROOT_AUTO(env);
-GC_ROOT_AUTO(current_closure);
-
     if (expr == NIL) return result_nil();
 
     // 自求值原子
@@ -96,7 +88,6 @@ GC_ROOT_AUTO(current_closure);
     // 符号：查找变量
     if (T(expr) == DISP_SYMBOL) {
         disp_val *sym = disp_find_symbol(env, disp_get_symbol_name(expr));
-        GC_ROOT_AUTO(sym);
         if (!sym) {
             ERRO("unbound symbol: %s", disp_get_symbol_name(expr));
             return result_nil();
@@ -112,8 +103,6 @@ GC_ROOT_AUTO(current_closure);
 
     disp_val *op = disp_car(expr);
     disp_val *args = disp_cdr(expr);
-    GC_ROOT_AUTO(op);
-    GC_ROOT_AUTO(args);
 
     // 特殊形式处理
     if (T(op) == DISP_SYMBOL) {
@@ -163,7 +152,7 @@ GC_ROOT_AUTO(current_closure);
         } else {
             int arg_count = 0;
             for (disp_val *a = args; a && T(a) == DISP_CONS; a = disp_cdr(a)) arg_count++;
-            disp_val **argv = gc_typed_malloc(arg_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
+            GC_NEW(disp_val*, argv) = gc_typed_malloc(arg_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
             int i = 0;
             for (disp_val *a = args; a && T(a) == DISP_CONS; a = disp_cdr(a)) {
                 argv[i++] = disp_eval(env, disp_car(a));

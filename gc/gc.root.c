@@ -59,3 +59,9 @@ void gc_remove_root(void *ptr) {
     }
     pthread_mutex_unlock(&gc_roots_lock);
 }
+
+inline void gc_root_cleanup(void **ptr) {
+    if (ptr && *ptr) {
+        gc_remove_root(ptr);
+    }
+}

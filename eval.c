@@ -24,7 +24,7 @@ static disp_val* expand_macro(disp_val *macro, disp_val *expr) {
     disp_scope_t *macro_env = disp_get_closure_env(macro);
 
     // 创建新作用域：children of macro_env
-    disp_scope_t *expand_scope = disp_new_scope(macro_env);
+    GC_NEW(disp_scope_t, expand_scope) = disp_new_scope(macro_env);
     // 将实际参数（未求值）绑定到 expand_scope
     int arg_count = 0;
     for (disp_val *a = args; a && T(a) == DISP_CONS; a = disp_cdr(a)) arg_count++;
@@ -52,7 +52,6 @@ disp_val* disp_eval_body(disp_scope_t *scope, disp_val *body) {
 
 disp_val* disp_eval(disp_scope_t *scope, disp_val *expr) {
     if (!expr) return NIL;
-    gc_add_root(&expr);   // 保护入口表达式
     if (!scope) scope = disp_global_scope;
     switch (T(expr)) {
         case DISP_BYTE:
@@ -63,7 +62,6 @@ disp_val* disp_eval(disp_scope_t *scope, disp_val *expr) {
         case DISP_DOUBLE:
         case DISP_STRING:
         case DISP_VOID:
-            gc_remove_root(&expr);
             return expr;
         case DISP_SYMBOL: {
             if (V(expr) == QUIT) {
@@ -74,7 +72,6 @@ disp_val* disp_eval(disp_scope_t *scope, disp_val *expr) {
                 ERET(NIL, "undefined symbol: %s", S(expr));
             }
             disp_val *value = V(val);   // 注意：需要查找后取其 value
-            gc_remove_root(&expr);
             return value;
         }
         case DISP_CONS: {
@@ -84,16 +81,12 @@ disp_val* disp_eval(disp_scope_t *scope, disp_val *expr) {
             if (T(func_val) == DISP_MACRO) {
                 disp_val *expansion = expand_macro(func_val, expr);
                 if (expansion == NIL) {
-                    gc_remove_root(&expr);
                     return NIL;
                 }
-                disp_val *result = disp_eval(scope, expansion);
-                gc_remove_root(&expr);
-                return result;
+                return disp_eval(scope, expansion);
             }
 
             if (T(func_val) == DISP_BUILTIN) {
-                gc_remove_root(&expr);
                 return disp_get_builtin(func_val)(scope, expr);
             }
 
@@ -118,17 +111,13 @@ disp_val* disp_eval(disp_scope_t *scope, disp_val *expr) {
                 char *s = disp_string(func_val);
                 ERET(NIL, "%s is not a function or macro", s);
                 gc_free(s);
-                gc_remove_root(&expr);
                 return NIL;
             }
             gc_free(args);
-            gc_remove_root(&expr);
             return result;
         }
         default:
-            gc_remove_root(&expr);
             ERET(NIL, "cannot evaluate");
     }
-    gc_remove_root(&expr);
     return NIL;   // never reach
 }

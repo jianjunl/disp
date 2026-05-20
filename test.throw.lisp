@@ -49,7 +49,7 @@
         (block nil
           (return 55))     ; 离开内层 nil 块
         66)                ; 这行不会执行
-      55)                  ; 外层继续执行返回 55? 注意: 内层 return 离开内层块后，外层继续执行其尾表达式
+      66)                  ; 外层继续执行返回 55? 注意: 内层 return 离开内层块后，外层继续执行其尾表达式
 ;; 解释: (block nil (println "outer") (block nil (return 55)) 66) => 66? 
 ;; 实际上内层 return 退出了内层 block，然后外层的 body 继续执行 66，最终返回 66。
 (test "return from inner nil block"

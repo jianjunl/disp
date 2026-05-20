@@ -54,10 +54,8 @@ eval_result_t* disp_eval_tail_letrec(disp_scope_t *env, disp_val *expr, int is_t
             }
 
             // 分配临时数组并加入 GC 根
-            disp_val **var_syms = gc_typed_malloc(var_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
-            disp_val **init_exprs = gc_typed_malloc(var_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
-            GC_ROOT_AUTO(var_syms);
-            GC_ROOT_AUTO(init_exprs);
+            GC_NEW(disp_val*, var_syms) = gc_typed_malloc(var_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
+            GC_NEW(disp_val*, init_exprs) = gc_typed_malloc(var_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
 
             // 解析绑定
             int idx = 0;
@@ -77,8 +75,7 @@ eval_result_t* disp_eval_tail_letrec(disp_scope_t *env, disp_val *expr, int is_t
             }
 
             // 创建新作用域
-            disp_scope_t *new_scope = disp_new_scope(env);
-            GC_ROOT_AUTO(new_scope);
+            GC_NEW(disp_scope_t, new_scope) = disp_new_scope(env);
 
             // 先绑定所有变量为 NIL（占位符）
             for (int i = 0; i < var_count; i++) {
@@ -87,8 +84,7 @@ eval_result_t* disp_eval_tail_letrec(disp_scope_t *env, disp_val *expr, int is_t
             }
 
             // 并行求值所有初值
-            disp_val **init_vals = gc_typed_malloc(var_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
-            GC_ROOT_AUTO(init_vals);
+            GC_NEW(disp_val*, init_vals) = gc_typed_malloc(var_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
             for (int i = 0; i < var_count; i++) {
                 init_vals[i] = disp_eval(new_scope, init_exprs[i]);
             }

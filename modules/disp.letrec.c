@@ -37,10 +37,8 @@ static disp_val* letrec_builtin(disp_scope_t *scope, disp_val *expr) {
     if (var_count == 0)
         return disp_eval_body(scope, body);
 
-    disp_val **var_syms = gc_typed_malloc(var_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
-    disp_val **init_exprs = gc_typed_malloc(var_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
-    GC_ROOT_AUTO(var_syms);
-    GC_ROOT_AUTO(init_exprs);
+    GC_NEW(disp_val*, var_syms) = gc_typed_malloc(var_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
+    GC_NEW(disp_val*, init_exprs) = gc_typed_malloc(var_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
 
     int idx = 0;
     disp_val *b = bindings;
@@ -58,8 +56,7 @@ static disp_val* letrec_builtin(disp_scope_t *scope, disp_val *expr) {
     }
 
     /* 创建新作用域 */
-    disp_scope_t *new_scope = disp_new_scope(scope);
-    GC_ROOT_AUTO(new_scope);
+    GC_NEW(disp_scope_t, new_scope) = disp_new_scope(scope);
 
     /* 先在新作用域中绑定占位符 NIL */
     for (int i = 0; i < var_count; i++) {
@@ -68,12 +65,10 @@ static disp_val* letrec_builtin(disp_scope_t *scope, disp_val *expr) {
     }
 
     /* 计算所有初值（在新作用域中，此时变量已存在但值为 NIL） */
-    disp_val **values = gc_typed_malloc(var_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
-    GC_ROOT_AUTO(values);
+    GC_NEW(disp_val*, values) = gc_typed_malloc(var_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
     if (disp_car(expr) == LETRECA) {   /* letrec* : 顺序初始化 */
         for (int i = 0; i < var_count; i++) {
             values[i] = disp_eval(new_scope, init_exprs[i]);
-            GC_ROOT_AUTO(values[i]);
             /* 立即更新绑定 */
             const char *name = disp_get_symbol_name(var_syms[i]);
             disp_define_symbol(new_scope, name, values[i], 0);
@@ -81,7 +76,6 @@ static disp_val* letrec_builtin(disp_scope_t *scope, disp_val *expr) {
     } else {                           /* letrec : 并行初始化 */
         for (int i = 0; i < var_count; i++) {
             values[i] = disp_eval(new_scope, init_exprs[i]);
-            GC_ROOT_AUTO(values[i]);
         }
         for (int i = 0; i < var_count; i++) {
             const char *name = disp_get_symbol_name(var_syms[i]);

@@ -130,7 +130,7 @@ disp_val* disp_define_symbol(const disp_scope_t *scope, const char *name, disp_v
     DBG("disp_define_symbol: %s\n", name);
     scope_lock(scope);
     unsigned int idx = hash(name);
-    struct sym_entry *e = disp_global_scope->buckets[idx];
+    struct sym_entry *e = scope->buckets[idx];
     while (e) {
         if (strcmp(e->name, name) == 0) {
             if (e->final) {
@@ -153,8 +153,8 @@ disp_val* disp_define_symbol(const disp_scope_t *scope, const char *name, disp_v
     GC_ASSIGN_PTR(new_entry->name, gc_strdup(name));
     GC_ASSIGN_PTR(new_entry->symbol, sym);
     new_entry->final = final;
-    GC_ASSIGN_PTR(new_entry->next, disp_global_scope->buckets[idx]);
-    GC_ASSIGN_PTR(disp_global_scope->buckets[idx], new_entry);
+    GC_ASSIGN_PTR(new_entry->next, scope->buckets[idx]);
+    GC_ASSIGN_PTR(scope->buckets[idx], new_entry);
     
     scope_unlock(scope);
     return sym;
@@ -164,7 +164,7 @@ disp_val* disp_intern_symbol(const disp_scope_t *scope, const char *name) {
     if (!scope) scope = disp_global_scope;
     scope_lock(scope);
     unsigned int idx = hash(name);
-    struct sym_entry *e = disp_global_scope->buckets[idx];
+    struct sym_entry *e = scope->buckets[idx];
     while (e) {
         if (strcmp(e->name, name) == 0) {
             scope_unlock(scope);
@@ -180,8 +180,8 @@ disp_val* disp_intern_symbol(const disp_scope_t *scope, const char *name) {
     GC_ASSIGN_PTR(new_entry->name, gc_strdup(name));
     GC_ASSIGN_PTR(new_entry->symbol, sym);
     new_entry->final = 0;
-    GC_ASSIGN_PTR(new_entry->next, disp_global_scope->buckets[idx]);
-    GC_ASSIGN_PTR(disp_global_scope->buckets[idx], new_entry);
+    GC_ASSIGN_PTR(new_entry->next, scope->buckets[idx]);
+    GC_ASSIGN_PTR(scope->buckets[idx], new_entry);
     
     scope_unlock(scope);
     return sym;

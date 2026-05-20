@@ -50,7 +50,6 @@ void disp_lock_table(void);
 void disp_unlock_table(void);
 char* disp_get_symbol_name(disp_val *v);
 disp_val* disp_get_symbol_value(disp_val *v);
-void disp_set_symbol_value(disp_val *v, disp_val *val);
 disp_val* disp_make_int(int i);
 disp_val* disp_make_long(long l);
 char disp_get_byte(disp_val *v);

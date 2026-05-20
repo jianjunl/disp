@@ -17,10 +17,6 @@
 #include "tail.h"
 
 eval_result_t* disp_eval_tail_let(disp_scope_t *env, disp_val *expr, int is_tail, disp_val *current_closure) {
-GC_ROOT_AUTO(expr);
-GC_ROOT_AUTO(env);
-GC_ROOT_AUTO(current_closure);
-
     disp_val *op = disp_car(expr);
     disp_val *args = disp_cdr(expr);
 
@@ -59,10 +55,8 @@ GC_ROOT_AUTO(current_closure);
             }
 
             // 分配临时数组并加入 GC 根
-            disp_val **var_syms = gc_typed_malloc(var_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
-            disp_val **init_vals = gc_typed_malloc(var_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
-            GC_ROOT_AUTO(var_syms);
-            GC_ROOT_AUTO(init_vals);
+            GC_NEW(disp_val*, var_syms) = gc_typed_malloc(var_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
+            GC_NEW(disp_val*, init_vals) = gc_typed_malloc(var_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
 
             // 解析绑定，并在旧环境中求值初值（并行绑定）
             int idx = 0;
@@ -83,8 +77,7 @@ GC_ROOT_AUTO(current_closure);
             }
 
             // 创建新作用域，父作用域为当前 env
-            disp_scope_t *new_scope = disp_new_scope(env);
-            GC_ROOT_AUTO(new_scope);
+            GC_NEW(disp_scope_t, new_scope) = disp_new_scope(env);
 
             // 将所有变量绑定到新作用域（并行，一次性）
             for (int i = 0; i < var_count; i++) {

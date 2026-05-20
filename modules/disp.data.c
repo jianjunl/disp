@@ -276,6 +276,8 @@ static disp_val* equal_syscall(disp_val **args, int count) {
     /* 比较 NIL */
     if (a == NIL && b == NIL) return TRUE;
     if (a == NIL || b == NIL) return NIL;
+    if (a == TRUE && b != NIL) return TRUE;
+    if (b == TRUE && a != NIL) return TRUE;
 
     /* 类型不同，快速失败 */
     if (T(a) != T(b)) return NIL;

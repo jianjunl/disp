@@ -141,8 +141,7 @@ void bind_arguments_to_scope(disp_scope_t *scope, disp_val *params, disp_val **a
 
 disp_val* disp_apply_closure(disp_val *closure, disp_val **args, int arg_count) {
     if (!closure->data->closure.reuse_scope) {
-        disp_scope_t *new_scope = disp_new_scope(closure->data->closure.env);
-        GC_ROOT_AUTO(new_scope);
+        GC_NEW(disp_scope_t, new_scope) = disp_new_scope(closure->data->closure.env);
         bind_arguments_to_scope(new_scope, closure->data->closure.params, args, arg_count);
         disp_val *ret = disp_eval_body(new_scope, closure->data->closure.body);
         return ret;
@@ -152,7 +151,6 @@ disp_val* disp_apply_closure(disp_val *closure, disp_val **args, int arg_count) 
     disp_val *params = closure->data->closure.params;
     disp_val *body = closure->data->closure.body;
     disp_val **current_args = args;
-    GC_ROOT_AUTO(current_args);
     int current_argc = arg_count;
     eval_result_t *res = NULL;   // 用于释放
 

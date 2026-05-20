@@ -34,12 +34,12 @@ static disp_val* define_builtin(disp_scope_t *scope, disp_val *expr) {
                 // 构造 (lambda (params) body1 body2 ...)
                 disp_val *params = second;              // 允许 NIL
                 // 原来构造 lambda_expr 再求值，改为直接创建闭包
-                //disp_val *lambda_expr = disp_make_cons(LAMBDA, disp_make_cons(params, body_rest));
-                //disp_val *closure = disp_eval(scope, lambda_expr);
-                //disp_define_symbol(scope, S(first_arg), closure, 0);
-                // 直接创建可尾递归优化的闭包
-                disp_val *closure = disp_make_closure(scope, params, body_rest, 1);
+                disp_val *lambda_expr = disp_make_cons(LAMBDA, disp_make_cons(params, body_rest));
+                disp_val *closure = disp_eval(scope, lambda_expr);
                 disp_define_symbol(scope, S(first_arg), closure, 0);
+                // 直接创建可尾递归优化的闭包
+                //disp_val *closure = disp_make_closure(scope, params, body_rest, 1);
+                //disp_define_symbol(scope, S(first_arg), closure, 0);
                 return first_arg;
             }
         }
