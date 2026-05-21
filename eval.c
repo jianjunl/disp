@@ -9,6 +9,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <time.h>
+#include <ucontext.h>
 #ifndef DEBUG
 //#define DEBUG
 #endif
@@ -24,7 +25,7 @@ static disp_val* expand_macro(disp_val *macro, disp_val *expr) {
     disp_scope_t *macro_env = disp_get_closure_env(macro);
 
     // 创建新作用域：children of macro_env
-    GC_NEW(disp_scope_t, expand_scope) = disp_new_scope(macro_env);
+    GC_ROOT(disp_scope_t, expand_scope) = disp_new_scope(macro_env);
     // 将实际参数（未求值）绑定到 expand_scope
     int arg_count = 0;
     for (disp_val *a = args; a && T(a) == DISP_CONS; a = disp_cdr(a)) arg_count++;
@@ -42,7 +43,7 @@ static disp_val* expand_macro(disp_val *macro, disp_val *expr) {
 }
 
 disp_val* disp_eval_body(disp_scope_t *scope, disp_val *body) {
-GC_ROOT(body);
+    GC_ROOT_AUTO(body);
     disp_val *result = NIL;
     while (body && T(body) == DISP_CONS) {
         result = disp_eval(scope, disp_car(body));

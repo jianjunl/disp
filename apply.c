@@ -30,7 +30,7 @@ static disp_val** eval_args_for_tail(disp_scope_t *env, disp_val *arg_list, int 
     for (disp_val *a = arg_list; a && T(a) == DISP_CONS; a = disp_cdr(a))
         (*arg_count)++;
     if (*arg_count == 0) return NULL;
-    GC_NEW(disp_val*, args) = gc_typed_malloc(*arg_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
+    GC_ROOT(disp_val*, args) = gc_typed_malloc(*arg_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
     int i = 0;
     for (disp_val *a = arg_list; a && T(a) == DISP_CONS; a = disp_cdr(a)) {
         args[i++] = disp_eval(env, disp_car(a));
@@ -152,7 +152,7 @@ eval_result_t* disp_eval_tail(disp_scope_t *env, disp_val *expr, int is_tail, di
         } else {
             int arg_count = 0;
             for (disp_val *a = args; a && T(a) == DISP_CONS; a = disp_cdr(a)) arg_count++;
-            GC_NEW(disp_val*, argv) = gc_typed_malloc(arg_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
+            GC_ROOT(disp_val*, argv) = gc_typed_malloc(arg_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
             int i = 0;
             for (disp_val *a = args; a && T(a) == DISP_CONS; a = disp_cdr(a)) {
                 argv[i++] = disp_eval(env, disp_car(a));

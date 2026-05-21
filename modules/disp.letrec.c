@@ -37,8 +37,8 @@ static disp_val* letrec_builtin(disp_scope_t *scope, disp_val *expr) {
     if (var_count == 0)
         return disp_eval_body(scope, body);
 
-    GC_NEW(disp_val*, var_syms) = gc_typed_malloc(var_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
-    GC_NEW(disp_val*, init_exprs) = gc_typed_malloc(var_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
+    GC_ROOT(disp_val*, var_syms) = gc_typed_malloc(var_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
+    GC_ROOT(disp_val*, init_exprs) = gc_typed_malloc(var_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
 
     int idx = 0;
     disp_val *b = bindings;
@@ -56,7 +56,7 @@ static disp_val* letrec_builtin(disp_scope_t *scope, disp_val *expr) {
     }
 
     /* 创建新作用域 */
-    GC_NEW(disp_scope_t, new_scope) = disp_new_scope(scope);
+    GC_ROOT(disp_scope_t, new_scope) = disp_new_scope(scope);
 
     /* 先在新作用域中绑定占位符 NIL */
     for (int i = 0; i < var_count; i++) {
@@ -65,7 +65,7 @@ static disp_val* letrec_builtin(disp_scope_t *scope, disp_val *expr) {
     }
 
     /* 计算所有初值（在新作用域中，此时变量已存在但值为 NIL） */
-    GC_NEW(disp_val*, values) = gc_typed_malloc(var_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
+    GC_ROOT(disp_val*, values) = gc_typed_malloc(var_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
     if (disp_car(expr) == LETRECA) {   /* letrec* : 顺序初始化 */
         for (int i = 0; i < var_count; i++) {
             values[i] = disp_eval(new_scope, init_exprs[i]);

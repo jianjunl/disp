@@ -37,7 +37,7 @@ eval_result_t* disp_eval_tail_letreca(disp_scope_t *env, disp_val *expr, int is_
             }
 
             // 创建新作用域
-            GC_NEW(disp_scope_t, new_scope) = disp_new_scope(env);
+            GC_ROOT(disp_scope_t, new_scope) = disp_new_scope(env);
 
             // 顺序处理每个绑定
             disp_val *b = bindings;

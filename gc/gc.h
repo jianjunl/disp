@@ -165,11 +165,11 @@ void gc_add_root(void *ptr_addr);
 void gc_remove_root(void *ptr_addr);
 
 /*
- * GC_NEW -  declare ptr for stack-allocated precise roots.
+ * GC_ROOT -  declare ptr for stack-allocated precise roots.
  *
  * Usage:
- *   GC_ROOT(my_ptr);
- *   GC_NEW(node_t, my_list) = gc_malloc(sizeof(node_t));
+ *   GC_ROOT_AUTO(my_ptr);
+ *   GC_ROOT(node_t, my_list) = gc_malloc(sizeof(node_t));
  *
  * This declares a pointer variable named 'my_list' of type 'node_t*',
  * automatically registers it as a root, and arranges for it to be
@@ -179,16 +179,16 @@ void gc_remove_root(void *ptr_addr);
 #define CONCAT_IMPL(x, y) x##y
 #define CONCAT(x, y) CONCAT_IMPL(x, y)
 
-#define GC_ROOT(var) \
-    void* CONCAT(__gc_auto_root_, __COUNTER__) __attribute__((cleanup(gc_root_cleanup))) = (void*)&(var); \
+#define GC_ROOT_AUTO(var) \
+    void* CONCAT(__gc_auto_root_, __COUNTER__) __attribute__((cleanup(gc_auto_root_cleanup))) = (void*)&(var); \
     gc_add_root(&(var))
 
-#define GC_NEW(type, ptr) \
-    type * ptr = NULL; GC_ROOT(ptr); \
+#define GC_ROOT(type, ptr) \
+    type * ptr = NULL; GC_ROOT_AUTO(ptr); \
     ptr
 
 /* Internal helper for GC_ROOT; do not call directly. */
-void gc_root_cleanup(void **ptr_addr);
+void gc_auto_root_cleanup(void **ptr_addr);
 
 /* ------------------------------------------------------------------------
  * Typed allocation support

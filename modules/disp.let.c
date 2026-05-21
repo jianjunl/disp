@@ -38,8 +38,8 @@ static disp_val* let_builtin(disp_scope_t *scope, disp_val *expr) {
         return disp_eval_body(scope, body);
 
     /* 提取变量符号和初值表达式 */
-    GC_NEW(disp_val*, var_syms) = gc_typed_malloc(var_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
-    GC_NEW(disp_val*, init_exprs) = gc_typed_malloc(var_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
+    GC_ROOT(disp_val*, var_syms) = gc_typed_malloc(var_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
+    GC_ROOT(disp_val*, init_exprs) = gc_typed_malloc(var_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
 
     int idx = 0;
     disp_val *b = bindings;
@@ -57,7 +57,7 @@ static disp_val* let_builtin(disp_scope_t *scope, disp_val *expr) {
     }
 
     /* 创建新作用域，父作用域为当前 scope */
-    GC_NEW(disp_scope_t, new_scope) = disp_new_scope(scope);
+    GC_ROOT(disp_scope_t, new_scope) = disp_new_scope(scope);
 
     disp_val *result = NIL;
 
@@ -71,12 +71,12 @@ static disp_val* let_builtin(disp_scope_t *scope, disp_val *expr) {
         result = disp_eval_body(new_scope, body);
     } else {                         /* let : 并行绑定 */
         /* 在当前作用域中计算所有初值 */
-        GC_NEW(disp_val*, values) = gc_typed_malloc(var_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
+        GC_ROOT(disp_val*, values) = gc_typed_malloc(var_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
         for (int i = 0; i < var_count; i++) {
             values[i] = disp_eval(new_scope, init_exprs[i]);
         }
         /* 构造参数列表（符号列表） */
-        GC_NEW(disp_val, params) = NIL;
+        GC_ROOT(disp_val, params) = NIL;
         for (int i = var_count - 1; i >= 0; i--)
             params = disp_make_cons(var_syms[i], params);
         /* 一次性绑定到新作用域 */

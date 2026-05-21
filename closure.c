@@ -141,7 +141,7 @@ void bind_arguments_to_scope(disp_scope_t *scope, disp_val *params, disp_val **a
 
 disp_val* disp_apply_closure(disp_val *closure, disp_val **args, int arg_count) {
     if (!closure->data->closure.reuse_scope) {
-        GC_NEW(disp_scope_t, new_scope) = disp_new_scope(closure->data->closure.env);
+        GC_ROOT(disp_scope_t, new_scope) = disp_new_scope(closure->data->closure.env);
         bind_arguments_to_scope(new_scope, closure->data->closure.params, args, arg_count);
         disp_val *ret = disp_eval_body(new_scope, closure->data->closure.body);
         return ret;

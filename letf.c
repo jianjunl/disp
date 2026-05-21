@@ -29,8 +29,8 @@ disp_val* disp_letf(disp_scope_t *scope, disp_val *expr) {
     // 提取变量和初值
     int var_count = 0;
     for (disp_val *b = bindings; b && T(b) == DISP_CONS; b = disp_cdr(b)) var_count++;
-    GC_NEW(disp_val*, var_syms) = gc_typed_malloc(var_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
-    GC_NEW(disp_val*, init_exprs) = gc_typed_malloc(var_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
+    GC_ROOT(disp_val*, var_syms) = gc_typed_malloc(var_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
+    GC_ROOT(disp_val*, init_exprs) = gc_typed_malloc(var_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
     int idx = 0;
     for (disp_val *b = bindings; b && T(b) == DISP_CONS; b = disp_cdr(b)) {
         disp_val *pair = disp_car(b);
@@ -45,7 +45,7 @@ disp_val* disp_letf(disp_scope_t *scope, disp_val *expr) {
     }
 
     // 创建循环作用域
-    GC_NEW(disp_scope_t, loop_scope) = disp_new_scope(scope);
+    GC_ROOT(disp_scope_t, loop_scope) = disp_new_scope(scope);
     
     // 1. 先绑定所有变量初值（此时闭包尚未创建）
     for (int i = 0; i < var_count; i++) {
@@ -55,7 +55,7 @@ disp_val* disp_letf(disp_scope_t *scope, disp_val *expr) {
     }
     
     // 2. 提取当前变量的值作为调用闭包的初始参数（此时所有变量都是初值）
-    GC_NEW(disp_val*, args) = gc_typed_malloc(var_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
+    GC_ROOT(disp_val*, args) = gc_typed_malloc(var_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
     for (int i = 0; i < var_count; i++) {
         const char *vname = disp_get_symbol_name(var_syms[i]);
         disp_val *sym = disp_find_symbol(loop_scope, vname);
