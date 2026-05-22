@@ -188,7 +188,7 @@ void gc_remove_root(void *ptr_addr);
     ptr
 
 /* Internal helper for GC_ROOT; do not call directly. */
-void gc_auto_root_cleanup(void **ptr_addr);
+void gc_auto_root_cleanup(void **ptr);
 
 /* ------------------------------------------------------------------------
  * Typed allocation support

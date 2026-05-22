@@ -21,6 +21,7 @@ typedef struct eval_result {
     union {
         disp_val *normal;
         struct {
+            disp_val *target;      // 要调用的目标函数
             disp_val **new_args;
             int arg_count;
         } tail;
@@ -30,3 +31,6 @@ typedef struct eval_result {
 extern eval_result_t* result_nil();
 
 extern eval_result_t* disp_eval_tail(disp_scope_t *env, disp_val *expr, int is_tail, disp_val *current_closure);
+
+/* 从参数数组调用内置函数（构造临时表达式） */
+disp_val* disp_apply_builtin_from_array(disp_val *builtin, disp_scope_t *env, disp_val **args, int arg_count);

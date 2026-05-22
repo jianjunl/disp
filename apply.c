@@ -25,12 +25,12 @@ static int is_self_evaluating(disp_val *expr) {
 }
 
 // 辅助：求值参数列表（用于自调用）
-static disp_val** eval_args_for_tail(disp_scope_t *env, disp_val *arg_list, int *arg_count) {
-    *arg_count = 0;
+static disp_val** eval_args_for_tail(disp_scope_t *env, disp_val *arg_list, int arg_count) {
+    arg_count = 0;
     for (disp_val *a = arg_list; a && T(a) == DISP_CONS; a = disp_cdr(a))
-        (*arg_count)++;
-    if (*arg_count == 0) return NULL;
-    GC_ROOT(disp_val*, args) = gc_typed_malloc(*arg_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
+        (arg_count)++;
+    if (arg_count == 0) return NULL;
+    GC_ROOT(disp_val*, args) = gc_typed_malloc(arg_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
     int i = 0;
     for (disp_val *a = arg_list; a && T(a) == DISP_CONS; a = disp_cdr(a)) {
         args[i++] = disp_eval(env, disp_car(a));
@@ -58,19 +58,21 @@ eval_result_t* result_true() {
 
 GC_TYPE_INFO(eval_result_ti, eval_result_t,
     offsetof(eval_result_t, normal),       // disp_val*
+    offsetof(eval_result_t, tail.target),  // disp_val*
     offsetof(eval_result_t, tail.new_args) // disp_val**
 );
 
 eval_result_t* result_normal(disp_val *normal) {
-    eval_result_t *res = gc_typed_malloc(sizeof(eval_result_t), &eval_result_ti);
+    GC_ROOT(eval_result_t, res) = gc_typed_malloc(sizeof(eval_result_t), &eval_result_ti);
     res->kind = 0;
     res->normal = normal;
     return res;
 }
 
-static eval_result_t* result_tail(disp_val **new_argv, int new_argc) {
-    eval_result_t *res = gc_typed_malloc(sizeof(eval_result_t), &eval_result_ti);
+static eval_result_t* result_tail(disp_val *target, disp_val **new_argv, int new_argc) {
+    GC_ROOT(eval_result_t, res) = gc_typed_malloc(sizeof(eval_result_t), &eval_result_ti);
     res->kind = 1;
+    res->tail.target = target;
     res->tail.new_args = new_argv;
     res->tail.arg_count = new_argc;
     return res;
@@ -78,6 +80,7 @@ static eval_result_t* result_tail(disp_val **new_argv, int new_argc) {
 
 // 核心尾位置求值函数
 eval_result_t* disp_eval_tail(disp_scope_t *env, disp_val *expr, int is_tail, disp_val *current_closure) {
+GC_ROOT_AUTO(env);
     if (expr == NIL) return result_nil();
 
     // 自求值原子
@@ -138,11 +141,18 @@ eval_result_t* disp_eval_tail(disp_scope_t *env, disp_val *expr, int is_tail, di
     // 先求值操作符
     disp_val *func = disp_eval(env, op);
 
+/*
     if (is_tail && func == current_closure) {
         // 尾递归自调用：提取参数并返回重启标记
         int new_argc = 0;
         disp_val **new_argv = eval_args_for_tail(env, args, &new_argc);
         return result_tail(new_argv, new_argc);
+*/
+    if (is_tail && (T(func) == DISP_CLOSURE || T(func) == DISP_BUILTIN || T(func) == DISP_SYSCALL)) {
+        // 尾调用优化：求值参数后返回尾调用结果（不立即应用）
+        int arg_count = 0;
+        disp_val **args_arr = eval_args_for_tail(env, args, arg_count);
+        return result_tail(func, args_arr, arg_count);
     } else {
         // 正常调用：求值参数并应用
         disp_val *result;
@@ -164,7 +174,8 @@ eval_result_t* disp_eval_tail(disp_scope_t *env, disp_val *expr, int is_tail, di
             } else {
                 gc_free(argv);
 if (T(func) != DISP_CLOSURE && T(func) != DISP_BUILTIN && T(func) != DISP_SYSCALL) {
-    fprintf(stderr, "func type=%d, value=%p, symbol name=%s\n", T(func), func, disp_get_symbol_name(func));
+    fprintf(stderr, "func type=%d, value=%p\n", T(func), func);
+    //fprintf(stderr, "func type=%d, value=%p, symbol name=%s\n", T(func), func, disp_get_symbol_name(func));
 }
                 char *s = disp_string(func);
                 ERRO("%s is not a function or macro", s);
@@ -174,4 +185,18 @@ if (T(func) != DISP_CLOSURE && T(func) != DISP_BUILTIN && T(func) != DISP_SYSCAL
             return result_normal(result);
         }
     }
+}
+
+disp_val* disp_apply_builtin_from_array(disp_val *builtin, disp_scope_t *env, disp_val **args, int arg_count) {
+    // 1. 构建参数列表 (arg1 arg2 ... argN)
+    disp_val *arg_list = NIL;
+    for (int i = arg_count - 1; i >= 0; i--) {
+        arg_list = disp_make_cons(args[i], arg_list);
+    }
+    // 2. 构建完整调用表达式 (builtin arg1 arg2 ...)
+    disp_val *expr = disp_make_cons(builtin, arg_list);
+    // 3. 调用内置函数
+    disp_val *result = disp_get_builtin(builtin)(env, expr);
+    // 临时构造的 cons 节点会在下次 GC 时自动回收（无根引用）
+    return result;
 }

@@ -165,16 +165,51 @@ disp_val* disp_apply_closure(disp_val *closure, disp_val **args, int arg_count) 
             res = disp_eval_tail(env, expr, tail, closure);
             if (res->kind == 1) {
                 // 尾递归重启
-                if (current_args != args && current_args != NULL) {
+                // 释放旧的参数数组（如果是由本函数分配的）
+                // 释放旧的参数数组
+                if (current_args != args && current_args != NULL)
                     gc_free(current_args);
-                }
+
+                // 取出新目标和新参数
+                closure = res->tail.target;
                 current_args = res->tail.new_args;
                 current_argc = res->tail.arg_count;
-                gc_free(res);          // 释放旧的 result 对象
-                goto restart;
+
+                // 更新循环所需的新闭包内部数据
+                if (T(closure) == DISP_CLOSURE) {
+                    env = closure->data->closure.env;
+                    params = closure->data->closure.params;
+                    body = closure->data->closure.body;
+                    gc_free(res);
+                    goto restart;
+                } 
+                else if (T(closure) == DISP_BUILTIN) {
+                    // 内置函数：调用后直接返回（不继续蹦床）
+                    disp_val *result = disp_apply_builtin_from_array(closure, env, current_args, current_argc);
+                    gc_free(res);
+                    // 清理当前参数数组（如果是从堆分配的）
+                    if (current_args != args && current_args != NULL)
+                        gc_free(current_args);
+                    return result;
+                }
+                else if (T(closure) == DISP_SYSCALL) {
+                    // 系统调用：参数数组直接可用
+                    disp_val *result = disp_get_syscall(closure)(current_args, current_argc);
+                    gc_free(res);
+                    if (current_args != args && current_args != NULL)
+                        gc_free(current_args);
+                    return result;
+                }
+                else {
+                    // 非法目标
+                    gc_free(res);
+                    ERET(NIL, "tail call target is not callable");
+                }
             } else if (tail) {
                 disp_val *result = res->normal;
                 gc_free(res);
+                if (current_args != args && current_args != NULL)
+                    gc_free(current_args);
                 return result;
             } else {
                 // 非尾表达式，继续下一个
@@ -185,6 +220,8 @@ disp_val* disp_apply_closure(disp_val *closure, disp_val **args, int arg_count) 
         }
         // body 为空时（理论上不应发生），返回 NIL
         if (res) gc_free(res);
+        if (current_args != args && current_args != NULL)
+            gc_free(current_args);
         return NIL;
 
         restart:
