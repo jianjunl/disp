@@ -187,6 +187,14 @@ void gc_remove_root(void *ptr_addr);
     type * ptr = NULL; GC_ROOT_AUTO(ptr); \
     ptr
 
+#define GC_NEW(type, ptr) \
+    type * ptr __attribute__((cleanup(gc_root_cleanup))) = NULL; \
+    gc_add_root(&ptr); \
+    ptr
+
+/* Internal helper for GC_ROOT; do not call directly. */
+void gc_root_cleanup(void *ptraddr);
+
 /* Internal helper for GC_ROOT; do not call directly. */
 void gc_auto_root_cleanup(void **ptr);
 

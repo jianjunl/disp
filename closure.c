@@ -139,6 +139,9 @@ void bind_arguments_to_scope(disp_scope_t *scope, disp_val *params, disp_val **a
 
 #include "tail.h"
 
+// 用于保护当前参数数组的根指针（静态或局部静态，但需要线程安全）
+_Thread_local disp_val **protected_args = NULL;
+
 disp_val* disp_apply_closure(disp_val *closure, disp_val **args, int arg_count) {
     if (!closure->data->closure.reuse_scope) {
         GC_ROOT(disp_scope_t, new_scope) = disp_new_scope(closure->data->closure.env);
@@ -153,6 +156,14 @@ disp_val* disp_apply_closure(disp_val *closure, disp_val **args, int arg_count) 
     disp_val **current_args = args;
     int current_argc = arg_count;
     eval_result_t *res = NULL;   // 用于释放
+
+    //static disp_val **protected_args = NULL;  // 注意：多线程下需要 TLS 或锁，这里简单示例
+
+    // 保护初始参数数组（如果非空）
+    if (current_args != NULL) {
+        gc_add_root(&protected_args);
+        protected_args = current_args;
+    }
 
     while (1) {
         bind_arguments_to_scope(env, params, current_args, current_argc);
@@ -174,6 +185,14 @@ disp_val* disp_apply_closure(disp_val *closure, disp_val **args, int arg_count) 
                 closure = res->tail.target;
                 current_args = res->tail.new_args;
                 current_argc = res->tail.arg_count;
+
+                // 更新 GC 根：先移除旧的保护，再保护新的
+                if (protected_args != NULL)
+                    gc_remove_root(&protected_args);
+                protected_args = current_args;
+                if (protected_args != NULL)
+                    gc_add_root(&protected_args);
+
 
                 // 更新循环所需的新闭包内部数据
                 if (T(closure) == DISP_CLOSURE) {
@@ -227,4 +246,8 @@ disp_val* disp_apply_closure(disp_val *closure, disp_val **args, int arg_count) 
         restart:
         continue;
     }
+    // 清理根（实际可能永远到不了）
+    if (protected_args != NULL)
+        gc_remove_root(&protected_args);
+    return NIL;
 }

@@ -29,7 +29,20 @@ eval_result_t* disp_eval_tail_letreca(disp_scope_t *env, disp_val *expr, int is_
                 ERRO("malformed letrec*");
                 return result_nil();
             }
-            disp_val *bindings = disp_car(args);
+
+            disp_val *first = disp_car(args);
+    
+            // 命名 let: (let name ((var val) ...) body ...)
+            if (T(first) == DISP_SYMBOL) {
+                disp_val *rest = disp_cdr(args);
+                if (rest && T(rest) == DISP_CONS) {
+                    // 调用 disp_letf 处理命名 let，返回最终结果
+                    disp_val *result = disp_letf(env, expr);
+                    return result_normal(result);
+                }
+            }
+
+            disp_val *bindings = first;
             disp_val *body_exprs = disp_cdr(args);
             if (!body_exprs) {
                 ERRO("letrec*: missing body");

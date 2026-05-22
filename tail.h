@@ -28,9 +28,15 @@ typedef struct eval_result {
     };
 } eval_result_t;
 
-extern eval_result_t* result_nil();
-
-extern eval_result_t* disp_eval_tail(disp_scope_t *env, disp_val *expr, int is_tail, disp_val *current_closure);
+eval_result_t* result_nil();
+eval_result_t* result_true();
+eval_result_t* result_normal(disp_val *normal);
+eval_result_t* disp_eval_tail(disp_scope_t *env, disp_val *expr, int is_tail, disp_val *current_closure);
+eval_result_t* disp_eval_tail_flow(disp_scope_t *env, disp_val *expr, int is_tail, disp_val *current_closure);
+eval_result_t* disp_eval_tail_let(disp_scope_t *env, disp_val *expr, int is_tail, disp_val *current_closure);
+eval_result_t* disp_eval_tail_leta(disp_scope_t *env, disp_val *expr, int is_tail, disp_val *current_closure);
+eval_result_t* disp_eval_tail_letrec(disp_scope_t *env, disp_val *expr, int is_tail, disp_val *current_closure);
+eval_result_t* disp_eval_tail_letreca(disp_scope_t *env, disp_val *expr, int is_tail, disp_val *current_closure);
 
 /* 从参数数组调用内置函数（构造临时表达式） */
 disp_val* disp_apply_builtin_from_array(disp_val *builtin, disp_scope_t *env, disp_val **args, int arg_count);

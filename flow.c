@@ -16,9 +16,6 @@
 
 #include "tail.h"
 
-extern eval_result_t* result_true();
-extern eval_result_t* result_normal(disp_val *normal);
-
 eval_result_t* disp_eval_tail_flow(disp_scope_t *env, disp_val *expr, int is_tail, disp_val *current_closure) {
     disp_val *op = disp_car(expr);
     disp_val *args = disp_cdr(expr);
