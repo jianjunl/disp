@@ -138,6 +138,7 @@ eval_result_t* disp_eval_tail(disp_scope_t *env, disp_val *expr, int is_tail, di
         // 尾调用优化：求值参数后返回尾调用结果（不立即应用）
         int arg_count = 0;
         disp_val **args_arr = eval_args_for_tail(env, args, &arg_count);
+        GC_ROOT_AUTO(args_arr);
         return result_tail(func, args_arr, arg_count);
     } else {
         // 正常调用：求值参数并应用

@@ -156,6 +156,7 @@ disp_val* disp_apply_closure(disp_val *closure, disp_val **args, int arg_count) 
 
     // 用于保护当前参数数组的根指针（静态或局部静态，但需要线程安全）
     static _Thread_local disp_val **protected_args = NULL;  // 注意：多线程下需要 TLS 或锁
+    static _Thread_local eval_result_t *protected_res = NULL;
 
     // 保护初始参数数组（如果非空）
     if (current_args != NULL) {
@@ -172,25 +173,29 @@ disp_val* disp_apply_closure(disp_val *closure, disp_val **args, int arg_count) 
             disp_val *next = disp_cdr(exprs);
             int tail = (next == NIL);
             res = disp_eval_tail(env, expr, tail, closure);
+            // 保护新的 res
+            if (protected_res) gc_remove_root(&protected_res);
+            protected_res = res;
+            if (protected_res) gc_add_root(&protected_res);
             if (res->kind == 1) {
-                // 尾递归重启
-                // 释放旧的参数数组（如果是由本函数分配的）
-                // 释放旧的参数数组
-                if (current_args != args && current_args != NULL)
+                // 释放旧的参数数组前，先移除其根
+                if (current_args != args && current_args != NULL) {
+                    if (protected_args) gc_remove_root(&protected_args);
+                    protected_args = NULL;
                     gc_free(current_args);
+                }
 
                 // 取出新目标和新参数
                 closure = res->tail.target;
                 current_args = res->tail.new_args;
                 current_argc = res->tail.arg_count;
 
-                // 更新 GC 根：先移除旧的保护，再保护新的
-                if (protected_args != NULL)
-                    gc_remove_root(&protected_args);
-                protected_args = current_args;
-                if (protected_args != NULL)
+                // 保护新数组
+                if (current_args != NULL) {
+                    if (protected_args) gc_remove_root(&protected_args);
+                    protected_args = current_args;
                     gc_add_root(&protected_args);
-
+                }
 
                 // 更新循环所需的新闭包内部数据
                 if (T(closure) == DISP_CLOSURE) {
@@ -224,28 +229,52 @@ disp_val* disp_apply_closure(disp_val *closure, disp_val **args, int arg_count) 
                 }
             } else if (tail) {
                 disp_val *result = res->normal;
+                if (protected_res) {
+                    gc_remove_root(&protected_res);
+                    protected_res = NULL;
+                }
                 gc_free(res);
-                if (current_args != args && current_args != NULL)
+                if (current_args != args && current_args != NULL) {
+                    if (protected_args) {
+                        gc_remove_root(&protected_args);
+                        protected_args = NULL;
+                    }
                     gc_free(current_args);
+                }
                 return result;
             } else {
                 // 非尾表达式，继续下一个
-                exprs = next;
+                if (protected_res) {
+                    gc_remove_root(&protected_res);
+                    protected_res = NULL;
+                }
                 gc_free(res);          // 释放非尾结果的 result 对象
                 res = NULL;
+                exprs = next;
             }
         }
         // body 为空时（理论上不应发生），返回 NIL
-        if (res) gc_free(res);
-        if (current_args != args && current_args != NULL)
+        if (res) {
+            if (protected_res) {
+                gc_remove_root(&protected_res);
+                protected_res = NULL;
+            }
+            gc_free(res);
+        }
+        if (current_args != args && current_args != NULL) {
+            if (protected_args) {
+                gc_remove_root(&protected_args);
+                protected_args = NULL;
+            }
             gc_free(current_args);
+        }
         return NIL;
 
         restart:
         continue;
     }
     // 清理根（实际可能永远到不了）
-    if (protected_args != NULL)
-        gc_remove_root(&protected_args);
+    if (protected_args) gc_remove_root(&protected_args);
+    if (protected_res) gc_remove_root(&protected_res);
     return NIL;
 }
