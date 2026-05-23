@@ -48,6 +48,7 @@ typedef disp_val* (*disp_builtin_t)(disp_scope_t *scope, disp_val* arg);
 /* --- Value constructors --- */
 void disp_lock_table(void);
 void disp_unlock_table(void);
+disp_val* disp_make_symbol(const char *name);
 char* disp_get_symbol_name(disp_val *v);
 disp_val* disp_get_symbol_value(disp_val *v);
 disp_val* disp_make_int(int i);
@@ -85,15 +86,19 @@ disp_val* disp_cdr(disp_val *cons);
 void disp_set_car(disp_val *cons, disp_val *car);   /* use with care – immutable by convention */
 void disp_set_cdr(disp_val *cons, disp_val *cdr);
 
-/* --- Symbol table --- */
+/* --- Scope/Environment --- */
+void disp_init_scope(void);
 extern disp_scope_t *disp_global_scope;                     // 全局作用域指针
 void gc_root_cleanup_disp_scope_t(disp_scope_t **ptr_addr);
-void disp_set_symbol_value(disp_val *sym, disp_val *value);
 disp_scope_t* disp_new_scope(disp_scope_t *parent);
 disp_scope_t* disp_dup_scope(disp_scope_t *old);
+
+/* --- Symbol table --- */
+void disp_init_symbol(void);
 disp_val* disp_find_symbol(const disp_scope_t *scope, const char *name);
 disp_val* disp_define_symbol(const disp_scope_t *scope, const char *name, disp_val *value, int final);
 disp_val* disp_intern_symbol(const disp_scope_t *scope, const char *name);
+void disp_set_symbol_value(disp_val *sym, disp_val *value);
 
 /* --- numbers --- */
 bool disp_is_float_literal(const char *s);
@@ -108,7 +113,6 @@ disp_val* disp_eval_body(disp_scope_t *scope, disp_val *body);
 disp_scope_t* disp_get_closure_env(disp_val *closure);
 
 /* --- Garbage collection --- */
-void disp_init_symbol(void);
 disp_val* disp_alloc(disp_flag_t flag, disp_data *data);
 #define DISP_ALLOC_TI(flag) disp_alloc(flag, gc_typed_calloc(1, sizeof(union disp_data), &union_disp_data_ti))
 #define DISP_ALLOC(flag) disp_alloc(flag, gc_calloc(1, sizeof(union disp_data)))
