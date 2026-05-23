@@ -228,7 +228,7 @@ static disp_val* parse_atom(int first, FILE *f) {
         if (strcmp(buf, "#f") == 0) return NIL;
         // 其他以 # 开头的字符串继续作为普通符号
     }
-    disp_val *sym = disp_intern_symbol(NULL, buf);
+    disp_val *sym = disp_intern_symbol(disp_global_scope, buf);
     return sym;
 }
 

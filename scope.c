@@ -19,14 +19,13 @@ GC_STRUCT_TI(disp_val,
 );
 
 struct sym_entry {
-    char *name;
+    uint64_t id;
     disp_val *symbol;
     int final;
     struct sym_entry *next;
 };
 
 GC_STRUCT_TI(sym_entry,
-    GC_OFF(sym_entry, name),
     GC_OFF(sym_entry, symbol),
     GC_OFF(sym_entry, next)
 );
@@ -47,12 +46,6 @@ GC_STRUCT_TI(disp_scope,
 );
 
 disp_scope_t *disp_global_scope = NULL;
-
-static unsigned int hash(const char *s) {
-    unsigned int h = 0;
-    while (*s) h = h * 31 + (unsigned char)*s++;
-    return h % SYM_TABLE_SIZE;
-}
 
 static void scope_lock(const disp_scope_t *scope) {
     if(scope) gc_pthread_mutex_lock(scope->lock);
@@ -90,14 +83,14 @@ disp_scope_t* disp_dup_scope(disp_scope_t *old) {
     return t;
 }
 
-disp_val* disp_find_symbol(const disp_scope_t *scope, const char *name) {
+disp_val* disp_find_symbol_by_id(const disp_scope_t *scope, uint64_t id) {
     if (!scope) scope = disp_global_scope;
     while (scope) {
         scope_lock(scope);
-        unsigned int idx = hash(name);
+        unsigned int idx = id % SYM_TABLE_SIZE;   // 直接用 id 作为哈希
         struct sym_entry *e = scope->buckets[idx];
         while (e) {
-            if (strcmp(e->name, name) == 0) {
+            if (e->id == id) {
                 scope_unlock(scope);
                 return e->symbol;
             }
@@ -109,19 +102,17 @@ disp_val* disp_find_symbol(const disp_scope_t *scope, const char *name) {
     return NULL;
 }
 
-disp_val* disp_define_symbol(const disp_scope_t *scope, const char *name, disp_val *value, int final) {
+disp_val* disp_define_symbol_by_id(const disp_scope_t *scope, uint64_t id, disp_val *value, int final) {
     if (!scope) scope = disp_global_scope;
-    DBG("disp_define_symbol: %s\n", name);
     scope_lock(scope);
-    unsigned int idx = hash(name);
+    unsigned int idx = id % SYM_TABLE_SIZE;
     struct sym_entry *e = scope->buckets[idx];
     while (e) {
-        if (strcmp(e->name, name) == 0) {
+        if (e->id == id) {
             if (e->final) {
-                DBG("  trying to update final symbol %s\n", name);
+                DBG("  trying to update final symbol id %llu\n", (unsigned long long)id);
             } else {
                 disp_set_symbol_value(e->symbol, value);
-                DBG("  updated symbol %s -> %p\n", name, (void*)value);
             }
             scope_unlock(scope);
             return e->symbol;
@@ -130,11 +121,14 @@ disp_val* disp_define_symbol(const disp_scope_t *scope, const char *name, disp_v
     }
     
     // 创建新符号
-    disp_val *sym = disp_make_symbol(name);
+    disp_val *sym = disp_make_symbol(disp_get_name(id));  // 需要名称，但这里可能没有，我们可传入临时名
+    // 更好的做法：提前通过 id 获取 name，但 id 已知时通常 name 已存在全局表
+    // 若无法获取 name，可暂时传 "?"，但正常情况下不会发生
+    // 所以我们需要一个从 id 到 name 的映射，即 disp_get_name(id)
     disp_set_symbol_value(sym, value);
     
     struct sym_entry *new_entry = gc_typed_malloc(sizeof(struct sym_entry), &struct_sym_entry_ti);
-    GC_ASSIGN_PTR(new_entry->name, gc_strdup(name));
+    new_entry->id = id;
     GC_ASSIGN_PTR(new_entry->symbol, sym);
     new_entry->final = final;
     GC_ASSIGN_PTR(new_entry->next, scope->buckets[idx]);
@@ -144,13 +138,13 @@ disp_val* disp_define_symbol(const disp_scope_t *scope, const char *name, disp_v
     return sym;
 }
 
-disp_val* disp_intern_symbol(const disp_scope_t *scope, const char *name) {
+disp_val* disp_intern_symbol_by_id(const disp_scope_t *scope, uint64_t id) {
     if (!scope) scope = disp_global_scope;
     scope_lock(scope);
-    unsigned int idx = hash(name);
+    unsigned int idx = id % SYM_TABLE_SIZE;
     struct sym_entry *e = scope->buckets[idx];
     while (e) {
-        if (strcmp(e->name, name) == 0) {
+        if (e->id == id) {
             scope_unlock(scope);
             return e->symbol;
         }
@@ -158,10 +152,12 @@ disp_val* disp_intern_symbol(const disp_scope_t *scope, const char *name) {
     }
     
     // 未找到，创建新符号
-    disp_val *sym = disp_make_symbol(name);
+    const char *name = disp_get_name(id);
+    disp_val *sym = disp_make_symbol(name ? name : "?");
+    disp_set_symbol_value(sym, NIL);
     
     struct sym_entry *new_entry = gc_typed_malloc(sizeof(struct sym_entry), &struct_sym_entry_ti);
-    GC_ASSIGN_PTR(new_entry->name, gc_strdup(name));
+    new_entry->id = id;
     GC_ASSIGN_PTR(new_entry->symbol, sym);
     new_entry->final = 0;
     GC_ASSIGN_PTR(new_entry->next, scope->buckets[idx]);
@@ -169,6 +165,21 @@ disp_val* disp_intern_symbol(const disp_scope_t *scope, const char *name) {
     
     scope_unlock(scope);
     return sym;
+}
+
+disp_val* disp_find_symbol(const disp_scope_t *scope, const char *name) {
+    uint64_t id = disp_get_id(name);
+    return disp_find_symbol_by_id(scope, id);
+}
+
+disp_val* disp_define_symbol(const disp_scope_t *scope, const char *name, disp_val *value, int final) {
+    uint64_t id = disp_get_id(name);
+    return disp_define_symbol_by_id(scope, id, value, final);
+}
+
+disp_val* disp_intern_symbol(const disp_scope_t *scope, const char *name) {
+    uint64_t id = disp_get_id(name);
+    return disp_intern_symbol_by_id(scope, id);
 }
 
 /* ======================== GC 初始化和全局常量 ======================== */

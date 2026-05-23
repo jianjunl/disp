@@ -18,6 +18,7 @@
 #endif
 #include "gc/gc.h"
 #include "disp.macro.h"
+#include "array.h"
 
 /* Value types */
 typedef enum {
@@ -46,6 +47,9 @@ typedef disp_val* (*disp_syscall_t)(disp_val** args, int arg_count);
 typedef disp_val* (*disp_builtin_t)(disp_scope_t *scope, disp_val* arg);
 
 /* --- Value constructors --- */
+void disp_init_name_table(void);
+uint64_t disp_get_id(const char *name);
+const char* disp_get_name(uint64_t id);
 void disp_lock_table(void);
 void disp_unlock_table(void);
 disp_val* disp_make_symbol(const char *name);
@@ -95,6 +99,9 @@ disp_scope_t* disp_dup_scope(disp_scope_t *old);
 
 /* --- Symbol table --- */
 void disp_init_symbol(void);
+disp_val* disp_find_symbol_by_id(const disp_scope_t *scope, uint64_t id);
+disp_val* disp_define_symbol_by_id(const disp_scope_t *scope, uint64_t id, disp_val *value, int final);
+disp_val* disp_intern_symbol_by_id(const disp_scope_t *scope, uint64_t id);
 disp_val* disp_find_symbol(const disp_scope_t *scope, const char *name);
 disp_val* disp_define_symbol(const disp_scope_t *scope, const char *name, disp_val *value, int final);
 disp_val* disp_intern_symbol(const disp_scope_t *scope, const char *name);
