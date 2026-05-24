@@ -14,8 +14,6 @@ void disp_init_name_table(void) {
     g_id_to_name = disp_array_create(256);
     gc_pthread_mutex_init(&g_name_lock, NULL);
     gc_add_root(&g_name_lock);
-    gc_add_root(&g_name_to_id);
-    gc_add_root(&g_id_to_name);
     // 加入一个占位 ID 0（无效 ID）
     disp_array_add(g_name_to_id, (uint64_t)NULL);
     disp_array_add(g_id_to_name, (uint64_t)NULL);

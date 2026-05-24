@@ -81,6 +81,7 @@ static disp_val* trace_syscall(disp_val **args, int arg_count) {
 void disp_init_globals() {
     gc_init();
     disp_init_info();
+    disp_init_cons_pool();
     disp_init_name_table();
     disp_init_scope();
     disp_init_symbol();

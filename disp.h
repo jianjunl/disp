@@ -48,6 +48,7 @@ typedef disp_val* (*disp_builtin_t)(disp_scope_t *scope, disp_val* arg);
 
 /* --- Value constructors --- */
 void disp_init_name_table(void);
+void disp_init_cons_pool(void);
 uint64_t disp_get_id(const char *name);
 const char* disp_get_name(uint64_t id);
 void disp_lock_table(void);
