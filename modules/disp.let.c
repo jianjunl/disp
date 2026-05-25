@@ -15,13 +15,13 @@
 
 static disp_box let_builtin(disp_scope_t *scope, disp_box expr) {
     disp_box rest = disp_cdr(expr);
-    if (!rest || T(rest) != DISP_CONS)
+    if (!rest || T(rest) != FLAG_CONS)
         ERET(NIL, "let: missing binding list");
 
     disp_box first = disp_car(rest);
-    if (T(first) == DISP_SYMBOL) {
+    if (T(first) == FLAG_SYMBOL) {
         disp_box second_rest = disp_cdr(rest);
-        if (second_rest && T(second_rest) == DISP_CONS)
+        if (second_rest && T(second_rest) == FLAG_CONS)
             return disp_letf(scope, expr);
     }
 
@@ -31,7 +31,7 @@ static disp_box let_builtin(disp_scope_t *scope, disp_box expr) {
         ERET(NIL, "let: missing body");
 
     int var_count = 0;
-    for (disp_box b = bindings; b && T(b) == DISP_CONS; b = disp_cdr(b))
+    for (disp_box b = bindings; b && T(b) == FLAG_CONS; b = disp_cdr(b))
         var_count++;
 
     if (var_count == 0)
@@ -43,9 +43,9 @@ static disp_box let_builtin(disp_scope_t *scope, disp_box expr) {
 
     int idx = 0;
     disp_box b = bindings;
-    while (b && T(b) == DISP_CONS) {
+    while (b && T(b) == FLAG_CONS) {
         disp_box pair = disp_car(b);
-        if (T(pair) != DISP_CONS || T(disp_car(pair)) != DISP_SYMBOL) {
+        if (T(pair) != FLAG_CONS || T(disp_car(pair)) != FLAG_SYMBOL) {
             gc_free(init_exprs);
             gc_free(var_syms);
             ERET(NIL, "let: malformed binding (var expr)");

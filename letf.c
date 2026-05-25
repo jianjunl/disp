@@ -16,25 +16,25 @@
 disp_box disp_letf(disp_scope_t *scope, disp_box expr) {
     // 解析命名 let 语法
     disp_box rest = disp_cdr(expr);
-    if (!rest || T(rest) != DISP_CONS) ERET(NIL, "named let: missing name");
+    if (!rest || T(rest) != FLAG_CONS) ERET(NIL, "named let: missing name");
     disp_box name = disp_car(rest);
-    if (T(name) != DISP_SYMBOL) ERET(NIL, "named let: name must be a symbol");
+    if (T(name) != FLAG_SYMBOL) ERET(NIL, "named let: name must be a symbol");
     
     disp_box bindings_rest = disp_cdr(rest);
-    if (!bindings_rest || T(bindings_rest) != DISP_CONS) ERET(NIL, "named let: missing bindings");
+    if (!bindings_rest || T(bindings_rest) != FLAG_CONS) ERET(NIL, "named let: missing bindings");
     disp_box bindings = disp_car(bindings_rest);
     disp_box body = disp_cdr(bindings_rest);
     if (!body) ERET(NIL, "named let: missing body");
     
     // 提取变量和初值
     int var_count = 0;
-    for (disp_box b = bindings; b && T(b) == DISP_CONS; b = disp_cdr(b)) var_count++;
+    for (disp_box b = bindings; b && T(b) == FLAG_CONS; b = disp_cdr(b)) var_count++;
     GC_ROOT(disp_box, var_syms) = gc_typed_malloc(var_count * sizeof(disp_box), &GC_TYPE_PTR_ARRAY);
     GC_ROOT(disp_box, init_exprs) = gc_typed_malloc(var_count * sizeof(disp_box), &GC_TYPE_PTR_ARRAY);
     int idx = 0;
-    for (disp_box b = bindings; b && T(b) == DISP_CONS; b = disp_cdr(b)) {
+    for (disp_box b = bindings; b && T(b) == FLAG_CONS; b = disp_cdr(b)) {
         disp_box pair = disp_car(b);
-        if (T(pair) != DISP_CONS || T(disp_car(pair)) != DISP_SYMBOL) {
+        if (T(pair) != FLAG_CONS || T(disp_car(pair)) != FLAG_SYMBOL) {
             gc_free(init_exprs); gc_free(var_syms);
             ERET(NIL, "named let: malformed binding");
         }

@@ -1,10 +1,10 @@
 
-#ifndef DISP_THREAD_C
+#ifndef __MODULE_THREAD_C
 #error "internal use for disp.thread.c"
 #endif
 
-#ifndef DISP_THREAD_H
-#define DISP_THREAD_H
+#ifndef __MODULE_THREAD_H
+#define __MODULE_THREAD_H
 
 #include <pthread.h>
 #include "../disp.h"
@@ -34,4 +34,4 @@ GC_UNION_TI(disp_data,
     GC_OFF(disp_data, cond)
 );
 
-#endif /* DISP_THREAD_H */
+#endif /* __MODULE_THREAD_H */

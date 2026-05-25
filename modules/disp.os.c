@@ -18,12 +18,12 @@ static intmax_t val_to_int(disp_box v) {
     if (v == NIL) return 0;
     if (v == TRUE) return 1;
     switch (T(v)) {
-        case DISP_BYTE:   return disp_get_byte(v);
-        case DISP_SHORT:  return disp_get_short(v);
-        case DISP_INT:    return disp_get_int(v);
-        case DISP_LONG:   return disp_get_long(v);
-        case DISP_FLOAT:  return (intmax_t)disp_get_float(v);
-        case DISP_DOUBLE: return (intmax_t)disp_get_double(v);
+        case FLAG_BYTE:   return disp_get_byte(v);
+        case FLAG_SHORT:  return disp_get_short(v);
+        case FLAG_INT:    return disp_get_int(v);
+        case FLAG_LONG:   return disp_get_long(v);
+        case FLAG_FLOAT:  return (intmax_t)disp_get_float(v);
+        case FLAG_DOUBLE: return (intmax_t)disp_get_double(v);
         default:          return 0;
     }
 }
@@ -32,19 +32,19 @@ static intmax_t val_to_int(disp_box v) {
 static const char* val_to_str(disp_box v) {
     if (v == NIL) return "nil";
     if (v == TRUE) return "true";
-    if (T(v) == DISP_STRING) return disp_get_str(v);
+    if (T(v) == FLAG_STRING) return disp_get_str(v);
     return disp_str(v);
 }
 
 // 辅助函数：将 disp_val 转换为双精度浮点数（用于 %f, %g, %e）
 static double val_to_double(disp_box v) {
     switch (T(v)) {
-        case DISP_BYTE:   return disp_get_byte(v);
-        case DISP_SHORT:  return disp_get_short(v);
-        case DISP_INT:    return disp_get_int(v);
-        case DISP_LONG:   return disp_get_long(v);
-        case DISP_FLOAT:  return disp_get_float(v);
-        case DISP_DOUBLE: return disp_get_double(v);
+        case FLAG_BYTE:   return disp_get_byte(v);
+        case FLAG_SHORT:  return disp_get_short(v);
+        case FLAG_INT:    return disp_get_int(v);
+        case FLAG_LONG:   return disp_get_long(v);
+        case FLAG_FLOAT:  return disp_get_float(v);
+        case FLAG_DOUBLE: return disp_get_double(v);
         default:          if(v == NIL) return 0.0; else ERET(0.0, "NaN:%s", val_to_str(v));
     }
 }
@@ -161,7 +161,7 @@ static int disp_vprintf(FILE *out, const char *fmt, disp_box *args, int arg_coun
 }
 
 static disp_box printf_syscall(disp_box *args, int count) {
-    if (count < 1 || T(args[0]) != DISP_STRING) {
+    if (count < 1 || T(args[0]) != FLAG_STRING) {
         ERET(NIL, "printf: format string required");
     }
     const char *fmt = disp_get_str(args[0]);
@@ -171,7 +171,7 @@ static disp_box printf_syscall(disp_box *args, int count) {
 }
 
 static disp_box fprintf_syscall(disp_box *args, int count) {
-    if (count < 2 || T(args[0]) != DISP_FILE || T(args[1]) != DISP_STRING) {
+    if (count < 2 || T(args[0]) != FLAG_FILE || T(args[1]) != FLAG_STRING) {
         ERET(NIL, "fprintf: (file format-string ...) required");
     }
     FILE *out = disp_get_file(args[0]);
@@ -233,7 +233,7 @@ static disp_box println_syscall(disp_box *args, int count) {
 
 // --- system --- (execute shell command)
 static disp_box system_syscall(disp_box *args, int count) {
-    if (count != 1 || T(args[0]) != DISP_STRING) {
+    if (count != 1 || T(args[0]) != FLAG_STRING) {
         ERET(NIL, "system: expected a string argument");
     }
     int ret = system(disp_get_str(args[0]));
@@ -286,7 +286,7 @@ static gc_mutex_t io_mutex = GC_PTHREAD_MUTEX_INITIALIZER;
 
 /* (safe-fprintf file format-string args...) -> result */
 static disp_box safe_fprintf_syscall(disp_box *args, int count) {
-    if (count < 2 || T(args[0]) != DISP_FILE || T(args[1]) != DISP_STRING) {
+    if (count < 2 || T(args[0]) != FLAG_FILE || T(args[1]) != FLAG_STRING) {
         ERET(NIL, "safe-fprintf: (file format-string ...) required");
     }
     FILE *out = disp_get_file(args[0]);
@@ -313,11 +313,11 @@ static void pretty_print_obj(disp_box v, int indent, int newline) {
         return;
     }
     switch (T(v)) {
-        case DISP_CONS: {
+        case FLAG_CONS: {
             printf("(");
             disp_box p = v;
             int first = 1;
-            while (p != NIL && T(p) == DISP_CONS) {
+            while (p != NIL && T(p) == FLAG_CONS) {
                 if (!first) {
                     if (newline) {
                         printf("\n");
@@ -337,25 +337,25 @@ static void pretty_print_obj(disp_box v, int indent, int newline) {
             printf(")");
             break;
         }
-        case DISP_STRING:
+        case FLAG_STRING:
             printf("\"%s\"", disp_get_str(v));
             break;
-        case DISP_SYMBOL:
+        case FLAG_SYMBOL:
             printf("%s", disp_get_symbol_name(v));
             break;
-        case DISP_INT:
+        case FLAG_INT:
             printf("%d", disp_get_int(v));
             break;
-        case DISP_LONG:
+        case FLAG_LONG:
             printf("%ld", disp_get_long(v));
             break;
-        case DISP_FLOAT:
+        case FLAG_FLOAT:
             printf("%g", disp_get_float(v));
             break;
-        case DISP_DOUBLE:
+        case FLAG_DOUBLE:
             printf("%g", disp_get_double(v));
             break;
-        case DISP_VOID:
+        case FLAG_VOID:
             printf(v == NIL ? "nil" : "true");
             break;
         default:

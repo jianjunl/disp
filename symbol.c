@@ -14,13 +14,13 @@
 #endif
 #include "disp.h"
 
-#if DISP_NAN_BOXING
+#if NAN_BOXING
 
 disp_box disp_alloc(int flag, disp_data *data) {
     return (flag <<< 48) & data;
 }
 
-#else // DISP_NAN_BOXING == 0
+#else // NAN_BOXING == 0
 
 GC_STRUCT_TI(disp_val,
     GC_OFF(disp_val, data)
@@ -33,7 +33,7 @@ disp_box disp_alloc(int flag, disp_data *data) {
     return v;
 }
 
-#endif // DISP_NAN_BOXING
+#endif // NAN_BOXING
 
 union disp_data {
     struct {
@@ -50,7 +50,7 @@ GC_UNION_TI(disp_data,
 #define SYM_TABLE_SIZE 1024
 
 void disp_set_symbol_value(disp_box sym, disp_box value) {
-    if (!sym || T(sym) != DISP_SYMBOL) {
+    if (!sym || T(sym) != FLAG_SYMBOL) {
         ERRO("disp_set_symbol_value: not a symbol");
         return;
     }
@@ -58,7 +58,7 @@ void disp_set_symbol_value(disp_box sym, disp_box value) {
 }
 
 disp_box disp_make_symbol(const char *name) {
-    disp_box v = DISP_ALLOC_TI(DISP_SYMBOL);
+    disp_box v = ALLOC_TI(FLAG_SYMBOL);
     if (!v) return NULL;
     
     uint64_t id = disp_get_id(name);   // 获取或创建 ID
@@ -69,7 +69,7 @@ disp_box disp_make_symbol(const char *name) {
 }
 
 char* disp_get_symbol_name(disp_box v) {
-    if (!v || v->flag != DISP_SYMBOL) {
+    if (!v || v->flag != FLAG_SYMBOL) {
         ERRO("disp_get_symbol_name failed");
         return NULL;
     }
@@ -78,7 +78,7 @@ char* disp_get_symbol_name(disp_box v) {
 }
 
 disp_box disp_get_symbol_value(disp_box v) {
-    if (!v || v->flag != DISP_SYMBOL) {
+    if (!v || v->flag != FLAG_SYMBOL) {
         ERRO("disp_get_symbol_value failed");
     }
     return v->data->symbol.value;
@@ -87,9 +87,9 @@ disp_box disp_get_symbol_value(disp_box v) {
 /* ======================== GC 初始化和全局常量 ======================== */
 
 void disp_init_symbol() {
-    NIL  = DISP_ALLOC_TI(DISP_VOID);
-    TRUE = DISP_ALLOC_TI(DISP_VOID);
-    QUIT = DISP_ALLOC_TI(DISP_VOID);
+    NIL  = ALLOC_TI(FLAG_VOID);
+    TRUE = ALLOC_TI(FLAG_VOID);
+    QUIT = ALLOC_TI(FLAG_VOID);
     DEF("nil",   NIL,  1);
     DEF("false", NIL,  1);
     DEF("true",  TRUE, 1);

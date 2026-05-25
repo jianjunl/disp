@@ -1,14 +1,14 @@
 
-#ifndef DISP_CORO_C
-#ifndef DISP_CORO_CHAN_C
-#ifndef DISP_CORO_POLL_C
+#ifndef __MODULE_CORO_C
+#ifndef __MODULE_CORO_CHAN_C
+#ifndef __MODULE_CORO_POLL_C
 #error "internal use for disp.coro(.(chan|poll)).c"
 #endif
 #endif
 #endif
 
-#ifndef DISP_CORO_H
-#define DISP_CORO_H
+#ifndef __MODULE_CORO_H
+#define __MODULE_CORO_H
 
 #include <stddef.h>
 #include <stdio.h>
@@ -66,4 +66,4 @@ GC_UNION_TI(disp_data,
     GC_OFF(disp_data, chan)
 );
 
-#endif /* DISP_CORO_H */
+#endif /* __MODULE_CORO_H */

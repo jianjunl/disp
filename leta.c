@@ -21,10 +21,10 @@ eval_result_t* disp_eval_tail_leta(disp_scope_t *env, disp_box expr, int is_tail
     disp_box args = disp_cdr(expr);
 
     // 特殊形式处理
-    if (T(op) == DISP_SYMBOL) {
+    if (T(op) == FLAG_SYMBOL) {
         // let* : 顺序绑定，每个初值在扩展后的作用域中求值
         if (op == LETA) {
-            if (!args || T(args) != DISP_CONS) {
+            if (!args || T(args) != FLAG_CONS) {
                 ERRO("malformed let*");
                 return result_nil();
             }
@@ -32,9 +32,9 @@ eval_result_t* disp_eval_tail_leta(disp_scope_t *env, disp_box expr, int is_tail
             disp_box first = disp_car(args);
     
             // 命名 let: (let name ((var val) ...) body ...)
-            if (T(first) == DISP_SYMBOL) {
+            if (T(first) == FLAG_SYMBOL) {
                 disp_box rest = disp_cdr(args);
-                if (rest && T(rest) == DISP_CONS) {
+                if (rest && T(rest) == FLAG_CONS) {
                     // 调用 disp_letf 处理命名 let，返回最终结果
                     disp_box result = disp_letf(env, expr);
                     return result_normal(result);
@@ -53,9 +53,9 @@ eval_result_t* disp_eval_tail_leta(disp_scope_t *env, disp_box expr, int is_tail
 
             // 顺序处理每个绑定
             disp_box b = bindings;
-            while (b && T(b) == DISP_CONS) {
+            while (b && T(b) == FLAG_CONS) {
                 disp_box pair = disp_car(b);
-                if (T(pair) != DISP_CONS || T(disp_car(pair)) != DISP_SYMBOL) {
+                if (T(pair) != FLAG_CONS || T(disp_car(pair)) != FLAG_SYMBOL) {
                     ERRO("malformed let* binding");
                     return result_nil();
                 }
@@ -69,7 +69,7 @@ eval_result_t* disp_eval_tail_leta(disp_scope_t *env, disp_box expr, int is_tail
             }
 
             // 对 body 序列进行尾求值（类似于 begin）
-            while (body_exprs && T(body_exprs) == DISP_CONS) {
+            while (body_exprs && T(body_exprs) == FLAG_CONS) {
                 disp_box cur = disp_car(body_exprs);
                 disp_box next = disp_cdr(body_exprs);
                 if (next == NIL) {

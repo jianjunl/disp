@@ -17,7 +17,7 @@
 static disp_box lambda_builtin(disp_scope_t *scope, disp_box expr) {
     // (lambda (params) body...)
     disp_box rest = disp_cdr(expr);
-    if (!rest || T(rest) != DISP_CONS) ERET(NIL, "lambda: missing parameter list");
+    if (!rest || T(rest) != FLAG_CONS) ERET(NIL, "lambda: missing parameter list");
     disp_box params = disp_car(rest);
     disp_box body = disp_cdr(rest);
     if (!body) ERET(NIL, "lambda: missing body");
@@ -28,7 +28,7 @@ static disp_box lambda_builtin(disp_scope_t *scope, disp_box expr) {
 static disp_box macro_builtin(disp_scope_t *scope, disp_box expr) {
     // (macro (params) body...)
     disp_box rest = disp_cdr(expr);
-    if (!rest || T(rest) != DISP_CONS) ERET(NIL, "macro: missing parameter list");
+    if (!rest || T(rest) != FLAG_CONS) ERET(NIL, "macro: missing parameter list");
     disp_box params = disp_car(rest);
     disp_box body = disp_cdr(rest);
     if (!body) ERET(NIL, "macro: missing body");
@@ -45,7 +45,7 @@ static disp_box apply_syscall(disp_box *args, int count) {
 
     // 检查参数列表是否为 proper list（末尾必须是 nil）
     disp_box p = arg_list;
-    while (p != NIL && T(p) == DISP_CONS) {
+    while (p != NIL && T(p) == FLAG_CONS) {
         p = disp_cdr(p);
     }
     if (p != NIL) {
@@ -67,11 +67,11 @@ static disp_box apply_syscall(disp_box *args, int count) {
     }
 
     disp_box result = NIL;
-    if (T(func) == DISP_SYSCALL) {
+    if (T(func) == FLAG_SYSCALL) {
         result = disp_get_syscall(func)(argv, arg_count);
-    } else if (T(func) == DISP_CLOSURE) {
+    } else if (T(func) == FLAG_CLOSURE) {
         result = disp_apply_closure(func, argv, arg_count);
-    } else if (T(func) == DISP_BUILTIN) {
+    } else if (T(func) == FLAG_BUILTIN) {
         // 内置特殊形式通常不能通过 apply 直接调用，但我们可以尝试将列表构造成表达式再求值？
         // 简单处理：报错
         gc_free(argv);

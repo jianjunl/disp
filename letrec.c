@@ -21,11 +21,11 @@ eval_result_t* disp_eval_tail_letrec(disp_scope_t *env, disp_box expr, int is_ta
     disp_box args = disp_cdr(expr);
 
     // 特殊形式处理
-    if (T(op) == DISP_SYMBOL) {
+    if (T(op) == FLAG_SYMBOL) {
         // letrec : 并行绑定，所有初值在同一作用域内求值，变量可互相引用
         // letrec : 并行绑定（使用堆分配 + GC 根保护）
         if (op == LETREC) {
-            if (!args || T(args) != DISP_CONS) {
+            if (!args || T(args) != FLAG_CONS) {
                 ERRO("malformed letrec");
                 return result_nil();
             }
@@ -33,9 +33,9 @@ eval_result_t* disp_eval_tail_letrec(disp_scope_t *env, disp_box expr, int is_ta
             disp_box first = disp_car(args);
     
             // 命名 let: (let name ((var val) ...) body ...)
-            if (T(first) == DISP_SYMBOL) {
+            if (T(first) == FLAG_SYMBOL) {
                 disp_box rest = disp_cdr(args);
-                if (rest && T(rest) == DISP_CONS) {
+                if (rest && T(rest) == FLAG_CONS) {
                     // 调用 disp_letf 处理命名 let，返回最终结果
                     disp_box result = disp_letf(env, expr);
                     return result_normal(result);
@@ -51,10 +51,10 @@ eval_result_t* disp_eval_tail_letrec(disp_scope_t *env, disp_box expr, int is_ta
 
             // 统计绑定数量
             int var_count = 0;
-            for (disp_box b = bindings; b && T(b) == DISP_CONS; b = disp_cdr(b)) var_count++;
+            for (disp_box b = bindings; b && T(b) == FLAG_CONS; b = disp_cdr(b)) var_count++;
             if (var_count == 0) {
                 // 无绑定，直接求值 body
-                while (body_exprs && T(body_exprs) == DISP_CONS) {
+                while (body_exprs && T(body_exprs) == FLAG_CONS) {
                     disp_box cur = disp_car(body_exprs);
                     disp_box next = disp_cdr(body_exprs);
                     if (next == NIL)
@@ -73,9 +73,9 @@ eval_result_t* disp_eval_tail_letrec(disp_scope_t *env, disp_box expr, int is_ta
             // 解析绑定
             int idx = 0;
             disp_box b = bindings;
-            while (b && T(b) == DISP_CONS) {
+            while (b && T(b) == FLAG_CONS) {
                 disp_box pair = disp_car(b);
-                if (T(pair) != DISP_CONS || T(disp_car(pair)) != DISP_SYMBOL) {
+                if (T(pair) != FLAG_CONS || T(disp_car(pair)) != FLAG_SYMBOL) {
                     gc_free(init_exprs);
                     gc_free(var_syms);
                     ERRO("malformed letrec binding");
@@ -114,7 +114,7 @@ eval_result_t* disp_eval_tail_letrec(disp_scope_t *env, disp_box expr, int is_ta
             gc_free(var_syms);
 
             // 对 body 序列进行尾求值
-            while (body_exprs && T(body_exprs) == DISP_CONS) {
+            while (body_exprs && T(body_exprs) == FLAG_CONS) {
                 disp_box cur = disp_car(body_exprs);
                 disp_box next = disp_cdr(body_exprs);
                 if (next == NIL) {

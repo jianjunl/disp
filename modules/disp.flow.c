@@ -16,15 +16,15 @@
 static disp_box if_builtin(disp_scope_t *scope, disp_box expr) {
     // (if cond then [else])
     disp_box cadr = disp_cdr(expr);
-    if (!cadr || T(cadr) != DISP_CONS) ERET(NIL, "if: missing condition");
+    if (!cadr || T(cadr) != FLAG_CONS) ERET(NIL, "if: missing condition");
     disp_box cond = disp_eval(scope, disp_car(cadr));
     disp_box then_rest = disp_cdr(cadr);
-    if (!then_rest || T(then_rest) != DISP_CONS) ERET(NIL, "if: missing then clause");
+    if (!then_rest || T(then_rest) != FLAG_CONS) ERET(NIL, "if: missing then clause");
     if (cond != NIL) {
         return disp_eval(scope, disp_car(then_rest));
     } else {
         disp_box else_rest = disp_cdr(then_rest);
-        if (else_rest && T(else_rest) == DISP_CONS)
+        if (else_rest && T(else_rest) == FLAG_CONS)
             return disp_eval(scope, disp_car(else_rest));
         else
             return NIL;
@@ -35,19 +35,19 @@ static disp_box if_builtin(disp_scope_t *scope, disp_box expr) {
 static disp_box cond_builtin(disp_scope_t *scope, disp_box expr) {
     // (cond (test expr) ...)
     disp_box clauses = disp_cdr(expr);
-    while (clauses && T(clauses) == DISP_CONS) {
+    while (clauses && T(clauses) == FLAG_CONS) {
         disp_box clause = disp_car(clauses);
-        if (T(clause) != DISP_CONS) {
+        if (T(clause) != FLAG_CONS) {
             ERET(NIL, "cond: malformed clause");
         }
         disp_box test = disp_eval(scope, disp_car(clause));
         if (test != NIL) {
             // evaluate the rest of the clause (one or more expressions)
             disp_box body = disp_cdr(clause);
-            if (!body || T(body) != DISP_CONS) return NIL;
+            if (!body || T(body) != FLAG_CONS) return NIL;
             // evaluate all but return the last
             disp_box last = NIL;
-            while (body && T(body) == DISP_CONS) {
+            while (body && T(body) == FLAG_CONS) {
                 last = disp_eval(scope, disp_car(body));
                 body = disp_cdr(body);
             }
@@ -62,7 +62,7 @@ static disp_box cond_builtin(disp_scope_t *scope, disp_box expr) {
 static disp_box while_builtin(disp_scope_t *scope, disp_box expr) {
     // (while test body...)
     disp_box rest = disp_cdr(expr);
-    if (!rest || T(rest) != DISP_CONS) ERET(NIL, "while: missing test");
+    if (!rest || T(rest) != FLAG_CONS) ERET(NIL, "while: missing test");
     disp_box test_form = disp_car(rest);
     disp_box body = disp_cdr(rest);
     if (!body) return NIL;
@@ -72,7 +72,7 @@ static disp_box while_builtin(disp_scope_t *scope, disp_box expr) {
         if (cond == NIL) break;
         // evaluate body forms
         disp_box body_it = body;
-        while (body_it && T(body_it) == DISP_CONS) {
+        while (body_it && T(body_it) == FLAG_CONS) {
             last = disp_eval(scope, disp_car(body_it));
             body_it = disp_cdr(body_it);
         }
@@ -84,7 +84,7 @@ static disp_box while_builtin(disp_scope_t *scope, disp_box expr) {
 static disp_box and_builtin(disp_scope_t *scope, disp_box expr) {
     disp_box args = disp_cdr(expr);
     disp_box last = TRUE;
-    while (args && T(args) == DISP_CONS) {
+    while (args && T(args) == FLAG_CONS) {
         disp_box val = disp_eval(scope, disp_car(args));
         if (val == NIL) return NIL;
         last = val;
@@ -96,7 +96,7 @@ static disp_box and_builtin(disp_scope_t *scope, disp_box expr) {
 // --- or ---
 static disp_box or_builtin(disp_scope_t *scope, disp_box expr) {
     disp_box args = disp_cdr(expr);
-    while (args && T(args) == DISP_CONS) {
+    while (args && T(args) == FLAG_CONS) {
         disp_box val = disp_eval(scope, disp_car(args));
         if (val != NIL) return val;
             args = disp_cdr(args);
@@ -111,7 +111,7 @@ static disp_box begin_builtin(disp_scope_t *scope, disp_box expr) {
     if (!body) return NIL;           // 空 begin 返回 nil
     // 顺序求值所有表达式，返回最后一个的值
     disp_box last = NIL;
-    while (body && T(body) == DISP_CONS) {
+    while (body && T(body) == FLAG_CONS) {
         last = disp_eval(scope, disp_car(body));
         body = disp_cdr(body);
     }
@@ -121,11 +121,11 @@ static disp_box begin_builtin(disp_scope_t *scope, disp_box expr) {
 static disp_box repeat_builtin(disp_scope_t *scope, disp_box expr) {
     // 语法: (repeat count body ...)
     disp_box rest = disp_cdr(expr);
-    if (!rest || T(rest) != DISP_CONS) 
+    if (!rest || T(rest) != FLAG_CONS) 
         ERET(NIL, "repeat: missing count");
     disp_box count_val = disp_eval(scope, disp_car(rest));
-    long n = (T(count_val) == DISP_INT) ? disp_get_int(count_val) 
-            : (T(count_val) == DISP_LONG) ? disp_get_long(count_val) 
+    long n = (T(count_val) == FLAG_INT) ? disp_get_int(count_val) 
+            : (T(count_val) == FLAG_LONG) ? disp_get_long(count_val) 
             : 0;
     if (n <= 0) return NIL;
     disp_box body = disp_cdr(rest);
@@ -133,7 +133,7 @@ static disp_box repeat_builtin(disp_scope_t *scope, disp_box expr) {
     disp_box last = NIL;
     for (long i = 0; i < n; i++) {
         disp_box body_it = body;
-        while (body_it && T(body_it) == DISP_CONS) {
+        while (body_it && T(body_it) == FLAG_CONS) {
             last = disp_eval(scope, disp_car(body_it));
             body_it = disp_cdr(body_it);
         }

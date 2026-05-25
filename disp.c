@@ -19,7 +19,7 @@ disp_box __attribute__((section("gc_roots"))) disp_builtin_roots[NUM_BUILTIN_ROO
 
 /* ======================== Built‑in 'load' ======================== */
 static disp_box import_syscall(disp_box *args, int argc) {
-    if (argc != 1 || T(args[0]) != DISP_STRING) {
+    if (argc != 1 || T(args[0]) != FLAG_STRING) {
         ERET(NIL, "import expects a string filename\n");
     }
     DBG("import_syscall: about to load '%s'\n", disp_get_str(args[0]));
@@ -35,7 +35,7 @@ static disp_box load_builtin(disp_scope_t *env, disp_box expr) {
         ERRO("load: warning - extra arguments ignored");
     }
     disp_box arg0 = disp_eval(env, disp_car(rest));
-    if (T(arg0) != DISP_STRING) {
+    if (T(arg0) != FLAG_STRING) {
         ERET(NIL, "load expects a string filename\n");
     }
     DBG("load_builtin: about to load '%s'\n", disp_get_str(args0));
@@ -122,7 +122,7 @@ void disp_init_globals() {
     DEF("stdin"  , disp_make_file(stdin ,"r"), 1);
     DEF("stdout" , disp_make_file(stdout,"w"), 1);
     DEF("stderr" , disp_make_file(stderr,"w"), 1);
-///*
+//*
     DEF("import", MKF(import_syscall , "<import>"), 1);
     DEF("load"  , MKB(load_builtin   , "<#load>"), 1);
     DEF("gc"    , MKF(gc_syscall     , "<gc>"   ), 1);

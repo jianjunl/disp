@@ -1,6 +1,6 @@
 
-#ifndef DISP_CORO_C
-#define DISP_CORO_C
+#ifndef __MODULE_CORO_C
+#define __MODULE_CORO_C
 
 #define _POSIX_C_SOURCE 200809L
 #include <stdarg.h>
@@ -53,7 +53,7 @@ static void coroutine_entry(disp_box coro) {
 }
 
 disp_box disp_make_coroutine(disp_box func, size_t stack_size) {
-    disp_box v = DISP_ALLOC_TI(DISP_CORO);
+    disp_box v = ALLOC_TI(FLAG_CORO);
     disp_coro_t *c = gc_typed_calloc(1, sizeof(struct disp_coro_t), &struct_disp_coro_t_ti);
     v->data->coro = c;
     c->status = 0;
@@ -78,7 +78,7 @@ disp_box disp_make_coroutine(disp_box func, size_t stack_size) {
 }
 
 static disp_box make_coroutine_syscall(disp_box *args, int count) {
-    if (count != 1 || T(args[0]) != DISP_CLOSURE)
+    if (count != 1 || T(args[0]) != FLAG_CLOSURE)
         ERET(NIL, "make-coroutine expects a lambda");
     return disp_make_coroutine(args[0], 65536);
 }
@@ -107,7 +107,7 @@ static disp_box yield_syscall(disp_box *args, int count) {
 }
 
 static disp_box resume_syscall(disp_box *args, int count) {
-    if (count < 1 || T(args[0]) != DISP_CORO)
+    if (count < 1 || T(args[0]) != FLAG_CORO)
         ERET(NIL, "resume expects a coroutine and optional argument");
     disp_box coro = args[0];
     disp_coro_t *c =coro->data->coro;
@@ -138,8 +138,8 @@ static disp_box current_coro_syscall(disp_box *args, int count) {
 }
 
 void scheduler_add(disp_box coro) {
-    if (!coro || T(coro) != DISP_CORO) {
-        INFO("scheduler_add: invalid coro %p (flag=%d)", (void*)coro, coro != NULL ? T(coro) : DISP_VOID);
+    if (!coro || T(coro) != FLAG_CORO) {
+        INFO("scheduler_add: invalid coro %p (flag=%d)", (void*)coro, coro != NULL ? T(coro) : FLAG_VOID);
         exit(1);
     }
     if (ready_head == NULL) {
@@ -232,7 +232,7 @@ void event_loop_run(void) {
         // 先运行就绪队列中的协程
         if (ready_head) {
             disp_box next = ready_head;
-            if (T(next) != DISP_CORO) {
+            if (T(next) != FLAG_CORO) {
                 INFO("event_loop_run: non-coroutine in ready queue! flag=%d\n", T(next));
                 exit(1);
             }
@@ -285,4 +285,4 @@ void disp_init_module(void) {
     disp_import("disp.coro.net.so");
 } 
 
-#endif /* DISP_CORO_C */
+#endif /* __MODULE_CORO_C */

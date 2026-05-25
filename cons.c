@@ -31,24 +31,24 @@ GC_UNION_TI(disp_data,
 );
 
 disp_box disp_make_cons(disp_box car, disp_box cdr) {
-    disp_box v = DISP_ALLOC_TI(DISP_CONS);
+    disp_box v = ALLOC_TI(FLAG_CONS);
     GC_ASSIGN_PTR(v->data->cons.car, car);
     GC_ASSIGN_PTR(v->data->cons.cdr, cdr);
     return v;
 }
 
 disp_box disp_car(disp_box cons) {
-    return (cons && cons->flag == DISP_CONS) ? cons->data->cons.car : NIL;
+    return (cons && cons->flag == FLAG_CONS) ? cons->data->cons.car : NIL;
 }
 
 disp_box disp_cdr(disp_box cons) {
-    return (cons && cons->flag == DISP_CONS) ? cons->data->cons.cdr : NIL;
+    return (cons && cons->flag == FLAG_CONS) ? cons->data->cons.cdr : NIL;
 }
 
 void disp_set_car(disp_box cons, disp_box car) {
-    if (cons && cons->flag == DISP_CONS) GC_ASSIGN_PTR(cons->data->cons.car, car);
+    if (cons && cons->flag == FLAG_CONS) GC_ASSIGN_PTR(cons->data->cons.car, car);
 }
 
 void disp_set_cdr(disp_box cons, disp_box cdr) {
-    if (cons && cons->flag == DISP_CONS) GC_ASSIGN_PTR(cons->data->cons.cdr, cdr);
+    if (cons && cons->flag == FLAG_CONS) GC_ASSIGN_PTR(cons->data->cons.cdr, cdr);
 }

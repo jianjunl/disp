@@ -28,7 +28,7 @@ static int set_nonblocking(int fd) {
 // 辅助：从文件对象获取 fd，并确保非阻塞
 #pragma GCC diagnostic ignored "-Wunused-function"
 static int get_nonblock_fd(disp_box file_obj) {
-    if (T(file_obj) != DISP_FILE) return -1;
+    if (T(file_obj) != FLAG_FILE) return -1;
     FILE *f = disp_get_file(file_obj);
     if (!f) return -1;
     int fd = fileno(f);
@@ -39,7 +39,7 @@ static int get_nonblock_fd(disp_box file_obj) {
 }
 
 static disp_box fread_nb_syscall(disp_box *args, int count) {
-    if (count != 1 || T(args[0]) != DISP_FILE)
+    if (count != 1 || T(args[0]) != FLAG_FILE)
         ERET(NIL, "fread-nb expects a file object");
     FILE *f = disp_get_file(args[0]);
     if (!f) return NIL;
@@ -71,7 +71,7 @@ static disp_box fread_nb_syscall(disp_box *args, int count) {
 }
 
 static disp_box fwrite_nb_syscall(disp_box *args, int count) {
-    if (count != 2 || T(args[0]) != DISP_FILE || T(args[1]) != DISP_STRING)
+    if (count != 2 || T(args[0]) != FLAG_FILE || T(args[1]) != FLAG_STRING)
         ERET(NIL, "fwrite-nb expects (file string)");
     FILE *f = disp_get_file(args[0]);
     if (!f) return NIL;
@@ -102,7 +102,7 @@ static disp_box fwrite_nb_syscall(disp_box *args, int count) {
 /* =============================== go 和 sleep =============================== */
 
 static disp_box go_syscall(disp_box *args, int count) {
-    if (count != 1 || T(args[0]) != DISP_CLOSURE)
+    if (count != 1 || T(args[0]) != FLAG_CLOSURE)
         ERET(NIL, "go expects a lambda");
     disp_box coro = disp_make_coroutine(args[0], 65536);
     scheduler_add(coro);
@@ -112,9 +112,9 @@ static disp_box go_syscall(disp_box *args, int count) {
 static disp_box sleep_ms_syscall(disp_box *args, int count) {
     if (count != 1) ERET(NIL, "sleep-ms expects milliseconds");
     long ms = 0;
-    if (T(args[0]) == DISP_INT)
+    if (T(args[0]) == FLAG_INT)
         ms = disp_get_int(args[0]);
-    else if (T(args[0]) == DISP_LONG)
+    else if (T(args[0]) == FLAG_LONG)
         ms = disp_get_long(args[0]);
     else
         ERET(NIL, "sleep-ms: argument must be integer");

@@ -1,6 +1,6 @@
 
-#ifndef DISP_H
-#define DISP_H
+#ifndef _CORE_H
+#define _CORE_H
 
 #include <stddef.h>
 #include <stdio.h>
@@ -90,4 +90,4 @@ enum disp_builtin_root_idx {
 
 #include "debug.h"
 
-#endif /* DISP_H */
+#endif /* _CORE_H */

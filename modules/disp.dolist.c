@@ -17,13 +17,13 @@ extern void bind_arguments_to_scope(disp_scope_t *scope, disp_box params, disp_b
 // ======================== dolist 循环 ========================
 static disp_box dolist_builtin(disp_scope_t *scope, disp_box expr) {
     disp_box rest = disp_cdr(expr);
-    if (!rest || T(rest) != DISP_CONS)
+    if (!rest || T(rest) != FLAG_CONS)
         ERET(NIL, "dolist: missing binding list");
     disp_box binding = disp_car(rest);
-    if (T(binding) != DISP_CONS)
+    if (T(binding) != FLAG_CONS)
         ERET(NIL, "dolist: malformed binding");
     disp_box var = disp_car(binding);
-    if (T(var) != DISP_SYMBOL)
+    if (T(var) != FLAG_SYMBOL)
         ERET(NIL, "dolist: variable must be a symbol");
     const char *var_name = disp_get_symbol_name(var);
     disp_box list_expr = disp_car(disp_cdr(binding));
@@ -31,7 +31,7 @@ static disp_box dolist_builtin(disp_scope_t *scope, disp_box expr) {
         ERET(NIL, "dolist: missing list");
     disp_box result_expr = NIL;
     disp_box rest_binding = disp_cdr(disp_cdr(binding));
-    if (rest_binding && T(rest_binding) == DISP_CONS)
+    if (rest_binding && T(rest_binding) == FLAG_CONS)
         result_expr = disp_car(rest_binding);
     disp_box body = disp_cdr(rest);
 
@@ -56,13 +56,13 @@ static disp_box dolist_builtin(disp_scope_t *scope, disp_box expr) {
     volatile int normal_exit = 0;
     TRY {
         // 遍历列表
-        for (disp_box  volatile p = lst; p && T(p) == DISP_CONS; p = disp_cdr(p)) {
+        for (disp_box  volatile p = lst; p && T(p) == FLAG_CONS; p = disp_cdr(p)) {
             disp_box elem = disp_car(p);
             // 更新循环作用域中的变量绑定
             disp_define_symbol(loop_scope, var_name, elem, 0);
             // 执行 body（在 loop_scope 中）
             disp_box b = body;
-            while (b && T(b) == DISP_CONS) {
+            while (b && T(b) == FLAG_CONS) {
                 last_result = disp_eval(loop_scope, disp_car(b));
                 b = disp_cdr(b);
             }

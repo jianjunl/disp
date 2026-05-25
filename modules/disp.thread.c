@@ -1,6 +1,6 @@
 
-#ifndef DISP_THREAD_C
-#define DISP_THREAD_C
+#ifndef __MODULE_THREAD_C
+#define __MODULE_THREAD_C
 
 #define _POSIX_C_SOURCE 200809L
 #include <stdio.h>
@@ -50,10 +50,10 @@ static void* thread_entry(void *arg) {
 
 /* (make-thread func) -> thread */
 static disp_box make_thread_syscall(disp_box *args, int count) {
-    if (count != 1 || T(args[0]) != DISP_CLOSURE)
+    if (count != 1 || T(args[0]) != FLAG_CLOSURE)
         ERET(NIL, "make-thread expects a closure");
     
-    disp_box v = DISP_ALLOC_TI(DISP_THREAD);
+    disp_box v = ALLOC_TI(FLAG_THREAD);
     disp_thread_t *t = gc_typed_calloc(1, sizeof(disp_thread_t), &struct_disp_thread_t_ti);
     if (!t) {
         gc_free(v->data); gc_free(v);
@@ -88,7 +88,7 @@ static disp_box make_thread_syscall(disp_box *args, int count) {
 
 /* (thread-join thread) -> result */
 static disp_box thread_join_syscall(disp_box *args, int count) {
-    if (count != 1 || T(args[0]) != DISP_THREAD)
+    if (count != 1 || T(args[0]) != FLAG_THREAD)
         ERET(NIL, "thread-join expects a thread object");
     
     disp_box thread_obj = args[0];
@@ -111,7 +111,7 @@ static disp_box thread_join_syscall(disp_box *args, int count) {
 static disp_box make_mutex_syscall(disp_box *args, int count) {
     (void)args; (void)count;
     
-    disp_box v = DISP_ALLOC_TI(DISP_MUTEX);
+    disp_box v = ALLOC_TI(FLAG_MUTEX);
     if (gc_pthread_mutex_init(&v->data->mutex, NULL) != 0) {
         gc_free(v->data); gc_free(v);
         ERET(NIL, "make-mutex: init failed");
@@ -121,7 +121,7 @@ static disp_box make_mutex_syscall(disp_box *args, int count) {
 
 /* (lock mutex) -> true */
 static disp_box lock_mutex_syscall(disp_box *args, int count) {
-    if (count != 1 || T(args[0]) != DISP_MUTEX)
+    if (count != 1 || T(args[0]) != FLAG_MUTEX)
         ERET(NIL, "lock expects a mutex");
     gc_mutex_t *m = args[0]->data->mutex;
     if (gc_pthread_mutex_lock(m) != 0)
@@ -131,7 +131,7 @@ static disp_box lock_mutex_syscall(disp_box *args, int count) {
 
 /* (unlock mutex) -> true */
 static disp_box unlock_mutex_syscall(disp_box *args, int count) {
-    if (count != 1 || T(args[0]) != DISP_MUTEX)
+    if (count != 1 || T(args[0]) != FLAG_MUTEX)
         ERET(NIL, "unlock expects a mutex");
     gc_mutex_t *m = args[0]->data->mutex;
     if (gc_pthread_mutex_unlock(m) != 0)
@@ -143,7 +143,7 @@ static disp_box unlock_mutex_syscall(disp_box *args, int count) {
 static disp_box make_condition_syscall(disp_box *args, int count) {
     (void)args; (void)count;
     
-    disp_box v = DISP_ALLOC_TI(DISP_COND);
+    disp_box v = ALLOC_TI(FLAG_COND);
     if (gc_pthread_cond_init(&v->data->cond, NULL) != 0) {
         gc_free(v->data); gc_free(v);
         ERET(NIL, "make-condition: init failed");
@@ -153,7 +153,7 @@ static disp_box make_condition_syscall(disp_box *args, int count) {
 
 /* (condition-wait cond mutex) -> true */
 static disp_box condition_wait_syscall(disp_box *args, int count) {
-    if (count != 2 || T(args[0]) != DISP_COND || T(args[1]) != DISP_MUTEX)
+    if (count != 2 || T(args[0]) != FLAG_COND || T(args[1]) != FLAG_MUTEX)
         ERET(NIL, "condition-wait expects (cond mutex)");
     gc_cond_t *c = args[0]->data->cond;
     gc_mutex_t *m = args[1]->data->mutex;
@@ -164,7 +164,7 @@ static disp_box condition_wait_syscall(disp_box *args, int count) {
 
 /* (condition-signal cond) -> true */
 static disp_box condition_signal_syscall(disp_box *args, int count) {
-    if (count != 1 || T(args[0]) != DISP_COND)
+    if (count != 1 || T(args[0]) != FLAG_COND)
         ERET(NIL, "condition-signal expects a cond");
     gc_cond_t *c = args[0]->data->cond;
     if (gc_pthread_cond_signal(c) != 0)
@@ -174,7 +174,7 @@ static disp_box condition_signal_syscall(disp_box *args, int count) {
 
 /* (condition-broadcast cond) -> true */
 static disp_box condition_broadcast_syscall(disp_box *args, int count) {
-    if (count != 1 || T(args[0]) != DISP_COND)
+    if (count != 1 || T(args[0]) != FLAG_COND)
         ERET(NIL, "condition-broadcast expects a cond");
     gc_cond_t *c = args[0]->data->cond;
     if (gc_pthread_cond_broadcast(c) != 0)
@@ -186,17 +186,17 @@ static disp_box condition_broadcast_syscall(disp_box *args, int count) {
 static disp_box thread_sleep_syscall(disp_box *args, int count) {
     if (count != 1) ERET(NIL, "thread-sleep expects seconds");
     double secs = 0.0;
-    if (T(args[0]) == DISP_BYTE)
+    if (T(args[0]) == FLAG_BYTE)
         secs = disp_get_byte(args[0]);
-    else if (T(args[0]) == DISP_SHORT)
+    else if (T(args[0]) == FLAG_SHORT)
         secs = disp_get_short(args[0]);
-    else if (T(args[0]) == DISP_INT)
+    else if (T(args[0]) == FLAG_INT)
         secs = disp_get_int(args[0]);
-    else if (T(args[0]) == DISP_LONG)
+    else if (T(args[0]) == FLAG_LONG)
         secs = disp_get_long(args[0]);
-    else if (T(args[0]) == DISP_FLOAT)
+    else if (T(args[0]) == FLAG_FLOAT)
         secs = disp_get_float(args[0]);
-    else if (T(args[0]) == DISP_DOUBLE)
+    else if (T(args[0]) == FLAG_DOUBLE)
         secs = disp_get_double(args[0]);
     else
         ERET(NIL, "thread-sleep: numeric argument expected");
@@ -232,4 +232,4 @@ void disp_init_module(void) {
     DEF("thread-sleep",       MKF(thread_sleep_syscall,       "<thread-sleep>"),       1);
 }
 
-#endif /* DISP_THREAD_C */
+#endif /* __MODULE_THREAD_C */

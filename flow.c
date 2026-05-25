@@ -21,17 +21,17 @@ eval_result_t* disp_eval_tail_flow(disp_scope_t *env, disp_box expr, int is_tail
     disp_box args = disp_cdr(expr);
 
     // 特殊形式处理
-    if (T(op) == DISP_SYMBOL) {
+    if (T(op) == FLAG_SYMBOL) {
 
         // quote
         if (op == QUOTE) {
-            if (!args || T(args) != DISP_CONS) ERRO("malformed quote");
+            if (!args || T(args) != FLAG_CONS) ERRO("malformed quote");
             return result_normal(disp_car(args));
         }
 
         // if
         if (op == IF) {
-            if (!args || T(args) != DISP_CONS) ERRO("malformed if");
+            if (!args || T(args) != FLAG_CONS) ERRO("malformed if");
             disp_box test = disp_car(args);
             disp_box then_branch = disp_car(disp_cdr(args));
             disp_box else_branch = (disp_cdr(disp_cdr(args)) != NIL) ? disp_car(disp_cdr(disp_cdr(args))) : NIL;
@@ -45,7 +45,7 @@ eval_result_t* disp_eval_tail_flow(disp_scope_t *env, disp_box expr, int is_tail
         if (op == BEGIN || op == PROGN) {
             if (!args) return result_nil();
             disp_box exprs = args;
-            while (exprs && T(exprs) == DISP_CONS) {
+            while (exprs && T(exprs) == FLAG_CONS) {
                 disp_box cur = disp_car(exprs);
                 disp_box next = disp_cdr(exprs);
                 if (next == NIL) {
@@ -64,9 +64,9 @@ eval_result_t* disp_eval_tail_flow(disp_scope_t *env, disp_box expr, int is_tail
         if (op == COND) {
             if (!args) return result_nil();
             disp_box clauses = args;
-            while (clauses && T(clauses) == DISP_CONS) {
+            while (clauses && T(clauses) == FLAG_CONS) {
                 disp_box clause = disp_car(clauses);
-                if (T(clause) != DISP_CONS) ERRO("malformed cond clause");
+                if (T(clause) != FLAG_CONS) ERRO("malformed cond clause");
                 disp_box test = disp_car(clause);
                 disp_box rest_exprs = disp_cdr(clause);
                 if (test == ELSE || disp_eval(env, test) != NIL) {
@@ -76,7 +76,7 @@ eval_result_t* disp_eval_tail_flow(disp_scope_t *env, disp_box expr, int is_tail
                     } else {
                         // 处理隐式 begin
                         disp_box body = rest_exprs;
-                        while (body && T(body) == DISP_CONS) {
+                        while (body && T(body) == FLAG_CONS) {
                             disp_box cur = disp_car(body);
                             disp_box next = disp_cdr(body);
                             if (next == NIL)
@@ -97,7 +97,7 @@ eval_result_t* disp_eval_tail_flow(disp_scope_t *env, disp_box expr, int is_tail
             if (args == NIL) return result_true();
             disp_box exprs = args;
             disp_box last_val = TRUE;
-            while (exprs && T(exprs) == DISP_CONS) {
+            while (exprs && T(exprs) == FLAG_CONS) {
                 disp_box cur = disp_car(exprs);
                 disp_box next = disp_cdr(exprs);
                 last_val = disp_eval(env, cur);
@@ -116,7 +116,7 @@ eval_result_t* disp_eval_tail_flow(disp_scope_t *env, disp_box expr, int is_tail
             if (args == NIL) return result_nil();
             disp_box exprs = args;
             disp_box last_val = NIL;
-            while (exprs && T(exprs) == DISP_CONS) {
+            while (exprs && T(exprs) == FLAG_CONS) {
                 disp_box cur = disp_car(exprs);
                 disp_box next = disp_cdr(exprs);
                 last_val = disp_eval(env, cur);
@@ -133,7 +133,7 @@ eval_result_t* disp_eval_tail_flow(disp_scope_t *env, disp_box expr, int is_tail
 
         // set!
         if (op == SET || op == SETQ) {
-            if (!args || T(args) != DISP_CONS || T(disp_car(args)) != DISP_SYMBOL) ERRO("malformed set!");
+            if (!args || T(args) != FLAG_CONS || T(disp_car(args)) != FLAG_SYMBOL) ERRO("malformed set!");
             const char *varname = disp_get_symbol_name(disp_car(args));
             disp_box val_expr = disp_car(disp_cdr(args));
             disp_box val = disp_eval(env, val_expr);
@@ -145,15 +145,15 @@ eval_result_t* disp_eval_tail_flow(disp_scope_t *env, disp_box expr, int is_tail
 
         // define (仅允许顶层，但这里按局部处理)
         if (op == DEFINE) {
-            if (!args || T(args) != DISP_CONS) ERRO("malformed define");
+            if (!args || T(args) != FLAG_CONS) ERRO("malformed define");
             disp_box first = disp_car(args);
-            if (T(first) == DISP_SYMBOL) {
+            if (T(first) == FLAG_SYMBOL) {
                 const char *name = disp_get_symbol_name(first);
                 disp_box val_expr = disp_car(disp_cdr(args));
                 disp_box val = disp_eval(env, val_expr);
                 disp_define_symbol(env, name, val, 0);
                 return result_normal(val);
-            } else if (T(first) == DISP_CONS) {
+            } else if (T(first) == FLAG_CONS) {
                 // 函数定义 (define (f args) body)
                 // 简化：暂不实现
                 ERRO("define with function syntax not supported in tail evaluator");
@@ -164,7 +164,7 @@ eval_result_t* disp_eval_tail_flow(disp_scope_t *env, disp_box expr, int is_tail
 
         // lambda
         if (op == LAMBDA) {
-            if (!args || T(args) != DISP_CONS) ERRO("malformed lambda");
+            if (!args || T(args) != FLAG_CONS) ERRO("malformed lambda");
             disp_box params = disp_car(args);
             disp_box body = disp_cdr(args);
             disp_box closure = disp_make_closure(env, params, body, 0);

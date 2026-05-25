@@ -1,6 +1,6 @@
 
-#ifndef DISP_CORO_POLL_C
-#define DISP_CORO_POLL_C
+#ifndef __MODULE_CORO_POLL_C
+#define __MODULE_CORO_POLL_C
 
 #define _POSIX_C_SOURCE 200809L
 #include <stdarg.h>
@@ -167,7 +167,7 @@ static disp_box try_recv(disp_box ch, disp_box body, int *executed) {
 
     disp_box result = NIL;
     disp_box body_it = body;
-    while (body_it && T(body_it) == DISP_CONS) {
+    while (body_it && T(body_it) == FLAG_CONS) {
         result = disp_eval(NULL, disp_car(body_it));
         body_it = disp_cdr(body_it);
     }
@@ -195,7 +195,7 @@ static disp_box try_send(disp_box ch, disp_box val, disp_box body, int *executed
 
     disp_box result = NIL;
     disp_box body_it = body;
-    while (body_it && T(body_it) == DISP_CONS) {
+    while (body_it && T(body_it) == FLAG_CONS) {
         result = disp_eval(NULL, disp_car(body_it));
         body_it = disp_cdr(body_it);
     }
@@ -208,7 +208,7 @@ static disp_box try_after(case_info_t *info, int *executed) {
     if (info->timeout_ms == 0) {
         disp_box result = NIL;
         disp_box body_it = info->body;
-        while (body_it && T(body_it) == DISP_CONS) {
+        while (body_it && T(body_it) == FLAG_CONS) {
             result = disp_eval(NULL, disp_car(body_it));
             body_it = disp_cdr(body_it);
         }
@@ -310,7 +310,7 @@ static disp_box handle_ready_cases(case_info_t *infos, int count, disp_box curre
 
                 disp_box body_it = info->body;
                 result = NIL;
-                while (body_it && T(body_it) == DISP_CONS) {
+                while (body_it && T(body_it) == FLAG_CONS) {
                     result = disp_eval(NULL, disp_car(body_it));
                     body_it = disp_cdr(body_it);
                 }
@@ -337,7 +337,7 @@ static disp_box handle_ready_cases(case_info_t *infos, int count, disp_box curre
                 gc_pthread_mutex_unlock(LOCK(c));
                 disp_box body_it = info->body;
                 result = NIL;
-                while (body_it && T(body_it) == DISP_CONS) {
+                while (body_it && T(body_it) == FLAG_CONS) {
                     result = disp_eval(NULL, disp_car(body_it));
                     body_it = disp_cdr(body_it);
                 }
@@ -355,7 +355,7 @@ static disp_box handle_ready_cases(case_info_t *infos, int count, disp_box curre
 
             disp_box body_it = info->body;
             result = NIL;
-            while (body_it && T(body_it) == DISP_CONS) {
+            while (body_it && T(body_it) == FLAG_CONS) {
                 result = disp_eval(NULL, disp_car(body_it));
                 body_it = disp_cdr(body_it);
             }
@@ -376,7 +376,7 @@ static disp_box handle_ready_cases(case_info_t *infos, int count, disp_box curre
 /* ======================== select 主函数 ======================== */
 static disp_box select_builtin(disp_scope_t *scope, disp_box expr) {
     disp_box clauses = disp_cdr(expr);
-    if (!clauses || T(clauses) != DISP_CONS)
+    if (!clauses || T(clauses) != FLAG_CONS)
         ERET(NIL, "select: missing clauses");
 
     disp_box current = disp_get_current_coro();
@@ -385,7 +385,7 @@ static disp_box select_builtin(disp_scope_t *scope, disp_box expr) {
 
     // 统计 clause 个数
     int case_count = 0;
-    for (disp_box c = clauses; c && T(c) == DISP_CONS; c = disp_cdr(c))
+    for (disp_box c = clauses; c && T(c) == FLAG_CONS; c = disp_cdr(c))
         case_count++;
     if (case_count == 0)
         ERET(NIL, "select: no clauses");
@@ -395,28 +395,28 @@ static disp_box select_builtin(disp_scope_t *scope, disp_box expr) {
     int default_idx = -1;
 
     int i = 0;
-    for (disp_box c = clauses; c && T(c) == DISP_CONS; c = disp_cdr(c), i++) {
+    for (disp_box c = clauses; c && T(c) == FLAG_CONS; c = disp_cdr(c), i++) {
         disp_box clause = disp_car(c);
-        if (T(clause) != DISP_CONS) {
+        if (T(clause) != FLAG_CONS) {
             gc_free(infos);
             ERET(NIL, "select: malformed clause");
         }
         disp_box op = disp_car(clause);
         disp_box body = disp_cdr(clause);
 
-        if (T(op) == DISP_SYMBOL && strcmp(disp_get_symbol_name(op), "default") == 0) {
+        if (T(op) == FLAG_SYMBOL && strcmp(disp_get_symbol_name(op), "default") == 0) {
             infos[i].type = CASE_DEFAULT;
             infos[i].body = body;
             default_idx = i;
             continue;
         }
 
-        if (T(op) != DISP_CONS) {
+        if (T(op) != FLAG_CONS) {
             gc_free(infos);
             ERET(NIL, "select: operation must be (recv ...), (send ...) or (after ...)");
         }
         disp_box op_name = disp_car(op);
-        if (T(op_name) != DISP_SYMBOL) {
+        if (T(op_name) != FLAG_SYMBOL) {
             gc_free(infos);
             ERET(NIL, "select: unknown operation");
         }
@@ -424,13 +424,13 @@ static disp_box select_builtin(disp_scope_t *scope, disp_box expr) {
 
         if (strcmp(op_str, "recv") == 0) {
             disp_box rest = disp_cdr(op);
-            if (!rest || T(rest) != DISP_CONS) {
+            if (!rest || T(rest) != FLAG_CONS) {
                 gc_free(infos);
                 ERET(NIL, "select: recv expects (recv ch)");
             }
             disp_box ch_expr = disp_car(rest);
             disp_box ch_arg = disp_eval(NULL, ch_expr);
-            if (T(ch_arg) != DISP_CHAN) {
+            if (T(ch_arg) != FLAG_CHAN) {
                 gc_free(infos);
                 ERET(NIL, "select: recv argument must be a channel");
             }
@@ -439,13 +439,13 @@ static disp_box select_builtin(disp_scope_t *scope, disp_box expr) {
             infos[i].body = body;
         } else if (strcmp(op_str, "send") == 0) {
             disp_box rest = disp_cdr(op);
-            if (!rest || T(rest) != DISP_CONS) {
+            if (!rest || T(rest) != FLAG_CONS) {
                 gc_free(infos);
                 ERET(NIL, "select: send expects (send ch val)");
             }
             disp_box ch_expr = disp_car(rest);
             disp_box ch_arg = disp_eval(NULL, ch_expr);
-            if (T(ch_arg) != DISP_CHAN) {
+            if (T(ch_arg) != FLAG_CHAN) {
                 gc_free(infos);
                 ERET(NIL, "select: send channel must be a channel");
             }
@@ -457,16 +457,16 @@ static disp_box select_builtin(disp_scope_t *scope, disp_box expr) {
             infos[i].body = body;
         } else if (strcmp(op_str, "after") == 0) {
             disp_box rest = disp_cdr(op);
-            if (!rest || T(rest) != DISP_CONS) {
+            if (!rest || T(rest) != FLAG_CONS) {
                 gc_free(infos);
                 ERET(NIL, "select: after expects (after ms)");
             }
             disp_box ms_expr = disp_car(rest);
             disp_box ms_val = disp_eval(NULL, ms_expr);
             long ms = 0;
-            if (T(ms_val) == DISP_INT)
+            if (T(ms_val) == FLAG_INT)
                 ms = disp_get_int(ms_val);
-            else if (T(ms_val) == DISP_LONG)
+            else if (T(ms_val) == FLAG_LONG)
                 ms = disp_get_long(ms_val);
             else {
                 gc_free(infos);
@@ -505,7 +505,7 @@ static disp_box select_builtin(disp_scope_t *scope, disp_box expr) {
     if (default_idx != -1) {
         disp_box body_it = infos[default_idx].body;
         result = NIL;
-        while (body_it && T(body_it) == DISP_CONS) {
+        while (body_it && T(body_it) == FLAG_CONS) {
             result = disp_eval(NULL, disp_car(body_it));
             body_it = disp_cdr(body_it);
         }
@@ -542,4 +542,4 @@ void disp_init_module(void) {
     DEF("select", MKB(select_builtin, "<#select>"), 1);
 }
 
-#endif /* DISP_CORO_POLL_C */
+#endif /* __MODULE_CORO_POLL_C */

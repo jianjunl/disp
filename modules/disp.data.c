@@ -65,17 +65,17 @@ static disp_box lt_syscall(disp_box *args, int count) {
     double a = 0, b = 0;
     // convert both to double for simplicity
     switch (T(args[0])) {
-        case DISP_INT: a = disp_get_int(args[0]); break;
-        case DISP_LONG: a = disp_get_long(args[0]); break;
-        case DISP_FLOAT: a = disp_get_float(args[0]); break;
-        case DISP_DOUBLE: a = disp_get_double(args[0]); break;
+        case FLAG_INT: a = disp_get_int(args[0]); break;
+        case FLAG_LONG: a = disp_get_long(args[0]); break;
+        case FLAG_FLOAT: a = disp_get_float(args[0]); break;
+        case FLAG_DOUBLE: a = disp_get_double(args[0]); break;
         default: ERRO("<: left operand not numeric");
     }
     switch (T(args[1])) {
-        case DISP_INT: b = disp_get_int(args[1]); break;
-        case DISP_LONG: b = disp_get_long(args[1]); break;
-        case DISP_FLOAT: b = disp_get_float(args[1]); break;
-        case DISP_DOUBLE: b = disp_get_double(args[1]); break;
+        case FLAG_INT: b = disp_get_int(args[1]); break;
+        case FLAG_LONG: b = disp_get_long(args[1]); break;
+        case FLAG_FLOAT: b = disp_get_float(args[1]); break;
+        case FLAG_DOUBLE: b = disp_get_double(args[1]); break;
         default: ERRO("<: right operand not numeric");
     }
     return (a < b) ? TRUE : NIL;
@@ -87,17 +87,17 @@ static disp_box gt_syscall(disp_box *args, int count) {
     }
     double a = 0, b = 0;
     switch (T(args[0])) {
-        case DISP_INT: a = disp_get_int(args[0]); break;
-        case DISP_LONG: a = disp_get_long(args[0]); break;
-        case DISP_FLOAT: a = disp_get_float(args[0]); break;
-        case DISP_DOUBLE: a = disp_get_double(args[0]); break;
+        case FLAG_INT: a = disp_get_int(args[0]); break;
+        case FLAG_LONG: a = disp_get_long(args[0]); break;
+        case FLAG_FLOAT: a = disp_get_float(args[0]); break;
+        case FLAG_DOUBLE: a = disp_get_double(args[0]); break;
         default: ERRO(">: left operand not numeric");
     }
     switch (T(args[1])) {
-        case DISP_INT: b = disp_get_int(args[1]); break;
-        case DISP_LONG: b = disp_get_long(args[1]); break;
-        case DISP_FLOAT: b = disp_get_float(args[1]); break;
-        case DISP_DOUBLE: b = disp_get_double(args[1]); break;
+        case FLAG_INT: b = disp_get_int(args[1]); break;
+        case FLAG_LONG: b = disp_get_long(args[1]); break;
+        case FLAG_FLOAT: b = disp_get_float(args[1]); break;
+        case FLAG_DOUBLE: b = disp_get_double(args[1]); break;
         default: ERRO(">: right operand not numeric");
     }
     return (a > b) ? TRUE : NIL;
@@ -112,18 +112,18 @@ static disp_box eq_syscall(disp_box *args, int count) {
     long double a = 0, b = 0;
     disp_box v = disp_eval(NULL, args[0]);
     switch (T(v)) {
-        case DISP_INT: a = disp_get_int(v); break;
-        case DISP_LONG: a = disp_get_long(v); break;
-        case DISP_FLOAT: a = disp_get_float(v); break;
-        case DISP_DOUBLE: a = disp_get_double(v); break;
+        case FLAG_INT: a = disp_get_int(v); break;
+        case FLAG_LONG: a = disp_get_long(v); break;
+        case FLAG_FLOAT: a = disp_get_float(v); break;
+        case FLAG_DOUBLE: a = disp_get_double(v); break;
         default: ERRO("=: left operand not numeric");
     }
     v = disp_eval(NULL, args[1]);
     switch (T(v)) {
-        case DISP_INT: b = disp_get_int(v); break;
-        case DISP_LONG: b = disp_get_long(v); break;
-        case DISP_FLOAT: b = disp_get_float(v); break;
-        case DISP_DOUBLE: b = disp_get_double(v); break;
+        case FLAG_INT: b = disp_get_int(v); break;
+        case FLAG_LONG: b = disp_get_long(v); break;
+        case FLAG_FLOAT: b = disp_get_float(v); break;
+        case FLAG_DOUBLE: b = disp_get_double(v); break;
         default: ERRO("=: right operand not numeric");
     }
     return (a == b) ? TRUE : NIL;
@@ -147,59 +147,59 @@ static disp_box nullp_syscall(disp_box *args, int count) {
 /* ----- 类型谓词 ----- */
 static disp_box symbolp_syscall(disp_box *args, int count) {
     if (count != 1) ERET(NIL, "symbol?: expects one argument");
-    return (T(args[0]) == DISP_SYMBOL) ? TRUE : NIL;
+    return (T(args[0]) == FLAG_SYMBOL) ? TRUE : NIL;
 }
 
 /* ----- 类型谓词 ----- */
 static disp_box stringp_syscall(disp_box *args, int count) {
     if (count != 1) ERET(NIL, "string?: expects one argument");
-    return (T(args[0]) == DISP_STRING) ? TRUE : NIL;
+    return (T(args[0]) == FLAG_STRING) ? TRUE : NIL;
 }
 
 /* ----- 类型谓词 ----- */
 static disp_box bytep_syscall(disp_box *args, int count) {
     if (count != 1) ERET(NIL, "byte?: expects one argument");
-    return (T(args[0]) == DISP_BYTE) ? TRUE : NIL;
+    return (T(args[0]) == FLAG_BYTE) ? TRUE : NIL;
 }
 
 /* ----- 类型谓词 ----- */
 static disp_box shortp_syscall(disp_box *args, int count) {
     if (count != 1) ERET(NIL, "short?: expects one argument");
-    return (T(args[0]) == DISP_SHORT) ? TRUE : NIL;
+    return (T(args[0]) == FLAG_SHORT) ? TRUE : NIL;
 }
 
 /* ----- 类型谓词 ----- */
 static disp_box intp_syscall(disp_box *args, int count) {
     if (count != 1) ERET(NIL, "int?: expects one argument");
-    return (T(args[0]) == DISP_INT) ? TRUE : NIL;
+    return (T(args[0]) == FLAG_INT) ? TRUE : NIL;
 }
 
 /* ----- 类型谓词 ----- */
 static disp_box longp_syscall(disp_box *args, int count) {
     if (count != 1) ERET(NIL, "long?: expects one argument");
-    return (T(args[0]) == DISP_LONG) ? TRUE : NIL;
+    return (T(args[0]) == FLAG_LONG) ? TRUE : NIL;
 }
 
 /* ----- 类型谓词 ----- */
 static disp_box floatp_syscall(disp_box *args, int count) {
     if (count != 1) ERET(NIL, "float?: expects one argument");
-    return (T(args[0]) == DISP_FLOAT) ? TRUE : NIL;
+    return (T(args[0]) == FLAG_FLOAT) ? TRUE : NIL;
 }
 
 /* ----- 类型谓词 ----- */
 static disp_box doublep_syscall(disp_box *args, int count) {
     if (count != 1) ERET(NIL, "double?: expects one argument");
-    return (T(args[0]) == DISP_DOUBLE) ? TRUE : NIL;
+    return (T(args[0]) == FLAG_DOUBLE) ? TRUE : NIL;
 }
 
 /* ----- 类型谓词 ----- */
 static disp_box integerp_syscall(disp_box *args, int count) {
     if (count != 1) ERET(NIL, "integer?: expects one argument");
     if (
-        T(args[0]) == DISP_BYTE   ||
-        T(args[0]) == DISP_SHORT  ||
-        T(args[0]) == DISP_INT    ||
-        T(args[0]) == DISP_LONG
+        T(args[0]) == FLAG_BYTE   ||
+        T(args[0]) == FLAG_SHORT  ||
+        T(args[0]) == FLAG_INT    ||
+        T(args[0]) == FLAG_LONG
     ) return TRUE;
     return NIL;
 }
@@ -208,12 +208,12 @@ static disp_box integerp_syscall(disp_box *args, int count) {
 static disp_box decimalp_syscall(disp_box *args, int count) {
     if (count != 1) ERET(NIL, "decimal?: expects one argument");
     if (
-        T(args[0]) == DISP_BYTE   ||
-        T(args[0]) == DISP_SHORT  ||
-        T(args[0]) == DISP_INT    ||
-        T(args[0]) == DISP_LONG   ||
-        T(args[0]) == DISP_FLOAT  ||
-        T(args[0]) == DISP_DOUBLE
+        T(args[0]) == FLAG_BYTE   ||
+        T(args[0]) == FLAG_SHORT  ||
+        T(args[0]) == FLAG_INT    ||
+        T(args[0]) == FLAG_LONG   ||
+        T(args[0]) == FLAG_FLOAT  ||
+        T(args[0]) == FLAG_DOUBLE
     ) return TRUE;
     return NIL;
 }
@@ -222,12 +222,12 @@ static disp_box decimalp_syscall(disp_box *args, int count) {
 static disp_box numberp_syscall(disp_box *args, int count) {
     if (count != 1) ERET(NIL, "number?: expects one argument");
     if (
-        T(args[0]) == DISP_BYTE   ||
-        T(args[0]) == DISP_SHORT  ||
-        T(args[0]) == DISP_INT    ||
-        T(args[0]) == DISP_LONG   ||
-        T(args[0]) == DISP_FLOAT  ||
-        T(args[0]) == DISP_DOUBLE
+        T(args[0]) == FLAG_BYTE   ||
+        T(args[0]) == FLAG_SHORT  ||
+        T(args[0]) == FLAG_INT    ||
+        T(args[0]) == FLAG_LONG   ||
+        T(args[0]) == FLAG_FLOAT  ||
+        T(args[0]) == FLAG_DOUBLE
     ) return TRUE;
     return NIL;
 }
@@ -237,7 +237,7 @@ static disp_box set_car_syscall(disp_box *args, int count) {
     if (count != 2) {
         ERET(NIL, "set-car! expects two arguments (cons new-value)");
     }
-    if (T(args[0]) != DISP_CONS) {
+    if (T(args[0]) != FLAG_CONS) {
         ERET(NIL, "set-car!: first argument must be a cons cell");
     }
     disp_set_car(args[0], args[1]);
@@ -249,7 +249,7 @@ static disp_box set_cdr_syscall(disp_box *args, int count) {
     if (count != 2) {
         ERET(NIL, "set-cdr! expects two arguments (cons new-value)");
     }
-    if (T(args[0]) != DISP_CONS) {
+    if (T(args[0]) != FLAG_CONS) {
         ERET(NIL, "set-cdr!: first argument must be a cons cell");
     }
     disp_set_cdr(args[0], args[1]);
@@ -283,25 +283,25 @@ static disp_box equal_syscall(disp_box *args, int count) {
     if (T(a) != T(b)) return NIL;
 
     switch (T(a)) {
-        case DISP_BYTE:   return (disp_get_byte(a)   == disp_get_byte(b))   ? TRUE : NIL;
-        case DISP_SHORT:  return (disp_get_short(a)  == disp_get_short(b))  ? TRUE : NIL;
-        case DISP_INT:    return (disp_get_int(a)    == disp_get_int(b))    ? TRUE : NIL;
-        case DISP_LONG:   return (disp_get_long(a)   == disp_get_long(b))   ? TRUE : NIL;
-        case DISP_FLOAT:  return (disp_get_float(a)  == disp_get_float(b))  ? TRUE : NIL;
-        case DISP_DOUBLE: return (disp_get_double(a) == disp_get_double(b)) ? TRUE : NIL;
-        case DISP_STRING: {
+        case FLAG_BYTE:   return (disp_get_byte(a)   == disp_get_byte(b))   ? TRUE : NIL;
+        case FLAG_SHORT:  return (disp_get_short(a)  == disp_get_short(b))  ? TRUE : NIL;
+        case FLAG_INT:    return (disp_get_int(a)    == disp_get_int(b))    ? TRUE : NIL;
+        case FLAG_LONG:   return (disp_get_long(a)   == disp_get_long(b))   ? TRUE : NIL;
+        case FLAG_FLOAT:  return (disp_get_float(a)  == disp_get_float(b))  ? TRUE : NIL;
+        case FLAG_DOUBLE: return (disp_get_double(a) == disp_get_double(b)) ? TRUE : NIL;
+        case FLAG_STRING: {
             const char *sa = disp_get_str(a);
             const char *sb = disp_get_str(b);
             if (!sa || !sb) return NIL;
             return (strcmp(sa, sb) == 0) ? TRUE : NIL;
         }
-        case DISP_SYMBOL: {
+        case FLAG_SYMBOL: {
             const char *na = disp_get_symbol_name(a);
             const char *nb = disp_get_symbol_name(b);
             if (!na || !nb) return NIL;
             return (strcmp(na, nb) == 0) ? TRUE : NIL;
         }
-        case DISP_CONS: {
+        case FLAG_CONS: {
             depth++;
             disp_box car_eq = equal_syscall((disp_box[]){disp_car(a), disp_car(b)}, 2);
             if (car_eq == NIL) { depth--; return NIL; }

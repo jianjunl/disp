@@ -10,8 +10,8 @@
 
 /* --- Allocation --- */
 disp_box disp_alloc(int flag, disp_data *data);
-#define DISP_ALLOC_TI(flag) disp_alloc(flag, gc_typed_calloc(1, sizeof(union disp_data), &union_disp_data_ti))
-#define DISP_ALLOC(flag) disp_alloc(flag, gc_calloc(1, sizeof(union disp_data)))
+#define ALLOC_TI(flag) disp_alloc(flag, gc_typed_calloc(1, sizeof(union disp_data), &union_disp_data_ti))
+#define ALLOC(flag) disp_alloc(flag, gc_calloc(1, sizeof(union disp_data)))
 
 /* --- Symbol table --- */
 void disp_init_symbol(void);

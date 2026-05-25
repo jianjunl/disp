@@ -14,7 +14,7 @@
 
 static disp_box append(disp_box a, disp_box b) {
     if (!a || a == NIL) return b;
-    if (T(a) != DISP_CONS) ERET(NIL, "append: first argument must be a list");
+    if (T(a) != FLAG_CONS) ERET(NIL, "append: first argument must be a list");
     return disp_make_cons(disp_car(a), append(disp_cdr(a), b));
 }
 
@@ -35,11 +35,11 @@ static disp_box append_syscall(disp_box *args, int count) {
     for (int i = 0; i < count; i++) {
         disp_box lst = args[i];
         // 检查类型
-        if (lst != NIL && T(lst) != DISP_CONS) {
+        if (lst != NIL && T(lst) != FLAG_CONS) {
             ERET(NIL, "append: argument %d is not a list", i);
         }
         // 遍历 lst，将其元素复制到结果末尾
-        for (disp_box p = lst; p != NIL && T(p) == DISP_CONS; p = disp_cdr(p)) {
+        for (disp_box p = lst; p != NIL && T(p) == FLAG_CONS; p = disp_cdr(p)) {
             disp_box new_cons = disp_make_cons(disp_car(p), NIL);
             if (result == NIL) {
                 result = new_cons;
@@ -59,7 +59,7 @@ static disp_box quote_builtin(disp_scope_t *scope, disp_box expr) {
     ((void)scope);
     // 返回第二个元素，不求值
     disp_box quoted = disp_cdr(expr);
-    if (quoted && T(quoted) == DISP_CONS) {
+    if (quoted && T(quoted) == FLAG_CONS) {
         return disp_car(quoted);
     } else {
         ERET(NIL, "quote: missing argument");
@@ -73,11 +73,11 @@ static disp_box quote_builtin(disp_scope_t *scope, disp_box expr) {
 /* * Helper: Checks if a list starts with a specific symbol (e.g., "unquote")
  */
 static int is_tag(disp_box expr, disp_box tag) {
-    if (!expr || expr == NIL || T(expr) != DISP_CONS) 
+    if (!expr || expr == NIL || T(expr) != FLAG_CONS) 
         return 0;
     disp_box head = disp_car(expr);
     // Ensure the head is a symbol and matches the tag
-    return (head && T(head) == DISP_SYMBOL && head == tag);
+    return (head && T(head) == FLAG_SYMBOL && head == tag);
 }
 
 static disp_box unquote(disp_box expr) {
@@ -88,16 +88,16 @@ static disp_box unquote(disp_box expr) {
 }
 
 static int is_prim(disp_box expr) {
-    if (!expr || T(expr) == DISP_CONS || T(expr) != DISP_SYMBOL) return 0;
+    if (!expr || T(expr) == FLAG_CONS || T(expr) != FLAG_SYMBOL) return 0;
     return 
         expr == NIL ||
-        T(expr) == DISP_BYTE   ||
-        T(expr) == DISP_SHORT  ||
-        T(expr) == DISP_INT    ||
-        T(expr) == DISP_LONG   ||
-        T(expr) == DISP_FLOAT  ||
-        T(expr) == DISP_DOUBLE ||
-        T(expr) == DISP_STRING;
+        T(expr) == FLAG_BYTE   ||
+        T(expr) == FLAG_SHORT  ||
+        T(expr) == FLAG_INT    ||
+        T(expr) == FLAG_LONG   ||
+        T(expr) == FLAG_FLOAT  ||
+        T(expr) == FLAG_DOUBLE ||
+        T(expr) == FLAG_STRING;
 }
 
 static disp_box  SPLICE_MARK;
@@ -111,7 +111,7 @@ static disp_box qq_expand(disp_box expr, int level) {
     if(is_prim(expr)) return expr;
 
     // If it's a basic atom, return it quoted so it evaluates to itself
-    if (T(expr) != DISP_CONS) {
+    if (T(expr) != FLAG_CONS) {
         return disp_make_cons(QUOTE, disp_make_cons(expr, NIL));
     }
     
@@ -166,7 +166,7 @@ static disp_box expand_list(disp_box list, int level) {
     disp_box tail = expand_list(disp_cdr(list), level);
 
     // Check for the (SPLICE_MARK inner)
-    if (T(expanded_head) == DISP_CONS && disp_car(expanded_head) == SPLICE_MARK) {
+    if (T(expanded_head) == FLAG_CONS && disp_car(expanded_head) == SPLICE_MARK) {
         disp_box inner = disp_car(disp_cdr(expanded_head));
         // Result: (APPEND inner tail)
         return disp_make_cons(APPEND,
@@ -185,7 +185,7 @@ static disp_box expand_list(disp_box list, int level) {
  */
 static disp_box quasiquote_builtin(disp_scope_t *scope, disp_box expr) {
     disp_box cdr = disp_cdr(expr);
-    if (!cdr || T(cdr) != DISP_CONS) return NIL;
+    if (!cdr || T(cdr) != FLAG_CONS) return NIL;
     
     disp_box tmpl = disp_car(cdr);
     
@@ -202,7 +202,7 @@ static disp_box quasiquote_builtin(disp_scope_t *scope, disp_box expr) {
 static disp_box unquote_builtin(disp_scope_t *scope, disp_box expr) {
     disp_box cdr = disp_cdr(expr);
     if (!cdr) ERET(NIL, "unquote: expects one argument");
-    if (T(cdr) != DISP_CONS) return disp_eval(scope, cdr);
+    if (T(cdr) != FLAG_CONS) return disp_eval(scope, cdr);
     if (disp_cdr(cdr) != NIL)
         ERET(NIL, "unquote: expects exactly one argument");
     return disp_eval(scope, disp_car(cdr));
@@ -214,13 +214,13 @@ static disp_box unquote_builtin(disp_scope_t *scope, disp_box expr) {
 static disp_box unquote_splicing_builtin(disp_scope_t *scope, disp_box expr) {
     // expr contains the expression to unquote-splicing
     disp_box cdr = disp_cdr(expr);
-    if (!cdr || T(cdr) != DISP_CONS)
+    if (!cdr || T(cdr) != FLAG_CONS)
         ERET(NIL, "unquote-splicing: expects cons argument");
 
     disp_box result = disp_eval(scope, cdr);
 
     // Requirement: result of splicing must be a list
-    if (T(result) != DISP_CONS)
+    if (T(result) != FLAG_CONS)
         ERET(NIL, "unquote-splicing: expects cons result");
 
     return result;

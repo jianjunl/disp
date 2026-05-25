@@ -9,8 +9,8 @@
 } while(0);
 #endif
 
-#ifndef DISP_INFO 
-#define DISP_INFO(I, F, M, ...) do { \
+#ifndef DEBUG_INFO 
+#define DEBUG_INFO(I, F, M, ...) do { \
     disp_info_t *_info = disp_get_current_info(); \
     if (_info && _info->filename) { \
         fprintf(F, #I " @ %s:%d: \"" M "\"\n", __FILE__, __LINE__, ##__VA_ARGS__); \
@@ -29,9 +29,9 @@
 } while(0)
 #endif
 
-#ifndef DISP_IRET
-#define DISP_IRET(R, I, F, M, ...) do { \
-    DISP_INFO(I, F, M, ##__VA_ARGS__); \
+#ifndef DEBUG_IRET
+#define DEBUG_IRET(R, I, F, M, ...) do { \
+    DEBUG_INFO(I, F, M, ##__VA_ARGS__); \
     return R; \
 } while(0);
 #endif
@@ -41,7 +41,7 @@
 #else 
 #define NN(a) do { \
     if (!a || a == NIL) { \
-        DISP_INFO(ASSERT, stderr, #a " must not be null or nil"); \
+        DEBUG_INFO(ASSERT, stderr, #a " must not be null or nil"); \
         exit(1); \
     } \
 } while(0);
@@ -55,7 +55,7 @@
 #else
 #define A(a) do { \
     if (!a) { \
-        DISP_INFO(ASSERT, stderr, #a " must not be null"); \
+        DEBUG_INFO(ASSERT, stderr, #a " must not be null"); \
         exit(1); \
     } \
 } while(0);
@@ -117,31 +117,31 @@
 #ifdef INFO 
 # error "INFO has been defined before " #__FILENAME__
 #else 
-#define INFO(M, ...) DISP_INFO(INFO, stdout, M, ##__VA_ARGS__)
+#define INFO(M, ...) DEBUG_INFO(INFO, stdout, M, ##__VA_ARGS__)
 #endif
 
 #ifdef ERRO 
 # error "ERRO has been defined before " #__FILENAME__
 #else 
-#define ERRO(M, ...) DISP_INFO(ERRO,stderr, M, ##__VA_ARGS__)
+#define ERRO(M, ...) DEBUG_INFO(ERRO,stderr, M, ##__VA_ARGS__)
 #endif
 
 #ifdef FATAL 
 # error "FATAL has been defined before " #__FILENAME__
 #else 
-#define FATAL(M, ...) DISP_INFO(FATAL,stderr, M, ##__VA_ARGS__);exit(1)
+#define FATAL(M, ...) DEBUG_INFO(FATAL,stderr, M, ##__VA_ARGS__);exit(1)
 #endif
 
 #ifdef ERET 
 # error "ERET has been defined before " #__FILENAME__
 #else 
-#define ERET(R, M, ...) DISP_IRET(R, ERET, stderr, M, ##__VA_ARGS__)
+#define ERET(R, M, ...) DEBUG_IRET(R, ERET, stderr, M, ##__VA_ARGS__)
 #endif
 
 #if !defined DEBUG
 #define DBG(M, ...) ((void)0)
 #else
-#define DBG(M, ...) DISP_INFO(DBG, stderr, M, ##__VA_ARGS__)
+#define DBG(M, ...) DEBUG_INFO(DBG, stderr, M, ##__VA_ARGS__)
 #endif
 
 #endif /* DEBUG_H */

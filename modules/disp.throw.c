@@ -92,7 +92,7 @@ static disp_box error_syscall(disp_box *args, int count) {
 __attribute__((optimize("O0")))
 static disp_box catch_builtin(disp_scope_t *scope, disp_box expr) {
     disp_box rest = disp_cdr(expr);
-    if (!rest || T(rest) != DISP_CONS) ERET(NIL, "catch: missing tag");
+    if (!rest || T(rest) != FLAG_CONS) ERET(NIL, "catch: missing tag");
     disp_box tag = disp_eval(scope, disp_car(rest));
     disp_box body = disp_cdr(rest);
     if (!body) ERET(NIL, "catch: missing body");
@@ -107,7 +107,7 @@ static disp_box catch_builtin(disp_scope_t *scope, disp_box expr) {
 
     TRY {
         disp_box last = NIL;
-        while (body && T(body) == DISP_CONS) {
+        while (body && T(body) == FLAG_CONS) {
             last = disp_eval(scope, disp_car(body));
             body = disp_cdr(body);
         }
@@ -136,13 +136,13 @@ static disp_box catch_builtin(disp_scope_t *scope, disp_box expr) {
 __attribute__((optimize("O0")))
 static disp_box block_builtin(disp_scope_t *scope, disp_box expr) {
     disp_box rest = disp_cdr(expr);
-    if (!rest || T(rest) != DISP_CONS) ERET(NIL, "block: missing name");
+    if (!rest || T(rest) != FLAG_CONS) ERET(NIL, "block: missing name");
     disp_box name = disp_car(rest);
     /* 把符号 "nil" 转换为常量 NIL */
-    if (T(name) == DISP_SYMBOL && strcmp(disp_get_symbol_name(name), "nil") == 0) {
+    if (T(name) == FLAG_SYMBOL && strcmp(disp_get_symbol_name(name), "nil") == 0) {
         name = NIL;
     }
-    if (T(name) != DISP_SYMBOL && name != NIL)
+    if (T(name) != FLAG_SYMBOL && name != NIL)
         ERET(NIL, "block: name must be a symbol or nil");
     disp_box body = disp_cdr(rest);
     if (!body) ERET(NIL, "block: missing body");
@@ -157,7 +157,7 @@ static disp_box block_builtin(disp_scope_t *scope, disp_box expr) {
 
     TRY {
         disp_box last = NIL;
-        while (body && T(body) == DISP_CONS) {
+        while (body && T(body) == FLAG_CONS) {
             last = disp_eval(scope, disp_car(body));
             body = disp_cdr(body);
         }
@@ -185,7 +185,7 @@ static disp_box block_builtin(disp_scope_t *scope, disp_box expr) {
  * ------------------------------------------------------------------------- */
 static disp_box unwind_protect_builtin(disp_scope_t *scope, disp_box expr) {
     disp_box rest = disp_cdr(expr);
-    if (!rest || T(rest) != DISP_CONS) ERET(NIL, "unwind-protect: missing protected form");
+    if (!rest || T(rest) != FLAG_CONS) ERET(NIL, "unwind-protect: missing protected form");
     disp_box protected_form = disp_car(rest);
     disp_box cleanup_forms = disp_cdr(rest);
     if (!cleanup_forms) ERET(NIL, "unwind-protect: missing cleanup forms");
@@ -202,7 +202,7 @@ static disp_box unwind_protect_builtin(disp_scope_t *scope, disp_box expr) {
         disp_box result = disp_eval(scope, protected_form);
         /* 正常路径：先执行清理，再弹帧并返回 */
         disp_box cl = cleanup_forms;
-        while (cl && T(cl) == DISP_CONS) {
+        while (cl && T(cl) == FLAG_CONS) {
             disp_eval(scope, disp_car(cl));
             cl = disp_cdr(cl);
         }
@@ -212,7 +212,7 @@ static disp_box unwind_protect_builtin(disp_scope_t *scope, disp_box expr) {
     CATCH {
         /* 异常路径：执行清理，然后继续传播 */
         disp_box cl = frame.cleanup;
-        while (cl && T(cl) == DISP_CONS) {
+        while (cl && T(cl) == FLAG_CONS) {
             disp_eval(scope, disp_car(cl));
             cl = disp_cdr(cl);
         }
@@ -226,14 +226,14 @@ static disp_box unwind_protect_builtin(disp_scope_t *scope, disp_box expr) {
 __attribute__((optimize("O0")))
 static disp_box return_from_builtin(disp_scope_t *scope, disp_box expr) {
     disp_box rest = disp_cdr(expr);
-    if (!rest || T(rest) != DISP_CONS)
+    if (!rest || T(rest) != FLAG_CONS)
         ERET(NIL, "return-from: missing name");
     disp_box name = disp_car(rest);   // 不经求值
-    if (T(name) != DISP_SYMBOL)
+    if (T(name) != FLAG_SYMBOL)
         ERET(NIL, "return-from: name must be a symbol");
 
     disp_box value_rest = disp_cdr(rest);
-    disp_box value = (value_rest && T(value_rest) == DISP_CONS)
+    disp_box value = (value_rest && T(value_rest) == FLAG_CONS)
                       ? disp_eval(scope, disp_car(value_rest))
                       : NIL;
 
@@ -255,7 +255,7 @@ static disp_box return_from_builtin(disp_scope_t *scope, disp_box expr) {
 __attribute__((optimize("O0")))
 static disp_box return_builtin(disp_scope_t *scope, disp_box expr) {
     disp_box rest = disp_cdr(expr);
-    disp_box value = (rest && T(rest) == DISP_CONS)
+    disp_box value = (rest && T(rest) == FLAG_CONS)
                       ? disp_eval(scope, disp_car(rest))
                       : NIL;
 

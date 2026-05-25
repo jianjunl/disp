@@ -15,22 +15,22 @@
 // --- define ---
 static disp_box define_builtin(disp_scope_t *scope, disp_box expr) {
     disp_box cadr = disp_cdr(expr);
-    if (!cadr || T(cadr) != DISP_CONS) 
+    if (!cadr || T(cadr) != FLAG_CONS) 
         ERET(NIL, "define: missing first argument");
     
     disp_box first_arg = disp_car(cadr);
     
-    if (T(first_arg) == DISP_SYMBOL) {
+    if (T(first_arg) == FLAG_SYMBOL) {
         // 可能是 (define symbol expr) 或 (define symbol (params) body ...)
         disp_box rest = disp_cdr(cadr);
         
         // 检查是否为 (define symbol (params) body ...)
-        if (rest && T(rest) == DISP_CONS) {
+        if (rest && T(rest) == FLAG_CONS) {
             disp_box second = disp_car(rest);          // (params) 或 NIL
             disp_box body_rest = disp_cdr(rest);       // 剩余表达式列表
             
             // 存在 body 且第二个参数是合法参数列表（NIL 或 CONS）
-            if (body_rest && T(body_rest) == DISP_CONS) {
+            if (body_rest && T(body_rest) == FLAG_CONS) {
                 // 构造 (lambda (params) body1 body2 ...)
                 disp_box params = second;              // 允许 NIL
                 // 原来构造 lambda_expr 再求值，改为直接创建闭包
@@ -45,15 +45,15 @@ static disp_box define_builtin(disp_scope_t *scope, disp_box expr) {
         }
         
         // 普通 (define symbol expr)
-        if (!rest || T(rest) != DISP_CONS) 
+        if (!rest || T(rest) != FLAG_CONS) 
             ERET(NIL, "define: missing expression");
         disp_box value = disp_eval(scope, disp_car(rest));
         disp_define_symbol(scope, S(first_arg), value, 0);
         return first_arg;
-    } else if (T(first_arg) == DISP_CONS) {
+    } else if (T(first_arg) == FLAG_CONS) {
         // 原有 (define (name params) body ...) 语法
         disp_box name_sym = disp_car(first_arg);
-        if (T(name_sym) != DISP_SYMBOL) 
+        if (T(name_sym) != FLAG_SYMBOL) 
             ERET(NIL, "define: function name must be a symbol");
         disp_box params = disp_cdr(first_arg);
         disp_box rest = disp_cdr(cadr);
@@ -74,13 +74,13 @@ static disp_box define_builtin(disp_scope_t *scope, disp_box expr) {
 
 static disp_box setq_builtin(disp_scope_t *scope, disp_box expr) {
     disp_box cadr = disp_cdr(expr);
-    if (!cadr || T(cadr) != DISP_CONS) ERET(NIL, "set!: missing symbol");
+    if (!cadr || T(cadr) != FLAG_CONS) ERET(NIL, "set!: missing symbol");
     disp_box sym = disp_car(cadr);
-    if (T(sym) != DISP_SYMBOL) ERET(NIL, "set!: first argument must be a symbol");
+    if (T(sym) != FLAG_SYMBOL) ERET(NIL, "set!: first argument must be a symbol");
     const char *name = disp_get_symbol_name(sym);
     
     disp_box rest = disp_cdr(cadr);
-    if (!rest || T(rest) != DISP_CONS) ERET(NIL, "set!: missing expression");
+    if (!rest || T(rest) != FLAG_CONS) ERET(NIL, "set!: missing expression");
     disp_box new_value = disp_eval(scope, disp_car(rest));
     
     disp_box found_sym = disp_find_symbol(scope, name);

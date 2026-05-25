@@ -33,9 +33,9 @@ GC_UNION_TI(disp_data,
 );
 
 static void intern_params(disp_scope_t *env, disp_box params) {
-    for (disp_box p = params; p && T(p) == DISP_CONS; p = disp_cdr(p)) {
+    for (disp_box p = params; p && T(p) == FLAG_CONS; p = disp_cdr(p)) {
         disp_box sym = disp_car(p);
-        if (T(sym) == DISP_SYMBOL) {
+        if (T(sym) == FLAG_SYMBOL) {
             const char *name = disp_get_symbol_name(sym);
             if (!disp_find_symbol(env, name)) {
                 disp_define_symbol(env, name, NIL, 0);
@@ -46,7 +46,7 @@ static void intern_params(disp_scope_t *env, disp_box params) {
 
 disp_box disp_make_closure(disp_scope_t *env, disp_box params, disp_box body, int reuse_scope) {
     intern_params(env, params);
-    disp_box v = DISP_ALLOC_TI(DISP_CLOSURE);
+    disp_box v = ALLOC_TI(FLAG_CLOSURE);
     v->data->closure.params = params;
     v->data->closure.body   = body;
     v->data->closure.env    = env;
@@ -56,7 +56,7 @@ disp_box disp_make_closure(disp_scope_t *env, disp_box params, disp_box body, in
 
 disp_box disp_make_macro(disp_scope_t *env, disp_box params, disp_box body, int reuse_scope) {
     intern_params(env, params);
-    disp_box v = DISP_ALLOC_TI(DISP_MACRO);
+    disp_box v = ALLOC_TI(FLAG_MACRO);
     v->data->closure.params = params;
     v->data->closure.body   = body;
     v->data->closure.env    = env;
@@ -65,7 +65,7 @@ disp_box disp_make_macro(disp_scope_t *env, disp_box params, disp_box body, int 
 }
 
 disp_box disp_get_closure_params(disp_box closure) {
-    if (T(closure) != DISP_CLOSURE && T(closure) != DISP_MACRO) {
+    if (T(closure) != FLAG_CLOSURE && T(closure) != FLAG_MACRO) {
         ERRO("disp_get_closure_params: not a closure/macro\n");
         return NIL;
     }
@@ -73,7 +73,7 @@ disp_box disp_get_closure_params(disp_box closure) {
 }
 
 disp_box disp_get_closure_body(disp_box closure) {
-    if (T(closure) != DISP_CLOSURE && T(closure) != DISP_MACRO) {
+    if (T(closure) != FLAG_CLOSURE && T(closure) != FLAG_MACRO) {
         ERRO("disp_get_closure_body: not a closure/macro\n");
         return NIL;
     }
@@ -81,7 +81,7 @@ disp_box disp_get_closure_body(disp_box closure) {
 }
 
 disp_scope_t* disp_get_closure_env(disp_box closure) {
-    if (T(closure) != DISP_CLOSURE && T(closure) != DISP_MACRO) {
+    if (T(closure) != FLAG_CLOSURE && T(closure) != FLAG_MACRO) {
         ERRO("disp_get_closure_env: not a closure/macro\n");
         return NULL;
     }
@@ -94,12 +94,12 @@ void bind_arguments_to_scope(disp_scope_t *scope, disp_box params, disp_box *arg
 
     // 遍历参数列表，计算固定参数个数，并找到可能的 rest 参数
     disp_box p = params;
-    while (p && T(p) == DISP_CONS) {
+    while (p && T(p) == FLAG_CONS) {
         fixed++;
         p = disp_cdr(p);
     }
     if (p != NIL) {
-        if (T(p) == DISP_SYMBOL) {
+        if (T(p) == FLAG_SYMBOL) {
             rest_sym = p;
         } else {
             // 非法 rest 参数：打印详细信息以便调试
@@ -113,9 +113,9 @@ void bind_arguments_to_scope(disp_scope_t *scope, disp_box params, disp_box *arg
     // 绑定固定参数
     int idx = 0;
     p = params;
-    while (p && T(p) == DISP_CONS && idx < fixed) {
+    while (p && T(p) == FLAG_CONS && idx < fixed) {
         disp_box sym = disp_car(p);
-        if (T(sym) != DISP_SYMBOL) {
+        if (T(sym) != FLAG_SYMBOL) {
             ERRO("bind_arguments_to_scope: parameter is not a symbol");
             return;
         }
@@ -168,7 +168,7 @@ disp_box disp_apply_closure(disp_box closure, disp_box *args, int arg_count) {
         bind_arguments_to_scope(env, params, current_args, current_argc);
 
         disp_box exprs = body;
-        while (exprs && T(exprs) == DISP_CONS) {
+        while (exprs && T(exprs) == FLAG_CONS) {
             disp_box expr = disp_car(exprs);
             disp_box next = disp_cdr(exprs);
             int tail = (next == NIL);
@@ -198,14 +198,14 @@ disp_box disp_apply_closure(disp_box closure, disp_box *args, int arg_count) {
                 }
 
                 // 更新循环所需的新闭包内部数据
-                if (T(closure) == DISP_CLOSURE) {
+                if (T(closure) == FLAG_CLOSURE) {
                     env = closure->data->closure.env;
                     params = closure->data->closure.params;
                     body = closure->data->closure.body;
                     gc_free(res);
                     goto restart;
                 } 
-                else if (T(closure) == DISP_BUILTIN) {
+                else if (T(closure) == FLAG_BUILTIN) {
                     // 内置函数：调用后直接返回（不继续蹦床）
                     disp_box result = disp_apply_builtin_from_array(closure, env, current_args, current_argc);
                     gc_free(res);
@@ -214,7 +214,7 @@ disp_box disp_apply_closure(disp_box closure, disp_box *args, int arg_count) {
                         gc_free(current_args);
                     return result;
                 }
-                else if (T(closure) == DISP_SYSCALL) {
+                else if (T(closure) == FLAG_SYSCALL) {
                     // 系统调用：参数数组直接可用
                     disp_box result = disp_get_syscall(closure)(current_args, current_argc);
                     gc_free(res);

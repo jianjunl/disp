@@ -111,7 +111,7 @@ static disp_box parse_list(FILE *f, char e, int comma_separated) {
         if (!elem) return NIL;
 
         // 仅在非逗号分隔模式下处理点对
-        if (!comma_separated && elem && T(elem) == DISP_SYMBOL &&
+        if (!comma_separated && elem && T(elem) == FLAG_SYMBOL &&
             strcmp(S(elem), ".") == 0) {
             // 点对语法：下一个 sexpr 是 cdr
             int next_c = skip_and_get(f);
@@ -242,7 +242,7 @@ static disp_box parse_sexpr(int first, FILE *f) {
         disp_box sub_lists = parse_list(f, '}', 1);
         disp_box result = disp_make_cons(sym, NIL);
         disp_box tail = result;
-        for (disp_box p = sub_lists; p && T(p) == DISP_CONS; p = disp_cdr(p)) {
+        for (disp_box p = sub_lists; p && T(p) == FLAG_CONS; p = disp_cdr(p)) {
             disp_box sublist = disp_car(p);
             disp_box new_cons = disp_make_cons(sublist, NIL);
             disp_set_cdr(tail, new_cons);

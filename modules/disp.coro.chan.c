@@ -1,6 +1,6 @@
 
-#ifndef DISP_CORO_CHAN_C
-#define DISP_CORO_CHAN_C
+#ifndef __MODULE_CORO_CHAN_C
+#define __MODULE_CORO_CHAN_C
 
 #define _POSIX_C_SOURCE 200809L
 #include <stdarg.h>
@@ -39,11 +39,11 @@ void disp_set_channel(disp_box v, disp_channel_t *c) {
 /* =============================== 通道（支持无缓冲握手） =============================== */
 
 static disp_box make_channel_syscall(disp_box *args, int count) {
-    if (count != 1 || T(args[0]) != DISP_INT)
+    if (count != 1 || T(args[0]) != FLAG_INT)
         ERET(NIL, "make-chan expects capacity (integer)");
     int cap = disp_get_int(args[0]);
     if (cap < 0) cap = 0;
-    disp_box v = DISP_ALLOC_TI(DISP_CHAN);
+    disp_box v = ALLOC_TI(FLAG_CHAN);
     disp_channel_t *ch = gc_typed_calloc(1, sizeof(struct disp_channel_t), &struct_disp_channel_t_ti);
     ch->cap = cap;
     ch->size = 0;
@@ -62,7 +62,7 @@ static disp_box make_channel_syscall(disp_box *args, int count) {
 
 static disp_box channel_send_syscall(disp_box *args, int count) {
     if (count != 2) ERET(NIL, "send expects (channel value)");
-    if (T(args[0]) != DISP_CHAN) ERET(NIL, "first argument must be a channel");
+    if (T(args[0]) != FLAG_CHAN) ERET(NIL, "first argument must be a channel");
     disp_channel_t *ch = disp_get_channel(args[0]);
     disp_box value = args[1];
     while (1) {
@@ -117,7 +117,7 @@ static disp_box channel_send_syscall(disp_box *args, int count) {
 
 static disp_box channel_recv_syscall(disp_box *args, int count) {
     if (count != 1) ERET(NIL, "recv expects a channel");
-    if (T(args[0]) != DISP_CHAN) ERET(NIL, "argument must be a channel");
+    if (T(args[0]) != FLAG_CHAN) ERET(NIL, "argument must be a channel");
     disp_channel_t *ch = disp_get_channel(args[0]);
     while (1) {
         gc_pthread_mutex_lock(ch->lock);
@@ -179,7 +179,7 @@ static disp_box channel_recv_syscall(disp_box *args, int count) {
 // recv2 类似，为简洁略作修改（支持无缓冲）
 static disp_box channel_recv2_syscall(disp_box *args, int count) {
     if (count != 1) ERET(NIL, "recv2 expects a channel");
-    if (T(args[0]) != DISP_CHAN) ERET(NIL, "argument must be a channel");
+    if (T(args[0]) != FLAG_CHAN) ERET(NIL, "argument must be a channel");
     disp_channel_t *ch = disp_get_channel(args[0]);
     while (1) {
         gc_pthread_mutex_lock(ch->lock);
@@ -235,7 +235,7 @@ static disp_box channel_recv2_syscall(disp_box *args, int count) {
 }
 
 static disp_box close_channel_syscall(disp_box *args, int count) {
-    if (count != 1 || T(args[0]) != DISP_CHAN)
+    if (count != 1 || T(args[0]) != FLAG_CHAN)
         ERET(NIL, "close-channel expects a channel");
     disp_channel_t *ch = disp_get_channel(args[0]);
     gc_pthread_mutex_lock(ch->lock);
@@ -268,4 +268,4 @@ void disp_init_module(void) {
     DEF("close-channel" , MKF(close_channel_syscall  , "<close-channel>" ), 1);
 }
 
-#endif /*  DISP_CORO_CHAN_C */
+#endif /*  __MODULE_CORO_CHAN_C */

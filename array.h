@@ -1,6 +1,6 @@
 
-#ifndef DISP_ARRAY_H
-#define DISP_ARRAY_H
+#ifndef _ARRAY_H
+#define _ARRAY_H
 
 #include <stddef.h>
 #include <stdint.h>
@@ -24,4 +24,4 @@ uint64_t disp_array_get(const disp_array_t *arr, size_t idx);
 void disp_array_put(disp_array_t *arr, size_t idx, uint64_t val);
 void disp_array_add(disp_array_t *arr, uint64_t val);
 
-#endif // DISP_ARRAY_H
+#endif // _ARRAY_H

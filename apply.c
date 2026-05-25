@@ -19,20 +19,20 @@
 // 辅助：判断表达式是否为自求值原子
 static int is_self_evaluating(disp_box expr) {
     int t = T(expr);
-    return (t == DISP_BYTE || t == DISP_SHORT || t == DISP_INT || t == DISP_LONG
-            || t == DISP_FLOAT || t == DISP_DOUBLE || t == DISP_STRING
+    return (t == FLAG_BYTE || t == FLAG_SHORT || t == FLAG_INT || t == FLAG_LONG
+            || t == FLAG_FLOAT || t == FLAG_DOUBLE || t == FLAG_STRING
             || expr == TRUE || expr == NIL || expr == QUIT);
 }
 
 // 辅助：求值参数列表（用于自调用）
 static disp_box * eval_args_for_tail(disp_scope_t *env, disp_box arg_list, int *arg_count) {
     *arg_count = 0;
-    for (disp_box a = arg_list; a && T(a) == DISP_CONS; a = disp_cdr(a))
+    for (disp_box a = arg_list; a && T(a) == FLAG_CONS; a = disp_cdr(a))
         (*arg_count)++;
     if (*arg_count == 0) return NULL;
     GC_ROOT(disp_box, args) = gc_typed_malloc(*arg_count * sizeof(disp_box), &GC_TYPE_PTR_ARRAY);
     int i = 0;
-    for (disp_box a = arg_list; a && T(a) == DISP_CONS; a = disp_cdr(a)) {
+    for (disp_box a = arg_list; a && T(a) == FLAG_CONS; a = disp_cdr(a)) {
         args[i++] = disp_eval(env, disp_car(a));
     }
     return args;
@@ -82,7 +82,7 @@ eval_result_t* disp_eval_tail(disp_scope_t *env, disp_box expr, int is_tail, dis
     }
 
     // 符号：查找变量
-    if (T(expr) == DISP_SYMBOL) {
+    if (T(expr) == FLAG_SYMBOL) {
         disp_box sym = disp_find_symbol(env, disp_get_symbol_name(expr));
         if (!sym) {
             ERRO("unbound symbol: %s", disp_get_symbol_name(expr));
@@ -92,7 +92,7 @@ eval_result_t* disp_eval_tail(disp_scope_t *env, disp_box expr, int is_tail, dis
     }
 
     // 不是 cons 则错误
-    if (T(expr) != DISP_CONS) {
+    if (T(expr) != FLAG_CONS) {
         ERRO("invalid expression");
         return result_nil();
     }
@@ -101,7 +101,7 @@ eval_result_t* disp_eval_tail(disp_scope_t *env, disp_box expr, int is_tail, dis
     disp_box args = disp_cdr(expr);
 
     // 特殊形式处理
-    if (T(op) == DISP_SYMBOL) {
+    if (T(op) == FLAG_SYMBOL) {
         if (op == QUOTE)
             return disp_eval_tail_flow(env, expr, is_tail, current_closure);
         if (op == IF)
@@ -134,7 +134,7 @@ eval_result_t* disp_eval_tail(disp_scope_t *env, disp_box expr, int is_tail, dis
     // 先求值操作符
     disp_box func = disp_eval(env, op);
 
-    if (is_tail && (T(func) == DISP_CLOSURE || T(func) == DISP_BUILTIN || T(func) == DISP_SYSCALL)) {
+    if (is_tail && (T(func) == FLAG_CLOSURE || T(func) == FLAG_BUILTIN || T(func) == FLAG_SYSCALL)) {
         // 尾调用优化：求值参数后返回尾调用结果（不立即应用）
         int arg_count = 0;
         disp_box *args_arr = eval_args_for_tail(env, args, &arg_count);
@@ -143,24 +143,24 @@ eval_result_t* disp_eval_tail(disp_scope_t *env, disp_box expr, int is_tail, dis
     } else {
         // 正常调用：求值参数并应用
         disp_box result;
-        if (T(func) == DISP_BUILTIN) {
+        if (T(func) == FLAG_BUILTIN) {
             result = disp_get_builtin(func)(env, expr);
             return result_normal(result);
         } else {
             int arg_count = 0;
-            for (disp_box a = args; a && T(a) == DISP_CONS; a = disp_cdr(a)) arg_count++;
+            for (disp_box a = args; a && T(a) == FLAG_CONS; a = disp_cdr(a)) arg_count++;
             GC_ROOT(disp_box, argv) = gc_typed_malloc(arg_count * sizeof(disp_box), &GC_TYPE_PTR_ARRAY);
             int i = 0;
-            for (disp_box a = args; a && T(a) == DISP_CONS; a = disp_cdr(a)) {
+            for (disp_box a = args; a && T(a) == FLAG_CONS; a = disp_cdr(a)) {
                 argv[i++] = disp_eval(env, disp_car(a));
             }
-            if (T(func) == DISP_CLOSURE) {
+            if (T(func) == FLAG_CLOSURE) {
                 result = disp_apply_closure(func, argv, arg_count);
-            } else if (T(func) == DISP_SYSCALL) {
+            } else if (T(func) == FLAG_SYSCALL) {
                 result = disp_get_syscall(func)(argv, arg_count);
             } else {
                 gc_free(argv);
-                if (T(func) != DISP_CLOSURE && T(func) != DISP_BUILTIN && T(func) != DISP_SYSCALL) {
+                if (T(func) != FLAG_CLOSURE && T(func) != FLAG_BUILTIN && T(func) != FLAG_SYSCALL) {
                     ERRO("func type=%d, value=%p, symbol name=%s\n", T(func), func, disp_get_symbol_name(func));
                 }
                 char *s = disp_string(func);

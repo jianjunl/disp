@@ -18,11 +18,11 @@ extern void bind_arguments_to_scope(disp_scope_t *scope, disp_box params, disp_b
 // 语法: (do ((var init step) ...) (test result ...) body ...)
 static disp_box do_builtin(disp_scope_t *scope, disp_box expr) {
     disp_box rest = disp_cdr(expr);
-    if (!rest || T(rest) != DISP_CONS)
+    if (!rest || T(rest) != FLAG_CONS)
         ERET(NIL, "do: missing variable list");
     disp_box var_specs = disp_car(rest);   // ((var init step) ...)
     rest = disp_cdr(rest);
-    if (!rest || T(rest) != DISP_CONS)
+    if (!rest || T(rest) != FLAG_CONS)
         ERET(NIL, "do: missing termination clause");
     disp_box term_clause = disp_car(rest); // (test result ...)
     disp_box body = disp_cdr(rest);        // body forms
@@ -31,7 +31,7 @@ static disp_box do_builtin(disp_scope_t *scope, disp_box expr) {
     gc_add_root(&rest);
 
     int var_count = 0;
-    for (disp_box s = var_specs; s && T(s) == DISP_CONS; s = disp_cdr(s))
+    for (disp_box s = var_specs; s && T(s) == FLAG_CONS; s = disp_cdr(s))
         var_count++;
 
     // 无变量情况：直接在当前作用域中循环
@@ -44,14 +44,14 @@ static disp_box do_builtin(disp_scope_t *scope, disp_box expr) {
                 if (test != NIL) {
                     disp_box results = disp_cdr(term_clause);
                     result = NIL;
-                    while (results && T(results) == DISP_CONS) {
+                    while (results && T(results) == FLAG_CONS) {
                         result = disp_eval(scope, disp_car(results));
                         results = disp_cdr(results);
                     }
                     break;
                 }
                 disp_box b = body;
-                while (b && T(b) == DISP_CONS) {
+                while (b && T(b) == FLAG_CONS) {
                     disp_eval(scope, disp_car(b));
                     b = disp_cdr(b);
                 }
@@ -78,9 +78,9 @@ static disp_box do_builtin(disp_scope_t *scope, disp_box expr) {
     gc_add_root(&step_exprs);
 
     int i = 0;
-    for (disp_box s = var_specs; s && T(s) == DISP_CONS; s = disp_cdr(s), i++) {
+    for (disp_box s = var_specs; s && T(s) == FLAG_CONS; s = disp_cdr(s), i++) {
         disp_box spec = disp_car(s);
-        if (T(spec) != DISP_CONS) {
+        if (T(spec) != FLAG_CONS) {
             gc_remove_root(&step_exprs);
             gc_remove_root(&init_exprs);
             gc_remove_root(&var_names);
@@ -89,7 +89,7 @@ static disp_box do_builtin(disp_scope_t *scope, disp_box expr) {
             ERET(NIL, "do: malformed variable spec");
         }
         disp_box var = disp_car(spec);
-        if (T(var) != DISP_SYMBOL) {
+        if (T(var) != FLAG_SYMBOL) {
             gc_remove_root(&step_exprs);
             gc_remove_root(&init_exprs);
             gc_remove_root(&var_names);
@@ -99,7 +99,7 @@ static disp_box do_builtin(disp_scope_t *scope, disp_box expr) {
         }
         var_names[i] = gc_strdup(disp_get_symbol_name(var));
         disp_box init_part = disp_cdr(spec);
-        if (!init_part || T(init_part) != DISP_CONS) {
+        if (!init_part || T(init_part) != FLAG_CONS) {
             gc_remove_root(&step_exprs);
             gc_remove_root(&init_exprs);
             gc_remove_root(&var_names);
@@ -109,7 +109,7 @@ static disp_box do_builtin(disp_scope_t *scope, disp_box expr) {
         }
         init_exprs[i] = disp_car(init_part);
         disp_box step_part = disp_cdr(init_part);
-        if (step_part && T(step_part) == DISP_CONS)
+        if (step_part && T(step_part) == FLAG_CONS)
             step_exprs[i] = disp_car(step_part);
         else
             step_exprs[i] = NULL;
@@ -144,7 +144,7 @@ static disp_box do_builtin(disp_scope_t *scope, disp_box expr) {
                 // 求值结果表达式（仍在 loop_scope 中）
                 disp_box results = disp_cdr(term_clause);
                 result = NIL;
-                while (results && T(results) == DISP_CONS) {
+                while (results && T(results) == FLAG_CONS) {
                     result = disp_eval(loop_scope, disp_car(results));
                     results = disp_cdr(results);
                 }
@@ -152,7 +152,7 @@ static disp_box do_builtin(disp_scope_t *scope, disp_box expr) {
             }
             // 执行 body
             disp_box b = body;
-            while (b && T(b) == DISP_CONS) {
+            while (b && T(b) == FLAG_CONS) {
                 disp_eval(loop_scope, disp_car(b));
                 b = disp_cdr(b);
             }
