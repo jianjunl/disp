@@ -43,7 +43,7 @@ static disp_box make_channel_syscall(disp_box *args, int count) {
         ERET(NIL, "make-chan expects capacity (integer)");
     int cap = disp_get_int(args[0]);
     if (cap < 0) cap = 0;
-    disp_box v = ALLOC_TI(FLAG_CHAN);
+    disp_box v = ALLOC_TI(TAG_CHAN);
     disp_channel_t *ch = gc_typed_calloc(1, sizeof(struct disp_channel_t), &struct_disp_channel_t_ti);
     ch->cap = cap;
     ch->size = 0;
@@ -62,7 +62,7 @@ static disp_box make_channel_syscall(disp_box *args, int count) {
 
 static disp_box channel_send_syscall(disp_box *args, int count) {
     if (count != 2) ERET(NIL, "send expects (channel value)");
-    if (T(args[0]) != FLAG_CHAN) ERET(NIL, "first argument must be a channel");
+    if (T(args[0]) != TAG_CHAN) ERET(NIL, "first argument must be a channel");
     disp_channel_t *ch = disp_get_channel(args[0]);
     disp_box value = args[1];
     while (1) {
@@ -117,7 +117,7 @@ static disp_box channel_send_syscall(disp_box *args, int count) {
 
 static disp_box channel_recv_syscall(disp_box *args, int count) {
     if (count != 1) ERET(NIL, "recv expects a channel");
-    if (T(args[0]) != FLAG_CHAN) ERET(NIL, "argument must be a channel");
+    if (T(args[0]) != TAG_CHAN) ERET(NIL, "argument must be a channel");
     disp_channel_t *ch = disp_get_channel(args[0]);
     while (1) {
         gc_pthread_mutex_lock(ch->lock);
@@ -179,7 +179,7 @@ static disp_box channel_recv_syscall(disp_box *args, int count) {
 // recv2 类似，为简洁略作修改（支持无缓冲）
 static disp_box channel_recv2_syscall(disp_box *args, int count) {
     if (count != 1) ERET(NIL, "recv2 expects a channel");
-    if (T(args[0]) != FLAG_CHAN) ERET(NIL, "argument must be a channel");
+    if (T(args[0]) != TAG_CHAN) ERET(NIL, "argument must be a channel");
     disp_channel_t *ch = disp_get_channel(args[0]);
     while (1) {
         gc_pthread_mutex_lock(ch->lock);
@@ -235,7 +235,7 @@ static disp_box channel_recv2_syscall(disp_box *args, int count) {
 }
 
 static disp_box close_channel_syscall(disp_box *args, int count) {
-    if (count != 1 || T(args[0]) != FLAG_CHAN)
+    if (count != 1 || T(args[0]) != TAG_CHAN)
         ERET(NIL, "close-channel expects a channel");
     disp_channel_t *ch = disp_get_channel(args[0]);
     gc_pthread_mutex_lock(ch->lock);

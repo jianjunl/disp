@@ -111,12 +111,12 @@ disp_box disp_make_double(double d) {
 }
 
 disp_box disp_make_socket(int fd) {
-    disp_box v = ALLOC(FLAG_SOCKET);
+    disp_box v = ALLOC(TAG_SOCKET);
     v->data->socket_val.fd = fd;
     return v;
 }
 
 int disp_get_socket_fd(disp_box v) {
-    if (v->flag != FLAG_SOCKET) return -1;
+    if (v->flag != TAG_SOCKET) return -1;
     return v->data->socket_val.fd;
 }

@@ -38,7 +38,7 @@ static disp_box fopen_syscall(disp_box *args, int count) {
 
 // (fclose file) -> bool
 static disp_box fclose_syscall(disp_box *args, int count) {
-    if (count != 1 || T(args[0]) != FLAG_FILE) {
+    if (count != 1 || T(args[0]) != TAG_FILE) {
         ERET(NIL, "fclose: expects a file object");
     }
     FILE *f = disp_get_file(args[0]);
@@ -60,7 +60,7 @@ static disp_box fclose_syscall(disp_box *args, int count) {
 
 // (fread file) -> string 或 nil (读取一行)
 static disp_box fread_syscall(disp_box *args, int count) {
-    if (count != 1 || T(args[0]) != FLAG_FILE) {
+    if (count != 1 || T(args[0]) != TAG_FILE) {
         ERET(NIL, "fread: expects a file object");
     }
     FILE *f = disp_get_file(args[0]);
@@ -77,7 +77,7 @@ static disp_box fread_syscall(disp_box *args, int count) {
 
 // (fwrite file string) -> bool
 static disp_box fwrite_syscall(disp_box *args, int count) {
-    if (count != 2 || T(args[0]) != FLAG_FILE || T(args[1]) != FLAG_STRING) {
+    if (count != 2 || T(args[0]) != TAG_FILE || T(args[1]) != FLAG_STRING) {
         ERET(NIL, "fwrite: expects (file string)");
     }
     FILE *f = disp_get_file(args[0]);
@@ -90,7 +90,7 @@ static disp_box fwrite_syscall(disp_box *args, int count) {
 
 // (feof file) -> bool
 static disp_box feof_syscall(disp_box *args, int count) {
-    if (count != 1 || T(args[0]) != FLAG_FILE) {
+    if (count != 1 || T(args[0]) != TAG_FILE) {
         ERET(NIL, "feof: expects a file object");
     }
     FILE *f = disp_get_file(args[0]);

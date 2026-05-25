@@ -52,18 +52,18 @@ void disp_fprint(FILE *out, disp_box v) {
         return;
     }
     switch (T(v)) {
-        case FLAG_TYPE:   fprintf(out, "%s",         disp_get_type_name(v));     break;
         case FLAG_BYTE:   fprintf(out, "%d",         disp_get_byte(v));          break;
         case FLAG_SHORT:  fprintf(out, "%d",         disp_get_short(v));         break;
         case FLAG_INT:    fprintf(out, "%d",         disp_get_int(v));           break;
         case FLAG_LONG:   fprintf(out, "%ld",        disp_get_long(v));          break;
         case FLAG_FLOAT:  fprintf(out, "%g",         (double)disp_get_float(v)); break;
         case FLAG_DOUBLE: fprintf(out, "%g",         disp_get_double(v));        break;
-        case FLAG_STRING: fprintf(out, "\"%s\"",     disp_get_str(v));      break;
+        case FLAG_STRING: fprintf(out, "\"%s\"",     disp_get_str(v));           break;
         case FLAG_SYMBOL: fprintf(out, "%s",         disp_get_symbol_name(v));   break;
-        case FLAG_CORO:   fprintf(out, "#<coroutine>"); break;
-        case FLAG_CHAN:   fprintf(out, "#<channel>"); break;
-        case FLAG_FILE: {
+        case TAG_TYPE:    fprintf(out, "%s",         disp_get_type_name(v));     break;
+        case TAG_CORO:    fprintf(out, "#<coroutine>"); break;
+        case TAG_CHAN:    fprintf(out, "#<channel>"); break;
+        case TAG_FILE: {
             FILE *f = disp_get_file(v);
             if (f == NULL) fprintf(out, "#<file (closed)>");
             else if (f == stdin) fprintf(out, "#<file stdin>");
@@ -95,10 +95,10 @@ void disp_fprint(FILE *out, disp_box v) {
         }; break;
         case FLAG_CLOSURE:  fprintf(out, "#<closure>"); break;
         case FLAG_MACRO:    fprintf(out, "#<macro>");   break;
-        case FLAG_THREAD:   fprintf(out, "#<thread>");  break;
-        case FLAG_MUTEX:    fprintf(out, "#<mutex>");   break;
-        case FLAG_COND:     fprintf(out, "#<cond>");    break;
-        case FLAG_SOCKET:
+        case TAG_THREAD:   fprintf(out, "#<thread>");  break;
+        case TAG_MUTEX:    fprintf(out, "#<mutex>");   break;
+        case TAG_COND:     fprintf(out, "#<cond>");    break;
+        case TAG_SOCKET:
             fprintf(out, "#<socket %d>", disp_get_socket_fd(v));
             break;
         default:         fprintf(out, "#<unknown>");
@@ -111,7 +111,6 @@ void disp_fwrite(FILE *out, disp_box v) {
         return;
     }
     switch (T(v)) {
-        case FLAG_TYPE:   fprintf(out, "%s",         disp_get_type_name(v));     break;
         case FLAG_BYTE:   fprintf(out, "%d",         disp_get_byte(v));          break;
         case FLAG_SHORT:  fprintf(out, "%d",         disp_get_short(v));         break;
         case FLAG_INT:    fprintf(out, "%d",         disp_get_int(v));           break;
@@ -120,9 +119,10 @@ void disp_fwrite(FILE *out, disp_box v) {
         case FLAG_DOUBLE: fprintf(out, "%g",         disp_get_double(v));        break;
         case FLAG_STRING: fprintf(out, "%s",         disp_get_str(v));           break;
         case FLAG_SYMBOL: fprintf(out, "%s",         disp_get_symbol_name(v));   break;
-        case FLAG_CORO:   fprintf(out, "#<coroutine>"); break;
-        case FLAG_CHAN:   fprintf(out, "#<channel>"); break;
-        case FLAG_FILE: {
+        case TAG_TYPE:    fprintf(out, "%s",         disp_get_type_name(v));     break;
+        case TAG_CORO:    fprintf(out, "#<coroutine>"); break;
+        case TAG_CHAN:    fprintf(out, "#<channel>"); break;
+        case TAG_FILE: {
             FILE *f = disp_get_file(v);
             if (f == NULL) fprintf(out, "#<file (closed)>");
             else if (f == stdin) fprintf(out, "#<file stdin>");
@@ -154,10 +154,10 @@ void disp_fwrite(FILE *out, disp_box v) {
         }; break;
         case FLAG_CLOSURE: fprintf(out, "#<closure>"); break;
         case FLAG_MACRO:   fprintf(out, "#<macro>");   break;
-        case FLAG_THREAD:  fprintf(out, "#<thread>");  break;
-        case FLAG_MUTEX:   fprintf(out, "#<mutex>");   break;
-        case FLAG_COND:    fprintf(out, "#<cond>");    break;
-        case FLAG_SOCKET:
+        case TAG_THREAD:  fprintf(out, "#<thread>");  break;
+        case TAG_MUTEX:   fprintf(out, "#<mutex>");   break;
+        case TAG_COND:    fprintf(out, "#<cond>");    break;
+        case TAG_SOCKET:
             fprintf(out, "#<socket %d>", disp_get_socket_fd(v));
             break;
         default:         fprintf(out, "#<unknown>");

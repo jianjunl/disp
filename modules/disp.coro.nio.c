@@ -28,7 +28,7 @@ static int set_nonblocking(int fd) {
 // 辅助：从文件对象获取 fd，并确保非阻塞
 #pragma GCC diagnostic ignored "-Wunused-function"
 static int get_nonblock_fd(disp_box file_obj) {
-    if (T(file_obj) != FLAG_FILE) return -1;
+    if (T(file_obj) != TAG_FILE) return -1;
     FILE *f = disp_get_file(file_obj);
     if (!f) return -1;
     int fd = fileno(f);
@@ -39,7 +39,7 @@ static int get_nonblock_fd(disp_box file_obj) {
 }
 
 static disp_box fread_nb_syscall(disp_box *args, int count) {
-    if (count != 1 || T(args[0]) != FLAG_FILE)
+    if (count != 1 || T(args[0]) != TAG_FILE)
         ERET(NIL, "fread-nb expects a file object");
     FILE *f = disp_get_file(args[0]);
     if (!f) return NIL;
@@ -71,7 +71,7 @@ static disp_box fread_nb_syscall(disp_box *args, int count) {
 }
 
 static disp_box fwrite_nb_syscall(disp_box *args, int count) {
-    if (count != 2 || T(args[0]) != FLAG_FILE || T(args[1]) != FLAG_STRING)
+    if (count != 2 || T(args[0]) != TAG_FILE || T(args[1]) != FLAG_STRING)
         ERET(NIL, "fwrite-nb expects (file string)");
     FILE *f = disp_get_file(args[0]);
     if (!f) return NIL;

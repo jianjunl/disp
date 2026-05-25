@@ -430,7 +430,7 @@ static disp_box select_builtin(disp_scope_t *scope, disp_box expr) {
             }
             disp_box ch_expr = disp_car(rest);
             disp_box ch_arg = disp_eval(NULL, ch_expr);
-            if (T(ch_arg) != FLAG_CHAN) {
+            if (T(ch_arg) != TAG_CHAN) {
                 gc_free(infos);
                 ERET(NIL, "select: recv argument must be a channel");
             }
@@ -445,7 +445,7 @@ static disp_box select_builtin(disp_scope_t *scope, disp_box expr) {
             }
             disp_box ch_expr = disp_car(rest);
             disp_box ch_arg = disp_eval(NULL, ch_expr);
-            if (T(ch_arg) != FLAG_CHAN) {
+            if (T(ch_arg) != TAG_CHAN) {
                 gc_free(infos);
                 ERET(NIL, "select: send channel must be a channel");
             }

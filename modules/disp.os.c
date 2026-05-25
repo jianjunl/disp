@@ -171,7 +171,7 @@ static disp_box printf_syscall(disp_box *args, int count) {
 }
 
 static disp_box fprintf_syscall(disp_box *args, int count) {
-    if (count < 2 || T(args[0]) != FLAG_FILE || T(args[1]) != FLAG_STRING) {
+    if (count < 2 || T(args[0]) != TAG_FILE || T(args[1]) != FLAG_STRING) {
         ERET(NIL, "fprintf: (file format-string ...) required");
     }
     FILE *out = disp_get_file(args[0]);
@@ -286,7 +286,7 @@ static gc_mutex_t io_mutex = GC_PTHREAD_MUTEX_INITIALIZER;
 
 /* (safe-fprintf file format-string args...) -> result */
 static disp_box safe_fprintf_syscall(disp_box *args, int count) {
-    if (count < 2 || T(args[0]) != FLAG_FILE || T(args[1]) != FLAG_STRING) {
+    if (count < 2 || T(args[0]) != TAG_FILE || T(args[1]) != FLAG_STRING) {
         ERET(NIL, "safe-fprintf: (file format-string ...) required");
     }
     FILE *out = disp_get_file(args[0]);

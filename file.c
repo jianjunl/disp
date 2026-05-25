@@ -27,14 +27,14 @@ GC_UNION_TI(disp_data,
 );
 
 disp_box disp_make_file(FILE *f, char *mode) {
-    disp_box v = ALLOC_TI(FLAG_FILE);
+    disp_box v = ALLOC_TI(TAG_FILE);
     v->data->file_val.file = f;
     v->data->file_val.mode = mode;
     return v;
 }
 
 FILE* disp_get_file(disp_box v) {
-    if (T(v) != FLAG_FILE) {
+    if (T(v) != TAG_FILE) {
         ERRO("disp_get_file: not a file object\n");
         return NULL;
     }
@@ -42,7 +42,7 @@ FILE* disp_get_file(disp_box v) {
 }
 
 char* disp_get_file_mode(disp_box v) {
-    if (T(v) != FLAG_FILE) {
+    if (T(v) != TAG_FILE) {
         ERRO("disp_get_file: not a file object\n");
         return NULL;
     }
@@ -50,11 +50,11 @@ char* disp_get_file_mode(disp_box v) {
 }
 
 void disp_set_file(disp_box v, FILE *f) {
-    if (T(v) != FLAG_FILE) return;
+    if (T(v) != TAG_FILE) return;
     GC_ASSIGN_PTR(v->data->file_val.file, f);
 }
 
 void disp_set_file_mode(disp_box v, char *mode) {
-    if (T(v) != FLAG_FILE) return;
+    if (T(v) != TAG_FILE) return;
     GC_ASSIGN_PTR(v->data->file_val.mode, mode);
 }

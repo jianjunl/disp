@@ -31,14 +31,14 @@
 #define FLAG_SYSCALL    0x7FFEULL
 #define FLAG_EXTRA      0x7FFFULL
 
-#define FLAG_TYPE       0ULL
-#define FLAG_FILE       1ULL
-#define FLAG_CORO       2ULL
-#define FLAG_CHAN       3ULL
-#define FLAG_SOCKET     4ULL
-#define FLAG_THREAD     5ULL
-#define FLAG_MUTEX      6ULL
-#define FLAG_COND       7ULL
+#define TAG_TYPE       0ULL
+#define TAG_FILE       1ULL
+#define TAG_CORO       2ULL
+#define TAG_CHAN       3ULL
+#define TAG_SOCKET     4ULL
+#define TAG_THREAD     5ULL
+#define TAG_MUTEX      6ULL
+#define TAG_COND       7ULL
 
 #define NAN_BOXING 0
 

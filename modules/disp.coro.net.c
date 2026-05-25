@@ -41,7 +41,7 @@ static disp_box make_socket_syscall(disp_box *args, int count) {
 
 /* 绑定端口 */
 static disp_box bind_socket_syscall(disp_box *args, int count) {
-    if (count != 2 || T(args[0]) != FLAG_SOCKET)
+    if (count != 2 || T(args[0]) != TAG_SOCKET)
         ERET(NIL, "bind-socket: expects (socket port)");
     int fd = disp_get_socket_fd(args[0]);
     if (fd == -1) return NIL;
@@ -66,7 +66,7 @@ static disp_box bind_socket_syscall(disp_box *args, int count) {
 
 /* 监听 */
 static disp_box listen_socket_syscall(disp_box *args, int count) {
-    if (count != 2 || T(args[0]) != FLAG_SOCKET)
+    if (count != 2 || T(args[0]) != TAG_SOCKET)
         ERET(NIL, "listen-socket: expects (socket backlog)");
     int fd = disp_get_socket_fd(args[0]);
     if (fd == -1) return NIL;
@@ -84,7 +84,7 @@ static disp_box listen_socket_syscall(disp_box *args, int count) {
 
 /* 非阻塞 accept */
 static disp_box accept_socket_syscall(disp_box *args, int count) {
-    if (count != 1 || T(args[0]) != FLAG_SOCKET)
+    if (count != 1 || T(args[0]) != TAG_SOCKET)
         ERET(NIL, "accept-socket: expects a socket");
     int listen_fd = disp_get_socket_fd(args[0]);
     if (listen_fd == -1) return NIL;
@@ -117,7 +117,7 @@ static disp_box accept_socket_syscall(disp_box *args, int count) {
 
 /* 非阻塞 connect */
 static disp_box connect_socket_syscall(disp_box *args, int count) {
-    if (count != 3 || T(args[0]) != FLAG_SOCKET || T(args[1]) != FLAG_STRING)
+    if (count != 3 || T(args[0]) != TAG_SOCKET || T(args[1]) != FLAG_STRING)
         ERET(NIL, "connect-socket: expects (socket host port)");
     int fd = disp_get_socket_fd(args[0]);
     if (fd == -1) return NIL;
@@ -170,7 +170,7 @@ static disp_box connect_socket_syscall(disp_box *args, int count) {
 
 /* 非阻塞 recv */
 static disp_box recv_socket_syscall(disp_box *args, int count) {
-    if (count != 2 || T(args[0]) != FLAG_SOCKET)
+    if (count != 2 || T(args[0]) != TAG_SOCKET)
         ERET(NIL, "recv-socket: expects (socket size)");
     int fd = disp_get_socket_fd(args[0]);
     if (fd == -1) return NIL;
@@ -208,7 +208,7 @@ static disp_box recv_socket_syscall(disp_box *args, int count) {
 
 /* 非阻塞 send（完整发送） */
 static disp_box send_socket_syscall(disp_box *args, int count) {
-    if (count != 2 || T(args[0]) != FLAG_SOCKET || T(args[1]) != FLAG_STRING)
+    if (count != 2 || T(args[0]) != TAG_SOCKET || T(args[1]) != FLAG_STRING)
         ERET(NIL, "send-socket: expects (socket data)");
     int fd = disp_get_socket_fd(args[0]);
     if (fd == -1) return NIL;
@@ -236,7 +236,7 @@ static disp_box send_socket_syscall(disp_box *args, int count) {
 
 /* 关闭 socket */
 static disp_box close_socket_syscall(disp_box *args, int count) {
-    if (count != 1 || T(args[0]) != FLAG_SOCKET)
+    if (count != 1 || T(args[0]) != TAG_SOCKET)
         ERET(NIL, "close-socket: expects a socket");
     int fd = disp_get_socket_fd(args[0]);
     if (fd != -1) {
