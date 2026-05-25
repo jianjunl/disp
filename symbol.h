@@ -22,7 +22,5 @@ disp_box disp_get_symbol_value(disp_box v);
 
 #define S disp_get_symbol_name
 #define V disp_get_symbol_value
-#define T(v) v->flag
-#define N(v) v->next
  
 #endif // SYMBOL_H

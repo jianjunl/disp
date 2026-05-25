@@ -87,9 +87,9 @@ disp_box disp_get_symbol_value(disp_box v) {
 /* ======================== GC 初始化和全局常量 ======================== */
 
 void disp_init_symbol() {
-    NIL  = ALLOC_TI(FLAG_VOID);
-    TRUE = ALLOC_TI(FLAG_VOID);
-    QUIT = ALLOC_TI(FLAG_VOID);
+    NIL  = ALLOC_TI(FLAG_FALSE);
+    TRUE = ALLOC_TI(FLAG_TRUE);
+    QUIT = ALLOC_TI(FLAG_FALSE);
     DEF("nil",   NIL,  1);
     DEF("false", NIL,  1);
     DEF("true",  TRUE, 1);

@@ -9,36 +9,36 @@
 #include <errno.h>
 #include <stdbool.h>
 
-// 特殊常量标签
-#define FLAG_VOID       0x7FF0ULL
+typedef uint16_t disp_flag_t;
+typedef union disp_data disp_data;
 
-// 数值标签（整数类）
-#define FLAG_BYTE       0x7FF1ULL
-#define FLAG_SHORT      0x7FF2ULL
-#define FLAG_INT        0x7FF3ULL
-#define FLAG_LONG       0x7FF4ULL
-#define FLAG_LONG_LONG  0x7FF5ULL
-#define FLAG_FLOAT      0x7FF6ULL
-#define FLAG_DOUBLE     0x7FF7ULL
+#define FLAG_TRUE       0xFFF8
+#define FLAG_FALSE      0xFFF9
+#define FLAG_BYTE       0xFFFA
+#define FLAG_SHORT      0xFFFB
+#define FLAG_INT        0xFFFC
+#define FLAG_LONG       0xFFFD
+#define FLAG_FLOAT      0xFFFE
+#define FLAG_DOUBLE     0xFFFF
 
-// 指针标签（0x7FF8 - 0x7FFF）
-#define FLAG_STRING     0x7FF8ULL
-#define FLAG_CONS       0x7FF9ULL
-#define FLAG_SYMBOL     0x7FFAULL
-#define FLAG_CLOSURE    0x7FFBULL
-#define FLAG_MACRO      0x7FFCULL
-#define FLAG_BUILTIN    0x7FFDULL
-#define FLAG_SYSCALL    0x7FFEULL
-#define FLAG_EXTRA      0x7FFFULL
+// 指针标签（0x7F80 - 0x7FFF）
+#define FLAG_SYMBOL     0x7FF8
+#define FLAG_STRING     0x7FF9
+#define FLAG_CONS       0x7FFA
+#define FLAG_CLOSURE    0x7FFB
+#define FLAG_MACRO      0x7FFC
+#define FLAG_BUILTIN    0x7FFD
+#define FLAG_SYSCALL    0x7FFE
+#define FLAG_EXTRA      0x7FFF
 
-#define TAG_TYPE       0ULL
-#define TAG_FILE       1ULL
-#define TAG_CORO       2ULL
-#define TAG_CHAN       3ULL
-#define TAG_SOCKET     4ULL
-#define TAG_THREAD     5ULL
-#define TAG_MUTEX      6ULL
-#define TAG_COND       7ULL
+#define TAG_TYPE       0
+#define TAG_FILE       1
+#define TAG_CORO       2
+#define TAG_CHAN       3
+#define TAG_SOCKET     4
+#define TAG_THREAD     5
+#define TAG_MUTEX      6
+#define TAG_COND       7
 
 #define NAN_BOXING 0
 
@@ -47,20 +47,25 @@
 typedef uint64_t disp_box;
 
 // 标签定义（高16位）
-#define FLAG_SHIFT 48
-#define FLAG_MASK  0xFFFF000000000000ULL
-#define DISP_VAL_MASK  0x0000FFFFFFFFFFFFULL
+#define TAG_SHIFT 48
+#define TAG_MASK  0x0000FFFFFFFFFFFFULL
 
 // 基本内联函数
-static inline uint64_t disp_tag(disp_box v) { return v >> FLAG_SHIFT; }
-static inline uint64_t disp_value(disp_box v) { return v & DISP_VAL_MASK; }
-static inline disp_box disp_make_tagged(uint64_t tag, uint64_t val) {
-    return (tag << FLAG_SHIFT) | (val & DISP_VAL_MASK);
+static inline disp_flag_t _flag(disp_box v) {
+    return (disp_flag_t)(v >> TAG_SHIFT);
+}
+static inline disp_box _unbox(disp_box v) {
+    return v & TAG_MASK;
+}
+static inline disp_box _box(disp_flag_t t, disp_box v) {
+    disp_box tag = (disp_box)t;
+    return (tag << TAG_SHIFT) | (v & TAG_MASK);
 }
 
+#define T(v) (_flag(v) == FLAG_EXTRA ? ((disp_data*)_unbox(v))->tag : flag(v))
 // 指针装箱/拆箱
-static inline disp_box disp_box_pointer(void *ptr, uint64_t tag) {
-    return disp_make_tagged(tag, (uint64_t)ptr);
+static inline disp_box _pack(disp_flag_t t, void *ptr) {
+    return _box(t, (disp_box)ptr);
 }
 static inline void* disp_unbox_pointer(disp_box v, uint64_t tag) {
     if (disp_tag(v) != tag) return NULL;
@@ -119,13 +124,13 @@ static inline double disp_get_double(disp_box v) {
 
 #else // NAN_BOXING = 0
 
-// Opaque types
-typedef union disp_data disp_data;
 typedef struct disp_val {
-    uint16_t flag;
+    disp_flag_t flag;
     disp_data *data;
 } disp_val ;
 typedef disp_val* disp_box;
+
+#define T(v) v->flag
 
 #endif // NAN_BOXING
 

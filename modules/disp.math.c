@@ -21,7 +21,7 @@ static disp_box plus_syscall(disp_box *args, int count) {
     if (count == 0) return disp_make_int(0);
 
     int has_double = 0, has_float = 0, has_long = 0;
-    uint64_t max_type = FLAG_INT;
+    disp_flag_t max_type = FLAG_INT;
 
     for (int i = 0; i < count; i++) {
         int t = T(args[i]);
@@ -91,7 +91,7 @@ static disp_box minus_syscall(disp_box *args, int count) {
 
     // First, determine the result type by checking all arguments
     int has_double = 0, has_float = 0, has_long = 0;
-    uint64_t max_type = FLAG_INT;
+    disp_flag_t max_type = FLAG_INT;
     for (int i = 0; i < count; i++) {
         int t = T(args[i]);
         switch (t) {
@@ -156,7 +156,7 @@ static disp_box times_syscall(disp_box *args, int count) {
     if (count == 0) return disp_make_int(1);
 
     int has_double = 0, has_float = 0, has_long = 0;
-    uint64_t max_type = FLAG_INT;
+    disp_flag_t max_type = FLAG_INT;
 
     for (int i = 0; i < count; i++) {
         int t = T(args[i]);

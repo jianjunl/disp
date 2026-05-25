@@ -1,0 +1,62 @@
+
+Infinity and NaNs
+
+
+The IEEE standard specifies a variety of special exponent and mantissa values in order to support the concepts of plus and minus infinity and “Not-a-Number” (NaN).
+
+Infinity (∞)
+
+Arithmetic involving infinity is treated as the limiting case of real arithmetic, with infinite values defined as those outside the range of representable numbers, or
+
+−∞ < representable numbers < +∞
+
+With the exception of the special cases discussed below (NaNs), any arithmetic operation involving infinity yields infinity. Infinity is represented by the largest biased exponent allowed by the format and a mantissa of zero.
+
+NaNs
+
+A NaN (Not-a-Number) is a symbolic entity encoded in floating-point format. There are two types of NaNs:
+
+
+Signalling NaN
+signals an invalid operation exception
+
+
+Quiet NaN
+propagates through almost every arithmetic operation without signalling an exception
+
+NaNs are produced by these operations:
+
+∞ − ∞,   −∞ + ∞,   0 × ∞,   0 ÷ 0,   ∞ ÷ ∞
+
+Both types of NaNs are represented by the largest biased exponent allowed by the format (single- or double-precision) and a mantissa that is non-zero.
+
+
+The bit pattern of the mantissa for a signalling NaN has the most significant digit set to zero and at least one of the remaining digits set to one.
+
+The bit pattern of the mantissa for a quiet NaN has the most significant digit set to one
+For single-precision values:
+
+
+Positive infinity is represented by the bit pattern 7F800000
+
+Negative infinity is represented by the bit pattern FF800000
+
+A signalling NaN (NANS) is represented by any bit pattern
+between 7F800001 and 7FBFFFFF or between FF800001 and FFBFFFFF
+
+A quiet NaN (NANQ) is represented by any bit pattern
+between 7FC00000 and 7FFFFFFF or between FFC00000 and FFFFFFFF
+For double-precision values:
+
+
+Positive infinity is represented by the bit pattern 7FF0000000000000
+
+Negative infinity is represented by the bit pattern FFF0000000000000
+
+A signalling NaN is represented by any bit pattern
+between 7FF0000000000001 and 7FF7FFFFFFFFFFFF or
+between FFF0000000000001 and FFF7FFFFFFFFFFFF
+
+A quiet NaN is represented by any bit pattern
+between 7FF8000000000000 and 7FFFFFFFFFFFFFFF or
+between FFF8000000000000 and FFFFFFFFFFFFFFFF

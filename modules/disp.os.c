@@ -354,9 +354,12 @@ static void pretty_print_obj(disp_box v, int indent, int newline) {
             break;
         case FLAG_DOUBLE:
             printf("%g", disp_get_double(v));
+            break; 
+        case FLAG_TRUE:
+            printf("true");
             break;
-        case FLAG_VOID:
-            printf(v == NIL ? "nil" : "true");
+        case FLAG_FALSE:
+            printf("nil");
             break;
         default:
             disp_print(v);
