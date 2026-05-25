@@ -122,7 +122,7 @@ void disp_init_globals() {
     DEF("stdin"  , disp_make_file(stdin ,"r"), 1);
     DEF("stdout" , disp_make_file(stdout,"w"), 1);
     DEF("stderr" , disp_make_file(stderr,"w"), 1);
-
+///*
     DEF("import", MKF(import_syscall , "<import>"), 1);
     DEF("load"  , MKB(load_builtin   , "<#load>"), 1);
     DEF("gc"    , MKF(gc_syscall     , "<gc>"   ), 1);
@@ -173,4 +173,5 @@ void disp_init_globals() {
     SET    = disp_find_symbol(NULL, "set!");
     SETQ   = disp_find_symbol(NULL, "setq");
     DEFINE = disp_find_symbol(NULL, "define");
+//*/
 }

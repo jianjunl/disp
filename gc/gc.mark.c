@@ -64,18 +64,6 @@ extern pthread_mutex_t gc_roots_lock;
 extern void* gc_os_alloc(size_t size);
 extern void gc_os_free(void *ptr, size_t size_hint);
 
-static gc_external_mark_fn *gc_mark_callbacks = NULL;
-static size_t gc_mark_callback_count = 0;
-static pthread_mutex_t gc_external_lock = PTHREAD_MUTEX_INITIALIZER;
-
-void gc_register_external_mark(gc_external_mark_fn fn) {
-    if (!fn) return;
-    pthread_mutex_lock(&gc_external_lock);
-    gc_mark_callbacks = realloc(gc_mark_callbacks, (gc_mark_callback_count+1)*sizeof(gc_external_mark_fn));
-    gc_mark_callbacks[gc_mark_callback_count++] = fn;
-    pthread_mutex_unlock(&gc_external_lock);
-}
-
 #if GC_MULTITHREAD 
 // ---------- Stop-The-World synchronizing ---------- //
 extern _Thread_local gc_thread_info_t *gc_tls_self_info;
@@ -108,10 +96,6 @@ static void gc_scan_region(void *start, void *end) {
         uintptr_t val = *p;
         if (val < 0x1000) continue;          // null or very low address
         void *candidate = (void*)val;
-pthread_mutex_lock(&gc_external_lock);
-for (size_t i = 0; i < gc_mark_callback_count; i++)
-    gc_mark_callbacks[i](candidate);
-pthread_mutex_unlock(&gc_external_lock);
         /* Single traversal: gc_find_block returns NULL if not managed */
         gc_block_t *blk = gc_find_block(candidate);
         if (blk && !blk->marked) {
@@ -134,10 +118,6 @@ static void gc_scan_block_content(gc_block_t *blk) {
                 uintptr_t val = *p;
                 if (val < 0x1000) continue;
                 void *candidate = (void*)val;
-pthread_mutex_lock(&gc_external_lock);
-for (size_t i = 0; i < gc_mark_callback_count; i++)
-    gc_mark_callbacks[i](candidate);
-pthread_mutex_unlock(&gc_external_lock);
                 gc_block_t *target = gc_find_block(candidate);
                 if (target && !target->marked) {
                     target->marked = true;
@@ -157,10 +137,6 @@ pthread_mutex_unlock(&gc_external_lock);
                     void **pp = (void**)(elem + off);
                     void *cand = *pp;
                     if (!cand) continue;
-pthread_mutex_lock(&gc_external_lock);
-for (size_t i = 0; i < gc_mark_callback_count; i++)
-    gc_mark_callbacks[i](cand);
-pthread_mutex_unlock(&gc_external_lock);
                     gc_block_t *target = gc_find_block(cand);
                     if (target && !target->marked) {
                         target->marked = true;
@@ -286,10 +262,6 @@ static void gc_scan_block_content_incremental(gc_block_t *blk) {
                 uintptr_t val = *p;
                 if (val < 0x1000) continue;
                 void *candidate = (void*)val;
-pthread_mutex_lock(&gc_external_lock);
-for (size_t i = 0; i < gc_mark_callback_count; i++)
-    gc_mark_callbacks[i](candidate);
-pthread_mutex_unlock(&gc_external_lock);
                 gc_block_t *target = gc_find_block(candidate);
                 if (target) gc_mark_object(target);   // only mark, no recursion
             }
@@ -306,10 +278,6 @@ pthread_mutex_unlock(&gc_external_lock);
                     void **pp = (void**)(elem + off);
                     void *cand = *pp;
                     if (!cand) continue;
-pthread_mutex_lock(&gc_external_lock);
-for (size_t i = 0; i < gc_mark_callback_count; i++)
-    gc_mark_callbacks[i](candidate);
-pthread_mutex_unlock(&gc_external_lock);
                     gc_block_t *target = gc_find_block(cand);
                     if (target) gc_mark_object(target);
                 }
@@ -323,10 +291,6 @@ pthread_mutex_unlock(&gc_external_lock);
             uintptr_t val = *p;
             if (val < 0x1000) continue;
             void *candidate = (void*)val;
-pthread_mutex_lock(&gc_external_lock);
-for (size_t i = 0; i < gc_mark_callback_count; i++)
-    gc_mark_callbacks[i](candidate);
-pthread_mutex_unlock(&gc_external_lock);
             gc_block_t *target = gc_find_block(candidate);
             if (target) gc_mark_object(target);
         }

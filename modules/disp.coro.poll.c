@@ -65,8 +65,8 @@ GC_STRUCT_TI(case_info_t,
 );
 
 /* 从等待队列中移除指定协程 */
-static void remove_from_queue(disp_val **head, disp_val *coro) {
-    disp_val *prev = NULL, *cur = *head;
+static void remove_from_queue(disp_box *head, disp_box coro) {
+    disp_box prev = NULL, cur = *head;
     while (cur) {
         if (cur == coro) {
             if (prev)

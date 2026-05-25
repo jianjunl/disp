@@ -1,15 +1,6 @@
 
-#ifndef DISP_MACRO_H
-#define DISP_MACRO_H
-
-#define S disp_get_symbol_name
-#define V disp_get_symbol_value
-#define T(v) v->flag
-#define N(v) v->next
-#define MKB disp_make_builtin
-#define MKF disp_make_syscall
-#define MKS disp_make_string
-#define DEF(n, v, i) disp_define_symbol(NULL, n, v, i)
+#ifndef DEBUG_H
+#define DEBUG_H
 
 #ifndef URET
 #define URET(R) do { \
@@ -153,4 +144,4 @@
 #define DBG(M, ...) DISP_INFO(DBG, stderr, M, ##__VA_ARGS__)
 #endif
 
-#endif /* DISP_MACRO_H */
+#endif /* DEBUG_H */

@@ -137,22 +137,18 @@ void gc_free(void *ptr);
  */
 void gc_collect(void);
 
-typedef void (*gc_external_mark_fn)(void *ptr);
-typedef void (*gc_external_sweep_fn)(void);
-
-void gc_register_external_mark(gc_external_mark_fn fn);
-void gc_register_external_sweep(gc_external_sweep_fn fn);
-
 /* ---------------------------------------------------------------------
- * 指针验证钩子 – 用于 NaN boxing 等场景。
- * 给定一个从内存中扫描到的候选指针（可能是装箱的值），
- * 返回真正的堆地址（如果它是有效的堆指针），否则返回 NULL。
- * 默认实现直接返回原指针（适合非 boxing 场景）。
+ * Pointer validation hook – for NaN boxing and similar techniques.
+ *
+ * Given a candidate pointer (possibly a boxed value) read from memory,
+ * returns the true heap pointer if it represents a valid heap object,
+ * otherwise returns NULL. The default implementation returns the pointer
+ * unchanged (suitable for non‑boxing scenarios).
  * --------------------------------------------------------------------- */
 typedef void* (*gc_validate_fn)(void *ptr);
 extern gc_validate_fn gc_validate_hook;
 
-/* 设置验证钩子（线程安全，建议在启动时调用一次） */
+/* Set the validation hook (thread‑safe; should be called once at startup). */
 void gc_set_validate_hook(gc_validate_fn fn);
 
 /* ============================================================================
@@ -183,7 +179,7 @@ void gc_add_root(void *ptr_addr);
 void gc_remove_root(void *ptr_addr);
 
 /*
- * GC_ROOT -  declare ptr for stack-allocated precise roots.
+ * GC_ROOT_AUTO - Declare an automatically‑registered root.
  *
  * Usage:
  *   GC_ROOT_AUTO(my_ptr);
