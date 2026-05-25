@@ -19,10 +19,10 @@ static disp_box plus_syscall(disp_box *args, int count) {
     if (count == 0) return disp_make_int(0);
 
     int has_double = 0, has_float = 0, has_long = 0;
-    disp_flag_t max_type = DISP_INT;
+    int max_type = DISP_INT;
 
     for (int i = 0; i < count; i++) {
-        disp_flag_t t = T(args[i]);
+        int t = T(args[i]);
         switch (t) {
             case DISP_FLOAT: has_float = 1; max_type = DISP_FLOAT; break;
             case DISP_DOUBLE: has_double = 1; max_type = DISP_DOUBLE; break;
@@ -70,7 +70,7 @@ static disp_box minus_syscall(disp_box *args, int count) {
     if (count == 1) {
         // unary minus: negate the argument, preserving its type
         disp_box v = args[0];
-        disp_flag_t t = T(v);
+        int t = T(v);
         switch (t) {
             case DISP_INT:    return disp_make_int(-disp_get_int(v));
             case DISP_LONG:   return disp_make_long(-disp_get_long(v));
@@ -89,9 +89,9 @@ static disp_box minus_syscall(disp_box *args, int count) {
 
     // First, determine the result type by checking all arguments
     int has_double = 0, has_float = 0, has_long = 0;
-    disp_flag_t max_type = DISP_INT;
+    int max_type = DISP_INT;
     for (int i = 0; i < count; i++) {
-        disp_flag_t t = T(args[i]);
+        int t = T(args[i]);
         switch (t) {
             case DISP_FLOAT: has_float = 1; max_type = DISP_FLOAT; break;
             case DISP_DOUBLE: has_double = 1; max_type = DISP_DOUBLE; break;
@@ -154,10 +154,10 @@ static disp_box times_syscall(disp_box *args, int count) {
     if (count == 0) return disp_make_int(1);
 
     int has_double = 0, has_float = 0, has_long = 0;
-    disp_flag_t max_type = DISP_INT;
+    int max_type = DISP_INT;
 
     for (int i = 0; i < count; i++) {
-        disp_flag_t t = T(args[i]);
+        int t = T(args[i]);
         switch (t) {
             case DISP_FLOAT: has_float = 1; max_type = DISP_FLOAT; break;
             case DISP_DOUBLE: has_double = 1; max_type = DISP_DOUBLE; break;

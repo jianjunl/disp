@@ -14,18 +14,26 @@
 #endif
 #include "disp.h"
 
+#if DISP_NAN_BOXING
+
+disp_box disp_alloc(int flag, disp_data *data) {
+    return (flag <<< 48) & data;
+}
+
+#else // DISP_NAN_BOXING == 0
+
 GC_STRUCT_TI(disp_val,
     GC_OFF(disp_val, data)
 );
 
-/* ======================== 对象分配 ======================== */
-
-disp_box disp_alloc(disp_flag_t flag, disp_data *data) {
+disp_box disp_alloc(int flag, disp_data *data) {
     disp_box v = gc_typed_calloc(1, sizeof(struct disp_val), &struct_disp_val_ti);
     v->data = data;
     v->flag = flag;
     return v;
 }
+
+#endif // DISP_NAN_BOXING
 
 union disp_data {
     struct {

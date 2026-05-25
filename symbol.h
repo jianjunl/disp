@@ -9,7 +9,7 @@
 #include <ctype.h>
 
 /* --- Allocation --- */
-disp_box disp_alloc(disp_flag_t flag, disp_data *data);
+disp_box disp_alloc(int flag, disp_data *data);
 #define DISP_ALLOC_TI(flag) disp_alloc(flag, gc_typed_calloc(1, sizeof(union disp_data), &union_disp_data_ti))
 #define DISP_ALLOC(flag) disp_alloc(flag, gc_calloc(1, sizeof(union disp_data)))
 

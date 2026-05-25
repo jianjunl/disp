@@ -41,7 +41,7 @@ static disp_box dotimes_builtin(disp_scope_t *scope, disp_box expr) {
     // 求值 count（在当前作用域中）
     disp_box count_val = disp_eval(scope, count_expr);
     long limit;
-    disp_flag_t ct = T(count_val);
+    int ct = T(count_val);
     if (ct == DISP_INT) {
         limit = disp_get_int(count_val);
     } else if (ct == DISP_LONG) {
