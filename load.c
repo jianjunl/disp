@@ -17,7 +17,7 @@
 extern void disp_push_source(const char *filename);
 extern void disp_pop_source(void);
 
-static disp_val* load_lisp(disp_scope_t *env, const char *filename) {
+static disp_box load_lisp(disp_scope_t *env, const char *filename) {
     if (!env) env = disp_global_scope;
     if (!strchr(filename, '/')) {
         char fn[PATH_MAX]; 
@@ -28,8 +28,8 @@ static disp_val* load_lisp(disp_scope_t *env, const char *filename) {
     if (!f) { perror("fopen"); return NIL; }
     // 压入新文件信息
     disp_push_source(filename);
-    disp_val *last = NIL;
-    disp_val *expr;
+    disp_box last = NIL;
+    disp_box expr;
     while ((expr = disp_read(f)) != NULL) {
         last = disp_eval(env, expr);
     }
@@ -39,7 +39,7 @@ static disp_val* load_lisp(disp_scope_t *env, const char *filename) {
     return last;
 }
 
-static disp_val* load_so(const char *filename) {
+static disp_box load_so(const char *filename) {
     if (!strchr(filename, '/')) {
         char fn[PATH_MAX]; 
         strcpy(fn, disp_get_str(MODPATH));
@@ -65,7 +65,7 @@ static disp_val* load_so(const char *filename) {
     return TRUE;
 }
 
-disp_val* disp_load(disp_scope_t *env, const char *filename) {
+disp_box disp_load(disp_scope_t *env, const char *filename) {
     const char *ext = strrchr(filename, '.');
     if (ext && strcmp(ext, ".lisp") == 0)
         return load_lisp(env, filename);
@@ -74,7 +74,7 @@ disp_val* disp_load(disp_scope_t *env, const char *filename) {
     ERET(NIL, "unknown extension: %s\n", filename);
 }
 
-disp_val* disp_import(const char *filename) {
+disp_box disp_import(const char *filename) {
     const char *ext = strrchr(filename, '.');
     if (ext && strcmp(ext, ".so") == 0)
         return load_so(filename);

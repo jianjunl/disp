@@ -15,10 +15,10 @@
 #endif
 #include "disp.h"
 
-disp_val* __attribute__((section("gc_roots"))) disp_builtin_roots[NUM_BUILTIN_ROOTS] = { NULL };
+disp_box __attribute__((section("gc_roots"))) disp_builtin_roots[NUM_BUILTIN_ROOTS] = { NULL };
 
 /* ======================== Built‑in 'load' ======================== */
-static disp_val* import_syscall(disp_val **args, int argc) {
+static disp_box import_syscall(disp_box *args, int argc) {
     if (argc != 1 || T(args[0]) != DISP_STRING) {
         ERET(NIL, "import expects a string filename\n");
     }
@@ -26,15 +26,15 @@ static disp_val* import_syscall(disp_val **args, int argc) {
     return disp_import(disp_get_str(args[0]));
 }
 
-static disp_val* load_builtin(disp_scope_t *env, disp_val *expr) {
-   disp_val *rest = disp_cdr(expr);
+static disp_box load_builtin(disp_scope_t *env, disp_box expr) {
+   disp_box rest = disp_cdr(expr);
     if (rest == NIL) {
         ERET(NIL, "load expects a string filename\n");
     }
     if (disp_cdr(rest) != NIL) {
         ERRO("load: warning - extra arguments ignored");
     }
-    disp_val* arg0 = disp_eval(env, disp_car(rest));
+    disp_box arg0 = disp_eval(env, disp_car(rest));
     if (T(arg0) != DISP_STRING) {
         ERET(NIL, "load expects a string filename\n");
     }
@@ -43,7 +43,7 @@ static disp_val* load_builtin(disp_scope_t *env, disp_val *expr) {
 }
 
 
-static disp_val* gc_syscall(disp_val **args, int count) {
+static disp_box gc_syscall(disp_box *args, int count) {
     (void)args;
     if (count != 0)
         ERET(NIL, "gc expects no arguments");
@@ -53,23 +53,23 @@ static disp_val* gc_syscall(disp_val **args, int count) {
 }
 
 // 内置函数：返回 (filename line column) 列表（栈顶）
-static disp_val* info_syscall(disp_val **args, int arg_count) {
+static disp_box info_syscall(disp_box *args, int arg_count) {
     (void)args; (void)arg_count;
     disp_info_t *info = disp_get_current_info();
     if (!info || !info->filename) return NIL;
-    disp_val *fname = disp_make_string(info->filename);
-    disp_val *line  = disp_make_int(info->line);
-    disp_val *col   = disp_make_int(info->column);
+    disp_box fname = disp_make_string(info->filename);
+    disp_box line  = disp_make_int(info->line);
+    disp_box col   = disp_make_int(info->column);
     return disp_make_cons(fname, disp_make_cons(line, disp_make_cons(col, NIL)));
 }
 
 // 内置函数：返回调用栈列表，每个元素是 (filename line column)
-static disp_val* trace_syscall(disp_val **args, int arg_count) {
+static disp_box trace_syscall(disp_box *args, int arg_count) {
     (void)args; (void)arg_count;
-    disp_val *trace = NIL;
+    disp_box trace = NIL;
     for (disp_info_t *p = disp_get_current_info(); p; p = p->next) {
         if (!p->filename) continue;
-        disp_val *frame = disp_make_cons(disp_make_string(p->filename),
+        disp_box frame = disp_make_cons(disp_make_string(p->filename),
                          disp_make_cons(disp_make_int(p->line),
                          disp_make_cons(disp_make_int(p->column), NIL)));
         trace = disp_make_cons(frame, trace);
@@ -77,11 +77,25 @@ static disp_val* trace_syscall(disp_val **args, int arg_count) {
     return trace;  // 栈顶在列表头部
 }
 
+static void* disp_gc_validate(void *ptr) {
+    uint64_t val = (uint64_t)ptr;
+    uint64_t tag = val >> 48;
+
+    // 情形1: 高16位为0 => 真实指针（来自精确根或已解码地址），直接返回
+    // 情形2: 高16位在 0x7FF8 ~ 0x7FFF 之间 => 装箱指针，返回低48位
+    // 情形3: 其他 => 数值或无效，返回 NULL
+    if (tag == 0 || ((tag & 0xFFF8) == 0x7FF8)) {
+        // 注意：情形2 需保证指针 tag 区域为 0x7FF8~0x7FFF，掩码 0xFFF8 恰好筛选出这些值
+        return (void*)(val & 0x0000FFFFFFFFFFFFULL);
+    }
+    return NULL;
+}
+
 /* ======================== Initialisation ======================== */
 void disp_init_globals() {
     gc_init();
+    gc_set_validate_hook(disp_gc_validate);
     disp_init_info();
-    disp_init_cons_pool();
     disp_init_name_table();
     disp_init_scope();
     disp_init_symbol();

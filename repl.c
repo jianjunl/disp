@@ -38,9 +38,9 @@ void disp_repl2() {
         printf("> ");
         fflush(stdout);
 
-        disp_val *expr = disp_read(stdin);
+        disp_box expr = disp_read(stdin);
         if (!expr) break;
-        disp_val *result = disp_eval(disp_global_scope, expr);
+        disp_box result = disp_eval(disp_global_scope, expr);
         disp_print(result);
         printf("\n");
         static int gc_counter = 0;
@@ -78,7 +78,7 @@ void disp_repl() {
         FILE *mem = fmemopen(line, strlen(line), "r");
         if (!mem) { free(line); continue; }
 
-        disp_val *expr = disp_read(mem);
+        disp_box expr = disp_read(mem);
         if (expr && T(expr) == DISP_SYMBOL && strcmp(S(expr), ":clh") == 0) {
             bestlineHistoryFree();
             printf("History cleared.\n");
@@ -94,7 +94,7 @@ void disp_repl() {
             continue;
         }
 
-        disp_val *result = disp_eval(disp_global_scope, expr);
+        disp_box result = disp_eval(disp_global_scope, expr);
         disp_print(result);
         printf("\n");
 

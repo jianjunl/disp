@@ -25,7 +25,7 @@ static int set_nonblocking(int fd) {
 }
 
 /* 创建 TCP socket */
-static disp_val* make_socket_syscall(disp_val **args, int count) {
+static disp_box make_socket_syscall(disp_box *args, int count) {
     (void)args; (void)count;
     int fd = socket(AF_INET, SOCK_STREAM, 0);
     if (fd == -1) {
@@ -34,13 +34,13 @@ static disp_val* make_socket_syscall(disp_val **args, int count) {
     }
     set_nonblocking(fd);
     //return disp_make_socket(fd);
-    disp_val *sock = disp_make_socket(fd);
+    disp_box sock = disp_make_socket(fd);
     DBG("Created socket object %p, fd=%d", (void*)sock, fd);
     return sock;
 }
 
 /* 绑定端口 */
-static disp_val* bind_socket_syscall(disp_val **args, int count) {
+static disp_box bind_socket_syscall(disp_box *args, int count) {
     if (count != 2 || T(args[0]) != DISP_SOCKET)
         ERET(NIL, "bind-socket: expects (socket port)");
     int fd = disp_get_socket_fd(args[0]);
@@ -65,7 +65,7 @@ static disp_val* bind_socket_syscall(disp_val **args, int count) {
 }
 
 /* 监听 */
-static disp_val* listen_socket_syscall(disp_val **args, int count) {
+static disp_box listen_socket_syscall(disp_box *args, int count) {
     if (count != 2 || T(args[0]) != DISP_SOCKET)
         ERET(NIL, "listen-socket: expects (socket backlog)");
     int fd = disp_get_socket_fd(args[0]);
@@ -83,7 +83,7 @@ static disp_val* listen_socket_syscall(disp_val **args, int count) {
 }
 
 /* 非阻塞 accept */
-static disp_val* accept_socket_syscall(disp_val **args, int count) {
+static disp_box accept_socket_syscall(disp_box *args, int count) {
     if (count != 1 || T(args[0]) != DISP_SOCKET)
         ERET(NIL, "accept-socket: expects a socket");
     int listen_fd = disp_get_socket_fd(args[0]);
@@ -99,12 +99,12 @@ static disp_val* accept_socket_syscall(disp_val **args, int count) {
             char addr_str[INET_ADDRSTRLEN + 10];
             snprintf(addr_str, sizeof(addr_str), "%s:%d",
                      inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
-            disp_val *sock_obj = disp_make_socket(client_fd);
-            disp_val *addr_obj = disp_make_string(addr_str);
+            disp_box sock_obj = disp_make_socket(client_fd);
+            disp_box addr_obj = disp_make_string(addr_str);
             return disp_make_cons(sock_obj, addr_obj);
         }
         if (errno == EAGAIN || errno == EWOULDBLOCK) {
-            disp_val *current = disp_get_current_coro();
+            disp_box current = disp_get_current_coro();
             event_loop_add_fd(listen_fd, current, EPOLLIN);
             scheduler_suspend();
             // 唤醒后重试
@@ -116,7 +116,7 @@ static disp_val* accept_socket_syscall(disp_val **args, int count) {
 }
 
 /* 非阻塞 connect */
-static disp_val* connect_socket_syscall(disp_val **args, int count) {
+static disp_box connect_socket_syscall(disp_box *args, int count) {
     if (count != 3 || T(args[0]) != DISP_SOCKET || T(args[1]) != DISP_STRING)
         ERET(NIL, "connect-socket: expects (socket host port)");
     int fd = disp_get_socket_fd(args[0]);
@@ -153,7 +153,7 @@ static disp_val* connect_socket_syscall(disp_val **args, int count) {
     if (ret == 0) return TRUE;  // 立即连接成功（例如本地连接）
 
     // 等待可写事件（表示连接完成或出错）
-    disp_val *current = disp_get_current_coro();
+    disp_box current = disp_get_current_coro();
     event_loop_add_fd(fd, current, EPOLLOUT);
     scheduler_suspend();
 
@@ -169,7 +169,7 @@ static disp_val* connect_socket_syscall(disp_val **args, int count) {
 }
 
 /* 非阻塞 recv */
-static disp_val* recv_socket_syscall(disp_val **args, int count) {
+static disp_box recv_socket_syscall(disp_box *args, int count) {
     if (count != 2 || T(args[0]) != DISP_SOCKET)
         ERET(NIL, "recv-socket: expects (socket size)");
     int fd = disp_get_socket_fd(args[0]);
@@ -186,7 +186,7 @@ static disp_val* recv_socket_syscall(disp_val **args, int count) {
         ssize_t n = recv(fd, buf, max_size, 0);
         if (n > 0) {
             buf[n] = '\0';
-            disp_val *res = disp_make_string(buf);
+            disp_box res = disp_make_string(buf);
             gc_free(buf);
             return res;
         }
@@ -195,7 +195,7 @@ static disp_val* recv_socket_syscall(disp_val **args, int count) {
             return NIL;  // 连接关闭
         }
         if (errno == EAGAIN || errno == EWOULDBLOCK) {
-            disp_val *current = disp_get_current_coro();
+            disp_box current = disp_get_current_coro();
             event_loop_add_fd(fd, current, EPOLLIN);
             scheduler_suspend();
             continue;
@@ -207,7 +207,7 @@ static disp_val* recv_socket_syscall(disp_val **args, int count) {
 }
 
 /* 非阻塞 send（完整发送） */
-static disp_val* send_socket_syscall(disp_val **args, int count) {
+static disp_box send_socket_syscall(disp_box *args, int count) {
     if (count != 2 || T(args[0]) != DISP_SOCKET || T(args[1]) != DISP_STRING)
         ERET(NIL, "send-socket: expects (socket data)");
     int fd = disp_get_socket_fd(args[0]);
@@ -221,7 +221,7 @@ static disp_val* send_socket_syscall(disp_val **args, int count) {
         ssize_t n = send(fd, data + sent, len - sent, 0);
         if (n == -1) {
             if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                disp_val *current = disp_get_current_coro();
+                disp_box current = disp_get_current_coro();
                 event_loop_add_fd(fd, current, EPOLLOUT);
                 scheduler_suspend();
                 continue;
@@ -235,7 +235,7 @@ static disp_val* send_socket_syscall(disp_val **args, int count) {
 }
 
 /* 关闭 socket */
-static disp_val* close_socket_syscall(disp_val **args, int count) {
+static disp_box close_socket_syscall(disp_box *args, int count) {
     if (count != 1 || T(args[0]) != DISP_SOCKET)
         ERET(NIL, "close-socket: expects a socket");
     int fd = disp_get_socket_fd(args[0]);

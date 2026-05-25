@@ -32,91 +32,91 @@ union disp_data {
     } socket_val;
 };
 
-char disp_get_byte(disp_val *v) {
+char disp_get_byte(disp_box v) {
     if (v->flag != DISP_BYTE) {
 	ERRO("disp_get_byte failed: %s\n", strerror (errno));
     }
     return v->data->byte_val;
 }
 
-short disp_get_short(disp_val *v) {
+short disp_get_short(disp_box v) {
     if (v->flag != DISP_SHORT) {
 	ERRO("disp_get_short failed: %s\n", strerror (errno));
     }
     return v->data->short_val;
 }
 
-int disp_get_int(disp_val *v) {
+int disp_get_int(disp_box v) {
     if (v->flag != DISP_INT) {
 	ERRO("disp_get_int failed: %s\n", strerror (errno));
     }
     return v->data->int_val;
 }
 
-long disp_get_long(disp_val *v) {
+long disp_get_long(disp_box v) {
     if (v->flag != DISP_LONG) {
 	ERRO("disp_get_long failed: %s\n", strerror (errno));
     }
     return v->data->long_val;
 }
 
-float disp_get_float(disp_val *v) {
+float disp_get_float(disp_box v) {
     if (v->flag != DISP_FLOAT) {
 	ERRO("disp_get_float failed: %s\n", strerror (errno));
     }
     return v->data->float_val;
 }
 
-double disp_get_double(disp_val *v) {
+double disp_get_double(disp_box v) {
     if (v->flag != DISP_DOUBLE) {
 	ERRO("disp_get_double failed: %s\n", strerror (errno));
     }
     return v->data->double_val;
 }
 
-disp_val* disp_make_byte(char c) {
-    disp_val *v = DISP_ALLOC(DISP_BYTE);
+disp_box disp_make_byte(char c) {
+    disp_box v = DISP_ALLOC(DISP_BYTE);
     v->data->byte_val = c;
     return v;
 }
 
-disp_val* disp_make_short(short i) {
-    disp_val *v = DISP_ALLOC(DISP_SHORT);
+disp_box disp_make_short(short i) {
+    disp_box v = DISP_ALLOC(DISP_SHORT);
     v->data->int_val = i;
     return v;
 }
 
-disp_val* disp_make_int(int i) {
-    disp_val *v = DISP_ALLOC(DISP_INT);
+disp_box disp_make_int(int i) {
+    disp_box v = DISP_ALLOC(DISP_INT);
     v->data->int_val = i;
     return v;
 }
 
-disp_val* disp_make_long(long l) {
-    disp_val *v = DISP_ALLOC(DISP_LONG);
+disp_box disp_make_long(long l) {
+    disp_box v = DISP_ALLOC(DISP_LONG);
     v->data->long_val = l;
     return v;
 }
 
-disp_val* disp_make_float(float f) {
-    disp_val *v = DISP_ALLOC(DISP_FLOAT);
+disp_box disp_make_float(float f) {
+    disp_box v = DISP_ALLOC(DISP_FLOAT);
     v->data->float_val = f;
     return v;
 }
 
-disp_val* disp_make_double(double d) {
-    disp_val *v = DISP_ALLOC(DISP_DOUBLE);
+disp_box disp_make_double(double d) {
+    disp_box v = DISP_ALLOC(DISP_DOUBLE);
     v->data->double_val = d;
     return v;
 }
 
-disp_val* disp_make_socket(int fd) {
-    disp_val *v = DISP_ALLOC(DISP_SOCKET);
+disp_box disp_make_socket(int fd) {
+    disp_box v = DISP_ALLOC(DISP_SOCKET);
     v->data->socket_val.fd = fd;
     return v;
 }
 
-int disp_get_socket_fd(disp_val *v) {
+int disp_get_socket_fd(disp_box v) {
     if (v->flag != DISP_SOCKET) return -1;
     return v->data->socket_val.fd;
 }

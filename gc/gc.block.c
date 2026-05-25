@@ -3,7 +3,7 @@
  *
  * Now includes a simple chain‑hash table that maps a user data
  * pointer directly to its gc_block_t header.  This eliminates the
- * previous O(n) list traversal from gc_find_block_by_ptr.
+ * previous O(n) list traversal from gc_find_block.
  *
  * Author: jianjunliu@126.com Generated with DeepSeek assistance
  * License: MIT
@@ -26,6 +26,19 @@ typedef struct gc_finalizer gc_finalizer_t;
 #endif // GC_FINALIZING
 
 #include "gc.block.h"
+
+/* ---------- 指针验证钩子 ---------- */
+static void* default_validate(void *ptr) {
+    return ptr;   // 默认行为：直接返回原指针
+}
+
+gc_validate_fn gc_validate_hook = default_validate;
+
+void gc_set_validate_hook(gc_validate_fn fn) {
+    if (fn) {
+        gc_validate_hook = fn;
+    }
+}
 
 /* ---------- Global block list (still maintained) ---------- */
 gc_block_t *gc_blocks = NULL;
@@ -88,22 +101,16 @@ void gc_hash_remove(void *ptr) {
 }
 
 /*
- * gc_find_block - locate a block header by its exact address.
- * Kept for future use; currently not used internally.
- */
-gc_block_t* gc_find_block(void *blk) {
-    for (gc_block_t *node = gc_blocks; node; node = node->next) {
-        if ((void *)node == blk) return node;
-    }
-    return NULL;
-}
-
-/*
- * gc_find_block_by_ptr - O(1) lookup of the block that contains a user pointer.
+ * gc_find_block - O(1) lookup of the block that contains a user pointer.
  * Uses the hash table exclusively – no list traversal needed.
  */
-gc_block_t* gc_find_block_by_ptr(void *ptr) {
+gc_block_t* gc_find_block(void *ptr) {
     if (!ptr) return NULL;
+
+    /* Apply user defined pointer validate hook (NaN boxing decode) */
+    ptr = gc_validate_hook(ptr);
+    if (!ptr) return NULL;
+
     unsigned int idx = gc_hash_ptr(ptr);
     pthread_rwlock_rdlock(&gc_hash_lock);
     gc_hash_entry_t *e = gc_hash_table[idx];

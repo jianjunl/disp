@@ -12,34 +12,34 @@
 #endif
 #include "../disp.h"
 
-extern void bind_arguments_to_scope(disp_scope_t *scope, disp_val *params, disp_val **args, int arg_count);
+extern void bind_arguments_to_scope(disp_scope_t *scope, disp_box params, disp_box *args, int arg_count);
 
 // ======================== dolist 循环 ========================
-static disp_val* dolist_builtin(disp_scope_t *scope, disp_val *expr) {
-    disp_val *rest = disp_cdr(expr);
+static disp_box dolist_builtin(disp_scope_t *scope, disp_box expr) {
+    disp_box rest = disp_cdr(expr);
     if (!rest || T(rest) != DISP_CONS)
         ERET(NIL, "dolist: missing binding list");
-    disp_val *binding = disp_car(rest);
+    disp_box binding = disp_car(rest);
     if (T(binding) != DISP_CONS)
         ERET(NIL, "dolist: malformed binding");
-    disp_val *var = disp_car(binding);
+    disp_box var = disp_car(binding);
     if (T(var) != DISP_SYMBOL)
         ERET(NIL, "dolist: variable must be a symbol");
     const char *var_name = disp_get_symbol_name(var);
-    disp_val *list_expr = disp_car(disp_cdr(binding));
+    disp_box list_expr = disp_car(disp_cdr(binding));
     if (!list_expr)
         ERET(NIL, "dolist: missing list");
-    disp_val *result_expr = NIL;
-    disp_val *rest_binding = disp_cdr(disp_cdr(binding));
+    disp_box result_expr = NIL;
+    disp_box rest_binding = disp_cdr(disp_cdr(binding));
     if (rest_binding && T(rest_binding) == DISP_CONS)
         result_expr = disp_car(rest_binding);
-    disp_val *body = disp_cdr(rest);
+    disp_box body = disp_cdr(rest);
 
     // 保护整个尾部
     gc_add_root(&rest);
 
     // 求值列表表达式（在当前作用域中）
-    disp_val *lst = disp_eval(scope, list_expr);
+    disp_box lst = disp_eval(scope, list_expr);
     if (!lst) {
         gc_remove_root(&rest);
         ERET(NIL, "dolist: list expression evaluation failed");
@@ -52,16 +52,16 @@ static disp_val* dolist_builtin(disp_scope_t *scope, disp_val *expr) {
     // 先绑定变量为 NIL（占位）
     disp_define_symbol(loop_scope, var_name, NIL, 0);
 
-    disp_val * volatile last_result = NIL;
+    disp_box  volatile last_result = NIL;
     volatile int normal_exit = 0;
     TRY {
         // 遍历列表
-        for (disp_val * volatile p = lst; p && T(p) == DISP_CONS; p = disp_cdr(p)) {
-            disp_val *elem = disp_car(p);
+        for (disp_box  volatile p = lst; p && T(p) == DISP_CONS; p = disp_cdr(p)) {
+            disp_box elem = disp_car(p);
             // 更新循环作用域中的变量绑定
             disp_define_symbol(loop_scope, var_name, elem, 0);
             // 执行 body（在 loop_scope 中）
-            disp_val *b = body;
+            disp_box b = body;
             while (b && T(b) == DISP_CONS) {
                 last_result = disp_eval(loop_scope, disp_car(b));
                 b = disp_cdr(b);

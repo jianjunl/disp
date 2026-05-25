@@ -14,13 +14,9 @@
 #endif
 #include "disp.h"
 
-GC_STRUCT_TI(disp_val,
-    GC_OFF(disp_val, data)
-);
-
 struct sym_entry {
     uint64_t id;
-    disp_val *symbol;
+    disp_box symbol;
     int final;
     struct sym_entry *next;
 };
@@ -57,14 +53,6 @@ static void scope_unlock(const disp_scope_t *scope) {
     else gc_pthread_mutex_unlock(disp_global_scope->lock);
 }
 
-/* ======================== 对象分配 ======================== */
-disp_val* disp_alloc(disp_flag_t flag, disp_data *data) {
-    disp_val *v = gc_typed_calloc(1, sizeof(struct disp_val), &struct_disp_val_ti);
-    v->data = data;
-    v->flag = flag;
-    return v;
-}
-
 disp_scope_t* disp_new_scope(disp_scope_t *parent) {
     if (!parent) parent = disp_global_scope;
     disp_scope_t *t = gc_typed_malloc(sizeof(struct disp_scope), &struct_disp_scope_ti);
@@ -83,7 +71,7 @@ disp_scope_t* disp_dup_scope(disp_scope_t *old) {
     return t;
 }
 
-disp_val* disp_find_symbol_by_id(const disp_scope_t *scope, uint64_t id) {
+disp_box disp_find_symbol_by_id(const disp_scope_t *scope, uint64_t id) {
     if (!scope) scope = disp_global_scope;
     while (scope) {
         scope_lock(scope);
@@ -102,7 +90,7 @@ disp_val* disp_find_symbol_by_id(const disp_scope_t *scope, uint64_t id) {
     return NULL;
 }
 
-disp_val* disp_define_symbol_by_id(const disp_scope_t *scope, uint64_t id, disp_val *value, int final) {
+disp_box disp_define_symbol_by_id(const disp_scope_t *scope, uint64_t id, disp_box value, int final) {
     if (!scope) scope = disp_global_scope;
     scope_lock(scope);
     unsigned int idx = id % SYM_TABLE_SIZE;
@@ -121,7 +109,7 @@ disp_val* disp_define_symbol_by_id(const disp_scope_t *scope, uint64_t id, disp_
     }
     
     // 创建新符号
-    disp_val *sym = disp_make_symbol(disp_get_name(id));  // 需要名称，但这里可能没有，我们可传入临时名
+    disp_box sym = disp_make_symbol(disp_get_name(id));  // 需要名称，但这里可能没有，我们可传入临时名
     // 更好的做法：提前通过 id 获取 name，但 id 已知时通常 name 已存在全局表
     // 若无法获取 name，可暂时传 "?"，但正常情况下不会发生
     // 所以我们需要一个从 id 到 name 的映射，即 disp_get_name(id)
@@ -138,7 +126,7 @@ disp_val* disp_define_symbol_by_id(const disp_scope_t *scope, uint64_t id, disp_
     return sym;
 }
 
-disp_val* disp_intern_symbol_by_id(const disp_scope_t *scope, uint64_t id) {
+disp_box disp_intern_symbol_by_id(const disp_scope_t *scope, uint64_t id) {
     if (!scope) scope = disp_global_scope;
     scope_lock(scope);
     unsigned int idx = id % SYM_TABLE_SIZE;
@@ -153,7 +141,7 @@ disp_val* disp_intern_symbol_by_id(const disp_scope_t *scope, uint64_t id) {
     
     // 未找到，创建新符号
     const char *name = disp_get_name(id);
-    disp_val *sym = disp_make_symbol(name ? name : "?");
+    disp_box sym = disp_make_symbol(name ? name : "?");
     disp_set_symbol_value(sym, NIL);
     
     struct sym_entry *new_entry = gc_typed_malloc(sizeof(struct sym_entry), &struct_sym_entry_ti);
@@ -167,17 +155,17 @@ disp_val* disp_intern_symbol_by_id(const disp_scope_t *scope, uint64_t id) {
     return sym;
 }
 
-disp_val* disp_find_symbol(const disp_scope_t *scope, const char *name) {
+disp_box disp_find_symbol(const disp_scope_t *scope, const char *name) {
     uint64_t id = disp_get_id(name);
     return disp_find_symbol_by_id(scope, id);
 }
 
-disp_val* disp_define_symbol(const disp_scope_t *scope, const char *name, disp_val *value, int final) {
+disp_box disp_define_symbol(const disp_scope_t *scope, const char *name, disp_box value, int final) {
     uint64_t id = disp_get_id(name);
     return disp_define_symbol_by_id(scope, id, value, final);
 }
 
-disp_val* disp_intern_symbol(const disp_scope_t *scope, const char *name) {
+disp_box disp_intern_symbol(const disp_scope_t *scope, const char *name) {
     uint64_t id = disp_get_id(name);
     return disp_intern_symbol_by_id(scope, id);
 }

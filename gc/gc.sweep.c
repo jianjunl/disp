@@ -28,6 +28,18 @@ typedef struct gc_finalizer gc_finalizer_t;
 
 extern void gc_os_free(void *ptr, size_t size_hint);
 
+static gc_external_sweep_fn *gc_sweep_callbacks = NULL;
+static size_t gc_sweep_callback_count = 0;
+static pthread_mutex_t gc_external_lock = PTHREAD_MUTEX_INITIALIZER;
+
+void gc_register_external_sweep(gc_external_sweep_fn fn) {
+    if (!fn) return;
+    pthread_mutex_lock(&gc_external_lock);
+    gc_sweep_callbacks = realloc(gc_sweep_callbacks, (gc_sweep_callback_count+1)*sizeof(gc_external_sweep_fn));
+    gc_sweep_callbacks[gc_sweep_callback_count++] = fn;
+    pthread_mutex_unlock(&gc_external_lock);
+}
+
 extern gc_block_t *gc_blocks;
 
 extern size_t      gc_allocated;
@@ -64,7 +76,7 @@ struct gc_finalizer {
 
 gc_weak_ref_t* gc_make_weak(void *obj, void (*on_clear)(void*, void*), void *user_data) {
     if (!obj) return NULL;
-    gc_block_t *blk = gc_find_block_by_ptr(obj);
+    gc_block_t *blk = gc_find_block(obj);
     if (!blk) return NULL;
     gc_weak_ref_t *ref = malloc(sizeof(gc_weak_ref_t));
     if (!ref) return NULL;
@@ -132,7 +144,7 @@ static void gc_clear_weak_refs_for_block(gc_block_t *blk) {
 // ---------- Finalizer API ---------- //
 void gc_register_finalizer(void *obj, void (*finalizer)(void*, void*), void *user_data) {
     if (!obj || !finalizer) return;
-    gc_block_t *blk = gc_find_block_by_ptr(obj);
+    gc_block_t *blk = gc_find_block(obj);
     if (!blk) return;
     gc_finalizer_t *fin = malloc(sizeof(struct gc_finalizer));
     if (!fin) return;
@@ -195,6 +207,10 @@ void gc_sweep(void) {
 #if GC_INCREMENTAL
     gc_gray_blocks = NULL;
 #endif // GC_INCREMENTAL
+pthread_mutex_lock(&gc_external_lock);
+for (size_t i = 0; i < gc_sweep_callback_count; i++)
+    gc_sweep_callbacks[i]();
+pthread_mutex_unlock(&gc_external_lock);
 }
 
 #else // GC_FINALIZING
@@ -233,5 +249,9 @@ void gc_sweep(void) {
 #if GC_INCREMENTAL
     gc_gray_blocks = NULL;
 #endif // GC_INCREMENTAL
+pthread_mutex_lock(&gc_external_lock);
+for (size_t i = 0; i < gc_sweep_callback_count; i++)
+    gc_sweep_callbacks[i]();
+pthread_mutex_unlock(&gc_external_lock);
 }
 #endif // GC_FINALIZING

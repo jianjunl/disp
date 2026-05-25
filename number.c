@@ -199,7 +199,7 @@ bool disp_is_integer_literal(const char *s) {
     return *p == '\0';
 }
 
-disp_val* disp_parse_number(const char *s) {
+disp_box disp_parse_number(const char *s) {
     if (!s || *s == '\0') return NULL;
 
     const char *p = s;

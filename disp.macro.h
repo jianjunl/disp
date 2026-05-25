@@ -13,7 +13,7 @@
 
 #ifndef URET
 #define URET(R) do { \
-    disp_val *_r = R; \
+    disp_box _r = R; \
     return _r; \
 } while(0);
 #endif

@@ -14,15 +14,15 @@
 
 /* ======================== Printer ======================== */
 
-void disp_print(disp_val *v) {
+void disp_print(disp_box v) {
     disp_fprint(stdout, v);
 }
 
-void disp_write(disp_val *v) {
+void disp_write(disp_box v) {
     disp_fwrite(stdout, v);
 }
 
-char* disp_string(disp_val *v) {
+char* disp_string(disp_box v) {
     char *buf = NULL;
     size_t size = 0;
     FILE *mem = open_memstream(&buf, &size);
@@ -34,7 +34,7 @@ char* disp_string(disp_val *v) {
     return s;
 }
 
-char* disp_str(disp_val *v) {
+char* disp_str(disp_box v) {
     char *buf = NULL;
     size_t size = 0;
     FILE *mem = open_memstream(&buf, &size);
@@ -46,7 +46,7 @@ char* disp_str(disp_val *v) {
     return s;
 }
 
-void disp_fprint(FILE *out, disp_val *v) {
+void disp_fprint(FILE *out, disp_box v) {
     if (!v) {
         fprintf(out, "nil");
         return;
@@ -75,7 +75,7 @@ void disp_fprint(FILE *out, disp_val *v) {
         case DISP_CONS:
             fputc('(', out);
             disp_fprint(out, disp_car(v));
-            disp_val *rest = disp_cdr(v);
+            disp_box rest = disp_cdr(v);
             while (rest && T(rest) == DISP_CONS) {
                 fputc(' ', out);
                 disp_fprint(out, disp_car(rest));
@@ -105,7 +105,7 @@ void disp_fprint(FILE *out, disp_val *v) {
     }
 }
 
-void disp_fwrite(FILE *out, disp_val *v) {
+void disp_fwrite(FILE *out, disp_box v) {
     if (!v) {
         fprintf(out, "nil");
         return;
@@ -134,7 +134,7 @@ void disp_fwrite(FILE *out, disp_val *v) {
         case DISP_CONS:
             fputc('(', out);
             disp_fwrite(out, disp_car(v));
-            disp_val *rest = disp_cdr(v);
+            disp_box rest = disp_cdr(v);
             while (rest && T(rest) == DISP_CONS) {
                 fputc(' ', out);
                 disp_fwrite(out, disp_car(rest));

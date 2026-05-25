@@ -12,37 +12,37 @@
 #endif
 #include "../disp.h"
 
-extern void bind_arguments_to_scope(disp_scope_t *scope, disp_val *params, disp_val **args, int arg_count);
+extern void bind_arguments_to_scope(disp_scope_t *scope, disp_box params, disp_box *args, int arg_count);
 
 // ======================== do 循环 ========================
 // 语法: (do ((var init step) ...) (test result ...) body ...)
-static disp_val* do_builtin(disp_scope_t *scope, disp_val *expr) {
-    disp_val *rest = disp_cdr(expr);
+static disp_box do_builtin(disp_scope_t *scope, disp_box expr) {
+    disp_box rest = disp_cdr(expr);
     if (!rest || T(rest) != DISP_CONS)
         ERET(NIL, "do: missing variable list");
-    disp_val *var_specs = disp_car(rest);   // ((var init step) ...)
+    disp_box var_specs = disp_car(rest);   // ((var init step) ...)
     rest = disp_cdr(rest);
     if (!rest || T(rest) != DISP_CONS)
         ERET(NIL, "do: missing termination clause");
-    disp_val *term_clause = disp_car(rest); // (test result ...)
-    disp_val *body = disp_cdr(rest);        // body forms
+    disp_box term_clause = disp_car(rest); // (test result ...)
+    disp_box body = disp_cdr(rest);        // body forms
 
     // 保护整个尾部（包含 var_specs, term_clause, body）
     gc_add_root(&rest);
 
     int var_count = 0;
-    for (disp_val *s = var_specs; s && T(s) == DISP_CONS; s = disp_cdr(s))
+    for (disp_box s = var_specs; s && T(s) == DISP_CONS; s = disp_cdr(s))
         var_count++;
 
     // 无变量情况：直接在当前作用域中循环
     if (var_count == 0) {
-        disp_val *result = NIL;
+        disp_box result = NIL;
         volatile int normal_exit = 0;
         TRY {
             while (1) {
-                disp_val *test = disp_eval(scope, disp_car(term_clause));
+                disp_box test = disp_eval(scope, disp_car(term_clause));
                 if (test != NIL) {
-                    disp_val *results = disp_cdr(term_clause);
+                    disp_box results = disp_cdr(term_clause);
                     result = NIL;
                     while (results && T(results) == DISP_CONS) {
                         result = disp_eval(scope, disp_car(results));
@@ -50,7 +50,7 @@ static disp_val* do_builtin(disp_scope_t *scope, disp_val *expr) {
                     }
                     break;
                 }
-                disp_val *b = body;
+                disp_box b = body;
                 while (b && T(b) == DISP_CONS) {
                     disp_eval(scope, disp_car(b));
                     b = disp_cdr(b);
@@ -71,15 +71,15 @@ static disp_val* do_builtin(disp_scope_t *scope, disp_val *expr) {
 
     // 收集变量信息：符号、初值表达式、步进表达式
     char **var_names = gc_typed_malloc(var_count * sizeof(char*), &GC_TYPE_PTR_ARRAY);
-    disp_val **init_exprs = gc_typed_malloc(var_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
-    disp_val **step_exprs = gc_typed_malloc(var_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
+    disp_box *init_exprs = gc_typed_malloc(var_count * sizeof(disp_box), &GC_TYPE_PTR_ARRAY);
+    disp_box *step_exprs = gc_typed_malloc(var_count * sizeof(disp_box), &GC_TYPE_PTR_ARRAY);
     gc_add_root(&var_names);
     gc_add_root(&init_exprs);
     gc_add_root(&step_exprs);
 
     int i = 0;
-    for (disp_val *s = var_specs; s && T(s) == DISP_CONS; s = disp_cdr(s), i++) {
-        disp_val *spec = disp_car(s);
+    for (disp_box s = var_specs; s && T(s) == DISP_CONS; s = disp_cdr(s), i++) {
+        disp_box spec = disp_car(s);
         if (T(spec) != DISP_CONS) {
             gc_remove_root(&step_exprs);
             gc_remove_root(&init_exprs);
@@ -88,7 +88,7 @@ static disp_val* do_builtin(disp_scope_t *scope, disp_val *expr) {
             gc_free(var_names); gc_free(init_exprs); gc_free(step_exprs);
             ERET(NIL, "do: malformed variable spec");
         }
-        disp_val *var = disp_car(spec);
+        disp_box var = disp_car(spec);
         if (T(var) != DISP_SYMBOL) {
             gc_remove_root(&step_exprs);
             gc_remove_root(&init_exprs);
@@ -98,7 +98,7 @@ static disp_val* do_builtin(disp_scope_t *scope, disp_val *expr) {
             ERET(NIL, "do: variable name must be a symbol");
         }
         var_names[i] = gc_strdup(disp_get_symbol_name(var));
-        disp_val *init_part = disp_cdr(spec);
+        disp_box init_part = disp_cdr(spec);
         if (!init_part || T(init_part) != DISP_CONS) {
             gc_remove_root(&step_exprs);
             gc_remove_root(&init_exprs);
@@ -108,7 +108,7 @@ static disp_val* do_builtin(disp_scope_t *scope, disp_val *expr) {
             ERET(NIL, "do: missing init expression");
         }
         init_exprs[i] = disp_car(init_part);
-        disp_val *step_part = disp_cdr(init_part);
+        disp_box step_part = disp_cdr(init_part);
         if (step_part && T(step_part) == DISP_CONS)
             step_exprs[i] = disp_car(step_part);
         else
@@ -120,7 +120,7 @@ static disp_val* do_builtin(disp_scope_t *scope, disp_val *expr) {
     gc_add_root(&loop_scope);
 
     // 计算所有初值（在当前 scope 中求值）
-    disp_val **init_vals = gc_typed_malloc(var_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
+    disp_box *init_vals = gc_typed_malloc(var_count * sizeof(disp_box), &GC_TYPE_PTR_ARRAY);
     gc_add_root(&init_vals);
     for (int j = 0; j < var_count; j++) {
         init_vals[j] = disp_eval(scope, init_exprs[j]);
@@ -128,21 +128,21 @@ static disp_val* do_builtin(disp_scope_t *scope, disp_val *expr) {
     }
 
     // 将初值一次性绑定到 loop_scope（构造参数列表）
-    disp_val *params = NIL;
+    disp_box params = NIL;
     for (int j = var_count - 1; j >= 0; j--)
         params = disp_make_cons(disp_intern_symbol(loop_scope, var_names[j]), params);
     bind_arguments_to_scope(loop_scope, params, init_vals, var_count);
 
     // 主循环（在 loop_scope 中进行）
-    disp_val * volatile result = NIL;
+    disp_box  volatile result = NIL;
     volatile int normal_exit = 0;
     TRY {
         while (1) {
             // 在当前循环作用域中求值终止测试
-            disp_val *test = disp_eval(loop_scope, disp_car(term_clause));
+            disp_box test = disp_eval(loop_scope, disp_car(term_clause));
             if (test != NIL) {
                 // 求值结果表达式（仍在 loop_scope 中）
-                disp_val *results = disp_cdr(term_clause);
+                disp_box results = disp_cdr(term_clause);
                 result = NIL;
                 while (results && T(results) == DISP_CONS) {
                     result = disp_eval(loop_scope, disp_car(results));
@@ -151,20 +151,20 @@ static disp_val* do_builtin(disp_scope_t *scope, disp_val *expr) {
                 break;
             }
             // 执行 body
-            disp_val *b = body;
+            disp_box b = body;
             while (b && T(b) == DISP_CONS) {
                 disp_eval(loop_scope, disp_car(b));
                 b = disp_cdr(b);
             }
             // 更新变量（并行更新：先求值所有新值，再赋值）
-            disp_val **new_vals = gc_typed_malloc(var_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
+            disp_box *new_vals = gc_typed_malloc(var_count * sizeof(disp_box), &GC_TYPE_PTR_ARRAY);
             gc_add_root(&new_vals);
             for (int j = 0; j < var_count; j++) {
                 if (step_exprs[j]) {
                     new_vals[j] = disp_eval(loop_scope, step_exprs[j]);
                 } else {
                     // 无步进，保持当前值（从作用域中取出）
-                    disp_val *sym = disp_find_symbol(loop_scope, var_names[j]);
+                    disp_box sym = disp_find_symbol(loop_scope, var_names[j]);
                     new_vals[j] = sym ? disp_get_symbol_value(sym) : NIL;
                 }
                 gc_add_root(&new_vals[j]);

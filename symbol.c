@@ -14,23 +14,34 @@
 #endif
 #include "disp.h"
 
+GC_STRUCT_TI(disp_val,
+    GC_OFF(disp_val, data)
+);
+
+/* ======================== 对象分配 ======================== */
+
+disp_box disp_alloc(disp_flag_t flag, disp_data *data) {
+    disp_box v = gc_typed_calloc(1, sizeof(struct disp_val), &struct_disp_val_ti);
+    v->data = data;
+    v->flag = flag;
+    return v;
+}
+
 union disp_data {
     struct {
-//        char *name;
         uint64_t id;            // 改为 ID，不再存储字符串指针
-        disp_val *value;
+        disp_box value;
     } symbol;
 };
 
 GC_UNION_TI(disp_data,
-//    GC_OFF(disp_data, symbol.name),
     GC_OFF(disp_data, symbol.value)
 );
 
 /* ======================== 符号表 ======================== */
 #define SYM_TABLE_SIZE 1024
 
-void disp_set_symbol_value(disp_val *sym, disp_val *value) {
+void disp_set_symbol_value(disp_box sym, disp_box value) {
     if (!sym || T(sym) != DISP_SYMBOL) {
         ERRO("disp_set_symbol_value: not a symbol");
         return;
@@ -38,8 +49,8 @@ void disp_set_symbol_value(disp_val *sym, disp_val *value) {
     GC_ASSIGN_PTR(sym->data->symbol.value, value);
 }
 
-disp_val* disp_make_symbol(const char *name) {
-    disp_val *v = DISP_ALLOC_TI(DISP_SYMBOL);
+disp_box disp_make_symbol(const char *name) {
+    disp_box v = DISP_ALLOC_TI(DISP_SYMBOL);
     if (!v) return NULL;
     
     uint64_t id = disp_get_id(name);   // 获取或创建 ID
@@ -49,7 +60,7 @@ disp_val* disp_make_symbol(const char *name) {
     return v;
 }
 
-char* disp_get_symbol_name(disp_val *v) {
+char* disp_get_symbol_name(disp_box v) {
     if (!v || v->flag != DISP_SYMBOL) {
         ERRO("disp_get_symbol_name failed");
         return NULL;
@@ -58,7 +69,7 @@ char* disp_get_symbol_name(disp_val *v) {
     return (char*)disp_get_name(id);   // 通过 ID 反查字符串
 }
 
-disp_val* disp_get_symbol_value(disp_val *v) {
+disp_box disp_get_symbol_value(disp_box v) {
     if (!v || v->flag != DISP_SYMBOL) {
         ERRO("disp_get_symbol_value failed");
     }

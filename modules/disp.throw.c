@@ -23,9 +23,9 @@
  * ------------------------------------------------------------------------- */
 typedef struct frame {
     int type;
-    disp_val *tag;          // catch 的标签 / block 的名字 (符号)
-    disp_val *result;       // 传递给 throw / return-from 的值
-    disp_val *cleanup;      // unwind-protect 的清理表达式列表
+    disp_box tag;          // catch 的标签 / block 的名字 (符号)
+    disp_box result;       // 传递给 throw / return-from 的值
+    disp_box cleanup;      // unwind-protect 的清理表达式列表
     struct frame *prev;
 } frame_t;
 
@@ -46,10 +46,10 @@ _Thread_local int throw_code;                            // 配合 THROW 的返�
  * throw 系统调用
  * ------------------------------------------------------------------------- */
 __attribute__((optimize("O0")))
-static disp_val* throw_syscall(disp_val **args, int count) {
+static disp_box throw_syscall(disp_box *args, int count) {
     if (count < 1) ERET(NIL, "throw expects at least one argument");
-    disp_val *tag = args[0];
-    disp_val *value = (count >= 2) ? args[1] : NIL;
+    disp_box tag = args[0];
+    disp_box value = (count >= 2) ? args[1] : NIL;
 
     /* 查找匹配的 catch 帧 */
     for (frame_t *f = current_frame; f; f = f->prev) {
@@ -66,17 +66,17 @@ static disp_val* throw_syscall(disp_val **args, int count) {
 /* -------------------------------------------------------------------------
  * error 系统调用 (标签固定为 'error)
  * ------------------------------------------------------------------------- */
-static disp_val* error_syscall(disp_val **args, int count) {
+static disp_box error_syscall(disp_box *args, int count) {
     if (count < 1) ERET(NIL, "error: expects at least one argument");
 
-    disp_val *throw_args[2];
+    disp_box throw_args[2];
     throw_args[0] = disp_intern_symbol(NULL, "error");
 
     if (count == 1) {
         throw_args[1] = args[0];
     } else {
         /* 多个参数组成列表作为错误数据 */
-        disp_val *lst = NIL;
+        disp_box lst = NIL;
         for (int i = count - 1; i >= 0; i--) {
             lst = disp_make_cons(args[i], lst);
         }
@@ -90,11 +90,11 @@ static disp_val* error_syscall(disp_val **args, int count) {
  * catch 内置特殊形式
  * ------------------------------------------------------------------------- */
 __attribute__((optimize("O0")))
-static disp_val* catch_builtin(disp_scope_t *scope, disp_val *expr) {
-    disp_val *rest = disp_cdr(expr);
+static disp_box catch_builtin(disp_scope_t *scope, disp_box expr) {
+    disp_box rest = disp_cdr(expr);
     if (!rest || T(rest) != DISP_CONS) ERET(NIL, "catch: missing tag");
-    disp_val *tag = disp_eval(scope, disp_car(rest));
-    disp_val *body = disp_cdr(rest);
+    disp_box tag = disp_eval(scope, disp_car(rest));
+    disp_box body = disp_cdr(rest);
     if (!body) ERET(NIL, "catch: missing body");
 
     frame_t frame;
@@ -106,7 +106,7 @@ static disp_val* catch_builtin(disp_scope_t *scope, disp_val *expr) {
     current_frame = &frame;
 
     TRY {
-        disp_val *last = NIL;
+        disp_box last = NIL;
         while (body && T(body) == DISP_CONS) {
             last = disp_eval(scope, disp_car(body));
             body = disp_cdr(body);
@@ -117,7 +117,7 @@ static disp_val* catch_builtin(disp_scope_t *scope, disp_val *expr) {
     CATCH {
         /* 如果是针对本帧的 throw 异常，则由本帧处理 */
         if (THROWN == 1 && current_frame == &frame && &frame == target_frame) {
-            disp_val *thrown = frame.result;
+            disp_box thrown = frame.result;
             current_frame = frame.prev;
             target_frame = NULL;   // 清理标志
             return thrown;
@@ -134,17 +134,17 @@ static disp_val* catch_builtin(disp_scope_t *scope, disp_val *expr) {
  * block 内置特殊形式
  * ------------------------------------------------------------------------- */
 __attribute__((optimize("O0")))
-static disp_val* block_builtin(disp_scope_t *scope, disp_val *expr) {
-    disp_val *rest = disp_cdr(expr);
+static disp_box block_builtin(disp_scope_t *scope, disp_box expr) {
+    disp_box rest = disp_cdr(expr);
     if (!rest || T(rest) != DISP_CONS) ERET(NIL, "block: missing name");
-    disp_val *name = disp_car(rest);
+    disp_box name = disp_car(rest);
     /* 把符号 "nil" 转换为常量 NIL */
     if (T(name) == DISP_SYMBOL && strcmp(disp_get_symbol_name(name), "nil") == 0) {
         name = NIL;
     }
     if (T(name) != DISP_SYMBOL && name != NIL)
         ERET(NIL, "block: name must be a symbol or nil");
-    disp_val *body = disp_cdr(rest);
+    disp_box body = disp_cdr(rest);
     if (!body) ERET(NIL, "block: missing body");
 
     frame_t frame;
@@ -156,7 +156,7 @@ static disp_val* block_builtin(disp_scope_t *scope, disp_val *expr) {
     current_frame = &frame;
 
     TRY {
-        disp_val *last = NIL;
+        disp_box last = NIL;
         while (body && T(body) == DISP_CONS) {
             last = disp_eval(scope, disp_car(body));
             body = disp_cdr(body);
@@ -167,7 +167,7 @@ static disp_val* block_builtin(disp_scope_t *scope, disp_val *expr) {
     CATCH {
         /* 如果是针对本帧的 return-from / return 异常 */
         if (THROWN == 2 && current_frame == &frame && &frame == target_frame) {
-            disp_val *returned = frame.result;
+            disp_box returned = frame.result;
             current_frame = frame.prev;
             target_frame = NULL;   // 清理标志
             return returned;
@@ -183,11 +183,11 @@ static disp_val* block_builtin(disp_scope_t *scope, disp_val *expr) {
 /* -------------------------------------------------------------------------
  * unwind-protect 内置特殊形式
  * ------------------------------------------------------------------------- */
-static disp_val* unwind_protect_builtin(disp_scope_t *scope, disp_val *expr) {
-    disp_val *rest = disp_cdr(expr);
+static disp_box unwind_protect_builtin(disp_scope_t *scope, disp_box expr) {
+    disp_box rest = disp_cdr(expr);
     if (!rest || T(rest) != DISP_CONS) ERET(NIL, "unwind-protect: missing protected form");
-    disp_val *protected_form = disp_car(rest);
-    disp_val *cleanup_forms = disp_cdr(rest);
+    disp_box protected_form = disp_car(rest);
+    disp_box cleanup_forms = disp_cdr(rest);
     if (!cleanup_forms) ERET(NIL, "unwind-protect: missing cleanup forms");
 
     frame_t frame;
@@ -199,9 +199,9 @@ static disp_val* unwind_protect_builtin(disp_scope_t *scope, disp_val *expr) {
     current_frame = &frame;
 
     TRY {
-        disp_val *result = disp_eval(scope, protected_form);
+        disp_box result = disp_eval(scope, protected_form);
         /* 正常路径：先执行清理，再弹帧并返回 */
-        disp_val *cl = cleanup_forms;
+        disp_box cl = cleanup_forms;
         while (cl && T(cl) == DISP_CONS) {
             disp_eval(scope, disp_car(cl));
             cl = disp_cdr(cl);
@@ -211,7 +211,7 @@ static disp_val* unwind_protect_builtin(disp_scope_t *scope, disp_val *expr) {
     }
     CATCH {
         /* 异常路径：执行清理，然后继续传播 */
-        disp_val *cl = frame.cleanup;
+        disp_box cl = frame.cleanup;
         while (cl && T(cl) == DISP_CONS) {
             disp_eval(scope, disp_car(cl));
             cl = disp_cdr(cl);
@@ -224,16 +224,16 @@ static disp_val* unwind_protect_builtin(disp_scope_t *scope, disp_val *expr) {
 }
 
 __attribute__((optimize("O0")))
-static disp_val* return_from_builtin(disp_scope_t *scope, disp_val *expr) {
-    disp_val *rest = disp_cdr(expr);
+static disp_box return_from_builtin(disp_scope_t *scope, disp_box expr) {
+    disp_box rest = disp_cdr(expr);
     if (!rest || T(rest) != DISP_CONS)
         ERET(NIL, "return-from: missing name");
-    disp_val *name = disp_car(rest);   // 不经求值
+    disp_box name = disp_car(rest);   // 不经求值
     if (T(name) != DISP_SYMBOL)
         ERET(NIL, "return-from: name must be a symbol");
 
-    disp_val *value_rest = disp_cdr(rest);
-    disp_val *value = (value_rest && T(value_rest) == DISP_CONS)
+    disp_box value_rest = disp_cdr(rest);
+    disp_box value = (value_rest && T(value_rest) == DISP_CONS)
                       ? disp_eval(scope, disp_car(value_rest))
                       : NIL;
 
@@ -253,9 +253,9 @@ static disp_val* return_from_builtin(disp_scope_t *scope, disp_val *expr) {
 }
 
 __attribute__((optimize("O0")))
-static disp_val* return_builtin(disp_scope_t *scope, disp_val *expr) {
-    disp_val *rest = disp_cdr(expr);
-    disp_val *value = (rest && T(rest) == DISP_CONS)
+static disp_box return_builtin(disp_scope_t *scope, disp_box expr) {
+    disp_box rest = disp_cdr(expr);
+    disp_box value = (rest && T(rest) == DISP_CONS)
                       ? disp_eval(scope, disp_car(rest))
                       : NIL;
 

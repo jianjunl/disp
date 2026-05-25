@@ -12,34 +12,34 @@
 #endif
 #include "../disp.h"
 
-extern void bind_arguments_to_scope(disp_scope_t *scope, disp_val *params, disp_val **args, int arg_count);
+extern void bind_arguments_to_scope(disp_scope_t *scope, disp_box params, disp_box *args, int arg_count);
 
 // ======================== dotimes 循环 ========================
-static disp_val* dotimes_builtin(disp_scope_t *scope, disp_val *expr) {
-    disp_val *rest = disp_cdr(expr);
+static disp_box dotimes_builtin(disp_scope_t *scope, disp_box expr) {
+    disp_box rest = disp_cdr(expr);
     if (!rest || T(rest) != DISP_CONS)
         ERET(NIL, "dotimes: missing binding list");
-    disp_val *binding = disp_car(rest);
+    disp_box binding = disp_car(rest);
     if (T(binding) != DISP_CONS)
         ERET(NIL, "dotimes: malformed binding");
-    disp_val *var = disp_car(binding);
+    disp_box var = disp_car(binding);
     if (T(var) != DISP_SYMBOL)
         ERET(NIL, "dotimes: variable must be a symbol");
     const char *var_name = disp_get_symbol_name(var);
-    disp_val *count_expr = disp_car(disp_cdr(binding));
+    disp_box count_expr = disp_car(disp_cdr(binding));
     if (!count_expr)
         ERET(NIL, "dotimes: missing count");
-    disp_val *result_expr = NIL;
-    disp_val *rest_binding = disp_cdr(disp_cdr(binding));
+    disp_box result_expr = NIL;
+    disp_box rest_binding = disp_cdr(disp_cdr(binding));
     if (rest_binding && T(rest_binding) == DISP_CONS)
         result_expr = disp_car(rest_binding);
-    disp_val *body = disp_cdr(rest);
+    disp_box body = disp_cdr(rest);
 
     // 保护尾部
     gc_add_root(&rest);
 
     // 求值 count（在当前作用域中）
-    disp_val *count_val = disp_eval(scope, count_expr);
+    disp_box count_val = disp_eval(scope, count_expr);
     long limit;
     disp_flag_t ct = T(count_val);
     if (ct == DISP_INT) {
@@ -58,7 +58,7 @@ static disp_val* dotimes_builtin(disp_scope_t *scope, disp_val *expr) {
     // 先绑定变量为 NIL（占位）
     disp_define_symbol(loop_scope, var_name, NIL, 0);
 
-    disp_val * volatile last_result = NIL;
+    disp_box  volatile last_result = NIL;
     volatile int normal_exit = 0;
     TRY {
         if (limit <= 0) {
@@ -69,11 +69,11 @@ static disp_val* dotimes_builtin(disp_scope_t *scope, disp_val *expr) {
                 last_result = NIL;
         } else {
             for (long i = 0; i < limit; i++) {
-                disp_val *i_val = disp_make_long(i);
+                disp_box i_val = disp_make_long(i);
                 // 更新循环作用域中的变量绑定
                 disp_define_symbol(loop_scope, var_name, i_val, 0);
                 // 执行 body
-                disp_val *b = body;
+                disp_box b = body;
                 while (b && T(b) == DISP_CONS) {
                     last_result = disp_eval(loop_scope, disp_car(b));
                     b = disp_cdr(b);

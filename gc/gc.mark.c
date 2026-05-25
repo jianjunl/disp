@@ -64,6 +64,18 @@ extern pthread_mutex_t gc_roots_lock;
 extern void* gc_os_alloc(size_t size);
 extern void gc_os_free(void *ptr, size_t size_hint);
 
+static gc_external_mark_fn *gc_mark_callbacks = NULL;
+static size_t gc_mark_callback_count = 0;
+static pthread_mutex_t gc_external_lock = PTHREAD_MUTEX_INITIALIZER;
+
+void gc_register_external_mark(gc_external_mark_fn fn) {
+    if (!fn) return;
+    pthread_mutex_lock(&gc_external_lock);
+    gc_mark_callbacks = realloc(gc_mark_callbacks, (gc_mark_callback_count+1)*sizeof(gc_external_mark_fn));
+    gc_mark_callbacks[gc_mark_callback_count++] = fn;
+    pthread_mutex_unlock(&gc_external_lock);
+}
+
 #if GC_MULTITHREAD 
 // ---------- Stop-The-World synchronizing ---------- //
 extern _Thread_local gc_thread_info_t *gc_tls_self_info;
@@ -96,8 +108,12 @@ static void gc_scan_region(void *start, void *end) {
         uintptr_t val = *p;
         if (val < 0x1000) continue;          // null or very low address
         void *candidate = (void*)val;
-        /* Single traversal: gc_find_block_by_ptr returns NULL if not managed */
-        gc_block_t *blk = gc_find_block_by_ptr(candidate);
+pthread_mutex_lock(&gc_external_lock);
+for (size_t i = 0; i < gc_mark_callback_count; i++)
+    gc_mark_callbacks[i](candidate);
+pthread_mutex_unlock(&gc_external_lock);
+        /* Single traversal: gc_find_block returns NULL if not managed */
+        gc_block_t *blk = gc_find_block(candidate);
         if (blk && !blk->marked) {
             blk->marked = true;
             gc_scan_block_content(blk);
@@ -118,7 +134,11 @@ static void gc_scan_block_content(gc_block_t *blk) {
                 uintptr_t val = *p;
                 if (val < 0x1000) continue;
                 void *candidate = (void*)val;
-                gc_block_t *target = gc_find_block_by_ptr(candidate);
+pthread_mutex_lock(&gc_external_lock);
+for (size_t i = 0; i < gc_mark_callback_count; i++)
+    gc_mark_callbacks[i](candidate);
+pthread_mutex_unlock(&gc_external_lock);
+                gc_block_t *target = gc_find_block(candidate);
                 if (target && !target->marked) {
                     target->marked = true;
                     gc_scan_block_content(target);   // recursion
@@ -137,7 +157,11 @@ static void gc_scan_block_content(gc_block_t *blk) {
                     void **pp = (void**)(elem + off);
                     void *cand = *pp;
                     if (!cand) continue;
-                    gc_block_t *target = gc_find_block_by_ptr(cand);
+pthread_mutex_lock(&gc_external_lock);
+for (size_t i = 0; i < gc_mark_callback_count; i++)
+    gc_mark_callbacks[i](cand);
+pthread_mutex_unlock(&gc_external_lock);
+                    gc_block_t *target = gc_find_block(cand);
                     if (target && !target->marked) {
                         target->marked = true;
                         gc_scan_block_content(target);
@@ -163,7 +187,7 @@ void gc_mark(void) {
         for (void **p = begin; p < end; p++) {
             void *cand = *p;
             if (!cand) continue;
-            gc_block_t *blk = gc_find_block_by_ptr(cand);
+            gc_block_t *blk = gc_find_block(cand);
             if (blk && !blk->marked) {
                 blk->marked = true;
                 gc_scan_block_content(blk);
@@ -211,7 +235,7 @@ void gc_mark(void) {
         if (ptr_addr) {
             void *ptr = *ptr_addr;
             if (ptr) {
-                gc_block_t *blk = gc_find_block_by_ptr(ptr);
+                gc_block_t *blk = gc_find_block(ptr);
                 if (blk && !blk->marked) {
                     blk->marked = true;
                     gc_scan_block_content(blk);
@@ -262,7 +286,11 @@ static void gc_scan_block_content_incremental(gc_block_t *blk) {
                 uintptr_t val = *p;
                 if (val < 0x1000) continue;
                 void *candidate = (void*)val;
-                gc_block_t *target = gc_find_block_by_ptr(candidate);
+pthread_mutex_lock(&gc_external_lock);
+for (size_t i = 0; i < gc_mark_callback_count; i++)
+    gc_mark_callbacks[i](candidate);
+pthread_mutex_unlock(&gc_external_lock);
+                gc_block_t *target = gc_find_block(candidate);
                 if (target) gc_mark_object(target);   // only mark, no recursion
             }
         } else {
@@ -278,7 +306,11 @@ static void gc_scan_block_content_incremental(gc_block_t *blk) {
                     void **pp = (void**)(elem + off);
                     void *cand = *pp;
                     if (!cand) continue;
-                    gc_block_t *target = gc_find_block_by_ptr(cand);
+pthread_mutex_lock(&gc_external_lock);
+for (size_t i = 0; i < gc_mark_callback_count; i++)
+    gc_mark_callbacks[i](candidate);
+pthread_mutex_unlock(&gc_external_lock);
+                    gc_block_t *target = gc_find_block(cand);
                     if (target) gc_mark_object(target);
                 }
             }
@@ -291,7 +323,11 @@ static void gc_scan_block_content_incremental(gc_block_t *blk) {
             uintptr_t val = *p;
             if (val < 0x1000) continue;
             void *candidate = (void*)val;
-            gc_block_t *target = gc_find_block_by_ptr(candidate);
+pthread_mutex_lock(&gc_external_lock);
+for (size_t i = 0; i < gc_mark_callback_count; i++)
+    gc_mark_callbacks[i](candidate);
+pthread_mutex_unlock(&gc_external_lock);
+            gc_block_t *target = gc_find_block(candidate);
             if (target) gc_mark_object(target);
         }
     }
@@ -334,7 +370,7 @@ void gc_mark_roots(void) {
 #define MARK_IF_MANAGED(ptr) do {               \
         void *cand = (ptr);                     \
         if (cand) {                             \
-            gc_block_t *blk = gc_find_block_by_ptr(cand); \
+            gc_block_t *blk = gc_find_block(cand); \
             if (blk) gc_mark_object(blk);       \
         }                                       \
     } while(0)
@@ -403,7 +439,7 @@ void gc_mark_roots(void) {
         if (ptr_addr) {
             void *ptr = *ptr_addr;
             if (ptr) {
-                gc_block_t *blk = gc_find_block_by_ptr(ptr);
+                gc_block_t *blk = gc_find_block(ptr);
                 if (blk) gc_mark_object(blk);   // note: using gc_mark_object insteadof marking
             }
         }
@@ -420,12 +456,12 @@ void gc_mark_roots(void) {
 void gc_write_barrier(void *container, void *val) {
     if (gc_phase != GC_PHASE_MARKING) return;
 
-    gc_block_t *container_blk = gc_find_block_by_ptr(container);
+    gc_block_t *container_blk = gc_find_block(container);
     if (!container_blk || !container_blk->marked) {
         return;   // container not black, no further processing needed
     }
 
-    gc_block_t *val_blk = gc_find_block_by_ptr(val);
+    gc_block_t *val_blk = gc_find_block(val);
     if (!val_blk || val_blk->marked) return;
 
     LOG_DEBUG("write barrier: marking container object %p (white object %p to be assigned)", container, val);

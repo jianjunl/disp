@@ -16,9 +16,9 @@
 
 #include "tail.h"
 
-eval_result_t* disp_eval_tail_letrec(disp_scope_t *env, disp_val *expr, int is_tail, disp_val *current_closure) {
-    disp_val *op = disp_car(expr);
-    disp_val *args = disp_cdr(expr);
+eval_result_t* disp_eval_tail_letrec(disp_scope_t *env, disp_box expr, int is_tail, disp_box current_closure) {
+    disp_box op = disp_car(expr);
+    disp_box args = disp_cdr(expr);
 
     // 特殊形式处理
     if (T(op) == DISP_SYMBOL) {
@@ -30,20 +30,20 @@ eval_result_t* disp_eval_tail_letrec(disp_scope_t *env, disp_val *expr, int is_t
                 return result_nil();
             }
 
-            disp_val *first = disp_car(args);
+            disp_box first = disp_car(args);
     
             // 命名 let: (let name ((var val) ...) body ...)
             if (T(first) == DISP_SYMBOL) {
-                disp_val *rest = disp_cdr(args);
+                disp_box rest = disp_cdr(args);
                 if (rest && T(rest) == DISP_CONS) {
                     // 调用 disp_letf 处理命名 let，返回最终结果
-                    disp_val *result = disp_letf(env, expr);
+                    disp_box result = disp_letf(env, expr);
                     return result_normal(result);
                 }
             }
 
-            disp_val *bindings = first;
-            disp_val *body_exprs = disp_cdr(args);
+            disp_box bindings = first;
+            disp_box body_exprs = disp_cdr(args);
             if (!body_exprs) {
                 ERRO("letrec: missing body");
                 return result_nil();
@@ -51,12 +51,12 @@ eval_result_t* disp_eval_tail_letrec(disp_scope_t *env, disp_val *expr, int is_t
 
             // 统计绑定数量
             int var_count = 0;
-            for (disp_val *b = bindings; b && T(b) == DISP_CONS; b = disp_cdr(b)) var_count++;
+            for (disp_box b = bindings; b && T(b) == DISP_CONS; b = disp_cdr(b)) var_count++;
             if (var_count == 0) {
                 // 无绑定，直接求值 body
                 while (body_exprs && T(body_exprs) == DISP_CONS) {
-                    disp_val *cur = disp_car(body_exprs);
-                    disp_val *next = disp_cdr(body_exprs);
+                    disp_box cur = disp_car(body_exprs);
+                    disp_box next = disp_cdr(body_exprs);
                     if (next == NIL)
                         return disp_eval_tail(env, cur, is_tail, current_closure);
                     else
@@ -67,14 +67,14 @@ eval_result_t* disp_eval_tail_letrec(disp_scope_t *env, disp_val *expr, int is_t
             }
 
             // 分配临时数组并加入 GC 根
-            GC_ROOT(disp_val*, var_syms) = gc_typed_malloc(var_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
-            GC_ROOT(disp_val*, init_exprs) = gc_typed_malloc(var_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
+            GC_ROOT(disp_box, var_syms) = gc_typed_malloc(var_count * sizeof(disp_box), &GC_TYPE_PTR_ARRAY);
+            GC_ROOT(disp_box, init_exprs) = gc_typed_malloc(var_count * sizeof(disp_box), &GC_TYPE_PTR_ARRAY);
 
             // 解析绑定
             int idx = 0;
-            disp_val *b = bindings;
+            disp_box b = bindings;
             while (b && T(b) == DISP_CONS) {
-                disp_val *pair = disp_car(b);
+                disp_box pair = disp_car(b);
                 if (T(pair) != DISP_CONS || T(disp_car(pair)) != DISP_SYMBOL) {
                     gc_free(init_exprs);
                     gc_free(var_syms);
@@ -97,7 +97,7 @@ eval_result_t* disp_eval_tail_letrec(disp_scope_t *env, disp_val *expr, int is_t
             }
 
             // 并行求值所有初值
-            GC_ROOT(disp_val*, init_vals) = gc_typed_malloc(var_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
+            GC_ROOT(disp_box, init_vals) = gc_typed_malloc(var_count * sizeof(disp_box), &GC_TYPE_PTR_ARRAY);
             for (int i = 0; i < var_count; i++) {
                 init_vals[i] = disp_eval(new_scope, init_exprs[i]);
             }
@@ -115,8 +115,8 @@ eval_result_t* disp_eval_tail_letrec(disp_scope_t *env, disp_val *expr, int is_t
 
             // 对 body 序列进行尾求值
             while (body_exprs && T(body_exprs) == DISP_CONS) {
-                disp_val *cur = disp_car(body_exprs);
-                disp_val *next = disp_cdr(body_exprs);
+                disp_box cur = disp_car(body_exprs);
+                disp_box next = disp_cdr(body_exprs);
                 if (next == NIL) {
                     return disp_eval_tail(new_scope, cur, is_tail, current_closure);
                 } else {

@@ -29,22 +29,22 @@ GC_UNION_TI(disp_data,
     GC_OFF(disp_data, string_val.str)
 );
 
-char* disp_get_str(disp_val *v) {
+char* disp_get_str(disp_box v) {
     if (v->flag != DISP_STRING) {
 	ERRO("disp_get_string failed: %s\n", strerror (errno));
     }
     return v->data->string_val.str;
 }
 
-size_t disp_get_str_len(disp_val *v) {
+size_t disp_get_str_len(disp_box v) {
     if (v->flag != DISP_STRING) {
 	ERRO("disp_get_string failed: %s\n", strerror (errno));
     }
     return v->data->string_val.len;
 }
 
-disp_val* disp_make_string(const char *s) {
-    disp_val *v = DISP_ALLOC_TI(DISP_STRING);
+disp_box disp_make_string(const char *s) {
+    disp_box v = DISP_ALLOC_TI(DISP_STRING);
     v->data->string_val.str = gc_strdup(s);
     v->data->string_val.len = strlen(s);
     return v;

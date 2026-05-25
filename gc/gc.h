@@ -40,7 +40,7 @@ extern "C" {
 #endif
 
 #ifndef GC_OPT_FREELIST
-#define GC_OPT_FREELIST    0
+#define GC_OPT_FREELIST    1
 #endif
 
 #define GC_MASK(x, n) ((x) << (n))
@@ -136,6 +136,24 @@ void gc_free(void *ptr);
  * This function is thread-safe and may be called at any time.
  */
 void gc_collect(void);
+
+typedef void (*gc_external_mark_fn)(void *ptr);
+typedef void (*gc_external_sweep_fn)(void);
+
+void gc_register_external_mark(gc_external_mark_fn fn);
+void gc_register_external_sweep(gc_external_sweep_fn fn);
+
+/* ---------------------------------------------------------------------
+ * 指针验证钩子 – 用于 NaN boxing 等场景。
+ * 给定一个从内存中扫描到的候选指针（可能是装箱的值），
+ * 返回真正的堆地址（如果它是有效的堆指针），否则返回 NULL。
+ * 默认实现直接返回原指针（适合非 boxing 场景）。
+ * --------------------------------------------------------------------- */
+typedef void* (*gc_validate_fn)(void *ptr);
+extern gc_validate_fn gc_validate_hook;
+
+/* 设置验证钩子（线程安全，建议在启动时调用一次） */
+void gc_set_validate_hook(gc_validate_fn fn);
 
 /* ============================================================================
  * Precise Root Registration

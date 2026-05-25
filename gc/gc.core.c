@@ -151,7 +151,7 @@ void gc_free(void *ptr) {
     static gc_mutex_t free_mutex = GC_PTHREAD_MUTEX_INITIALIZER;
     gc_pthread_mutex_lock(&free_mutex);
 
-    gc_block_t *blk = gc_find_block_by_ptr(ptr);
+    gc_block_t *blk = gc_find_block(ptr);
     if (blk == NULL) {
         gc_pthread_mutex_unlock(&free_mutex);
         return;

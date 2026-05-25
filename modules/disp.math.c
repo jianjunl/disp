@@ -15,7 +15,7 @@
 /* Arithmetic – with type promotion */
 
 #pragma GCC diagnostic ignored "-Wunused-but-set-variable"
-static disp_val* plus_syscall(disp_val **args, int count) {
+static disp_box plus_syscall(disp_box *args, int count) {
     if (count == 0) return disp_make_int(0);
 
     int has_double = 0, has_float = 0, has_long = 0;
@@ -35,7 +35,7 @@ static disp_val* plus_syscall(disp_val **args, int count) {
     if (has_double || has_float) {
         long double sum = 0.0L;
         for (int i = 0; i < count; i++) {
-            disp_val *v = args[i];
+            disp_box v = args[i];
             switch (T(v)) {
                 case DISP_INT:    sum += disp_get_int(v); break;
                 case DISP_LONG:   sum += disp_get_long(v); break;
@@ -51,7 +51,7 @@ static disp_val* plus_syscall(disp_val **args, int count) {
     } else {
         long long sum = 0;
         for (int i = 0; i < count; i++) {
-            disp_val *v = args[i];
+            disp_box v = args[i];
             switch (T(v)) {
                 case DISP_INT:  sum += disp_get_int(v); break;
                 case DISP_LONG: sum += disp_get_long(v); break;
@@ -65,11 +65,11 @@ static disp_val* plus_syscall(disp_val **args, int count) {
     }
 }
 
-static disp_val* minus_syscall(disp_val **args, int count) {
+static disp_box minus_syscall(disp_box *args, int count) {
     if (count == 0) return disp_make_int(0);
     if (count == 1) {
         // unary minus: negate the argument, preserving its type
-        disp_val *v = args[0];
+        disp_box v = args[0];
         disp_flag_t t = T(v);
         switch (t) {
             case DISP_INT:    return disp_make_int(-disp_get_int(v));
@@ -84,7 +84,7 @@ static disp_val* minus_syscall(disp_val **args, int count) {
 
     // Binary case: result = first - (sum of the rest)
     // We'll compute using type promotion similar to plus.
-    disp_val **rest = args + 1;
+    disp_box *rest = args + 1;
     int rest_count = count - 1;
 
     // First, determine the result type by checking all arguments
@@ -113,7 +113,7 @@ static disp_val* minus_syscall(disp_val **args, int count) {
         }
         // subtract the rest
         for (int i = 0; i < rest_count; i++) {
-            disp_val *v = rest[i];
+            disp_box v = rest[i];
             switch (T(v)) {
                 case DISP_INT:    result -= disp_get_int(v); break;
                 case DISP_LONG:   result -= disp_get_long(v); break;
@@ -136,7 +136,7 @@ static disp_val* minus_syscall(disp_val **args, int count) {
         }
         // subtract the rest
         for (int i = 0; i < rest_count; i++) {
-            disp_val *v = rest[i];
+            disp_box v = rest[i];
             switch (T(v)) {
                 case DISP_INT:  result -= disp_get_int(v); break;
                 case DISP_LONG: result -= disp_get_long(v); break;
@@ -150,7 +150,7 @@ static disp_val* minus_syscall(disp_val **args, int count) {
     }
 }
 
-static disp_val* times_syscall(disp_val **args, int count) {
+static disp_box times_syscall(disp_box *args, int count) {
     if (count == 0) return disp_make_int(1);
 
     int has_double = 0, has_float = 0, has_long = 0;
@@ -170,7 +170,7 @@ static disp_val* times_syscall(disp_val **args, int count) {
     if (has_double || has_float) {
         long double prod = 1.0L;
         for (int i = 0; i < count; i++) {
-            disp_val *v = args[i];
+            disp_box v = args[i];
             switch (T(v)) {
                 case DISP_INT:    prod *= disp_get_int(v); break;
                 case DISP_LONG:   prod *= disp_get_long(v); break;
@@ -186,7 +186,7 @@ static disp_val* times_syscall(disp_val **args, int count) {
     } else {
         long long prod = 1;
         for (int i = 0; i < count; i++) {
-            disp_val *v = args[i];
+            disp_box v = args[i];
             switch (T(v)) {
                 case DISP_INT:  prod *= disp_get_int(v); break;
                 case DISP_LONG: prod *= disp_get_long(v); break;
@@ -200,13 +200,13 @@ static disp_val* times_syscall(disp_val **args, int count) {
     }
 }
 
-static disp_val* divide_syscall(disp_val **args, int count) {
+static disp_box divide_syscall(disp_box *args, int count) {
     // Division always returns double for simplicity.
     // Special cases: empty or single argument.
     if (count == 0) return disp_make_double(0.0);
     if (count == 1) {
         double d = 1.0;
-        disp_val *v = args[0];
+        disp_box v = args[0];
         switch (T(v)) {
             case DISP_INT:    d /= disp_get_int(v); break;
             case DISP_LONG:   d /= disp_get_long(v); break;
@@ -219,7 +219,7 @@ static disp_val* divide_syscall(disp_val **args, int count) {
 
     // First argument is numerator, rest are divisors.
     double result = 0.0;
-    disp_val *v0 = args[0];
+    disp_box v0 = args[0];
     switch (T(v0)) {
         case DISP_INT:    result = disp_get_int(v0); break;
         case DISP_LONG:   result = disp_get_long(v0); break;
@@ -228,7 +228,7 @@ static disp_val* divide_syscall(disp_val **args, int count) {
         default: result = 0.0;
     }
     for (int i = 1; i < count; i++) {
-        disp_val *v = args[i];
+        disp_box v = args[i];
         switch (T(v)) {
             case DISP_INT:    result /= disp_get_int(v); break;
             case DISP_LONG:   result /= disp_get_long(v); break;

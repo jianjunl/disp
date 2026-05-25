@@ -89,15 +89,15 @@ static int skip_and_get(FILE *f) {
     }
 }
 
-static disp_val* parse_sexpr(int first, FILE *f);
+static disp_box parse_sexpr(int first, FILE *f);
 
 // parse_list 实现
-static disp_val* parse_list(FILE *f, char e, int comma_separated) {
+static disp_box parse_list(FILE *f, char e, int comma_separated) {
     int c;
-    disp_val *head = NIL;       // 当前子列表的头
-    disp_val *tail = NIL;       // 当前子列表的尾
-    disp_val *sub_lists = NIL;  // 累积的子列表（用于逗号分隔）
-    disp_val *sub_tail = NIL;
+    disp_box head = NIL;       // 当前子列表的头
+    disp_box tail = NIL;       // 当前子列表的尾
+    disp_box sub_lists = NIL;  // 累积的子列表（用于逗号分隔）
+    disp_box sub_tail = NIL;
 
     while (1) {
         c = skip_and_get(f);
@@ -107,7 +107,7 @@ static disp_val* parse_list(FILE *f, char e, int comma_separated) {
         }
 
         // 解析一个元素
-        disp_val *elem = parse_sexpr(c, f);
+        disp_box elem = parse_sexpr(c, f);
         if (!elem) return NIL;
 
         // 仅在非逗号分隔模式下处理点对
@@ -118,7 +118,7 @@ static disp_val* parse_list(FILE *f, char e, int comma_separated) {
             if (next_c == EOF) {
                 ERET(NIL, "unexpected EOF after '.'");
             }
-            disp_val *cdr_val = parse_sexpr(next_c, f);
+            disp_box cdr_val = parse_sexpr(next_c, f);
             if (!cdr_val) return NIL;
             // 确保列表以 e 结束
             int close = skip_and_get(f);
@@ -133,7 +133,7 @@ static disp_val* parse_list(FILE *f, char e, int comma_separated) {
         }
 
         // 将元素添加到当前子列表
-        disp_val *new_cons = disp_make_cons(elem, NIL);
+        disp_box new_cons = disp_make_cons(elem, NIL);
         if (head == NIL) {
             head = new_cons;
             tail = new_cons;
@@ -147,7 +147,7 @@ static disp_val* parse_list(FILE *f, char e, int comma_separated) {
             int next_c = skip_and_get(f);
             if (next_c == ',') {
                 // 遇到逗号：结束当前子列表，将其加入累积列表
-                disp_val *sub_cons = disp_make_cons(head, NIL);
+                disp_box sub_cons = disp_make_cons(head, NIL);
                 if (sub_lists == NIL) {
                     sub_lists = sub_cons;
                     sub_tail = sub_cons;
@@ -168,7 +168,7 @@ static disp_val* parse_list(FILE *f, char e, int comma_separated) {
     if (comma_separated) {
         // 将最后一个子列表加入累积列表（如果有元素或整个输入非空）
         if (head != NIL || sub_lists == NIL) {
-            disp_val *sub_cons = disp_make_cons(head, NIL);
+            disp_box sub_cons = disp_make_cons(head, NIL);
             if (sub_lists == NIL) {
                 sub_lists = sub_cons;
             } else {
@@ -182,7 +182,7 @@ static disp_val* parse_list(FILE *f, char e, int comma_separated) {
     }
 }
 
-static disp_val* parse_string(FILE *f) {
+static disp_box parse_string(FILE *f) {
     char buf[1024];
     int i = 0, c;
     while ((c = disp_fgetc(f)) != '"' && c != EOF) {
@@ -205,7 +205,7 @@ static disp_val* parse_string(FILE *f) {
     return disp_make_string(buf);
 }
 
-static disp_val* parse_atom(int first, FILE *f) {
+static disp_box parse_atom(int first, FILE *f) {
     char buf[256];
     int i = 0;
     buf[i++] = first;
@@ -219,7 +219,7 @@ static disp_val* parse_atom(int first, FILE *f) {
     }
     if (c != EOF) ungetc(c, f);
     buf[i] = '\0';
-    disp_val *num = disp_parse_number(buf);
+    disp_box num = disp_parse_number(buf);
     if (num) return num;
 
     // 处理 #t 和 #f 布尔常量
@@ -228,29 +228,29 @@ static disp_val* parse_atom(int first, FILE *f) {
         if (strcmp(buf, "#f") == 0) return NIL;
         // 其他以 # 开头的字符串继续作为普通符号
     }
-    disp_val *sym = disp_intern_symbol(disp_global_scope, buf);
+    disp_box sym = disp_intern_symbol(disp_global_scope, buf);
     return sym;
 }
 
-static disp_val* parse_sexpr(int first, FILE *f) {
+static disp_box parse_sexpr(int first, FILE *f) {
     if (first == '(') {
         return parse_list(f, ')', 0);
     } else if (first == '{') {
         // 保持不变：逗号分隔的 begin 语法
-        disp_val *sym = disp_find_symbol(NULL, "begin");
+        disp_box sym = disp_find_symbol(NULL, "begin");
         if(!sym || sym == NIL) ERET(NIL, "'begin' not found");
-        disp_val *sub_lists = parse_list(f, '}', 1);
-        disp_val *result = disp_make_cons(sym, NIL);
-        disp_val *tail = result;
-        for (disp_val *p = sub_lists; p && T(p) == DISP_CONS; p = disp_cdr(p)) {
-            disp_val *sublist = disp_car(p);
-            disp_val *new_cons = disp_make_cons(sublist, NIL);
+        disp_box sub_lists = parse_list(f, '}', 1);
+        disp_box result = disp_make_cons(sym, NIL);
+        disp_box tail = result;
+        for (disp_box p = sub_lists; p && T(p) == DISP_CONS; p = disp_cdr(p)) {
+            disp_box sublist = disp_car(p);
+            disp_box new_cons = disp_make_cons(sublist, NIL);
             disp_set_cdr(tail, new_cons);
             tail = new_cons;
         }
         return result;
     } else if (first == '[') {
-        disp_val *sym = disp_find_symbol(NULL, "list");
+        disp_box sym = disp_find_symbol(NULL, "list");
         if(!sym || sym == NIL) ERET(NIL, "'list' not found");
         return disp_make_cons(sym, parse_list(f, ']', 0));
     } else if (first == '"') {
@@ -259,17 +259,17 @@ static disp_val* parse_sexpr(int first, FILE *f) {
         // 单引号 -> quote
         int next_c = skip_and_get(f);
         if (next_c == EOF) ERET(NIL, "unexpected EOF after quote");
-        disp_val *quoted = parse_sexpr(next_c, f);
+        disp_box quoted = parse_sexpr(next_c, f);
         if (!quoted) return NIL;
-        disp_val *quote_sym = disp_find_symbol(NULL, "quote");
+        disp_box quote_sym = disp_find_symbol(NULL, "quote");
         return disp_make_cons(quote_sym, disp_make_cons(quoted, NIL));
     } else if (first == '`') {
         // 反引号 -> quasiquote
         int next_c = skip_and_get(f);
         if (next_c == EOF) ERET(NIL, "unexpected EOF after quasiquote");
-        disp_val *quasiquoted = parse_sexpr(next_c, f);
+        disp_box quasiquoted = parse_sexpr(next_c, f);
         if (!quasiquoted) return NIL;
-        disp_val *qq_sym = disp_find_symbol(NULL, "quasiquote");
+        disp_box qq_sym = disp_find_symbol(NULL, "quasiquote");
         return disp_make_cons(qq_sym, disp_make_cons(quasiquoted, NIL));
     } else if (first == ',') {
         // 逗号 -> unquote 或 unquote-splicing
@@ -279,15 +279,15 @@ static disp_val* parse_sexpr(int first, FILE *f) {
             // ,@ -> unquote-splicing
             int expr_c = skip_and_get(f);
             if (expr_c == EOF) ERET(NIL, "unexpected EOF after ,@");
-            disp_val *spliced = parse_sexpr(expr_c, f);
+            disp_box spliced = parse_sexpr(expr_c, f);
             if (!spliced) return NIL;
-            disp_val *us_sym = disp_find_symbol(NULL, "unquote-splicing");
+            disp_box us_sym = disp_find_symbol(NULL, "unquote-splicing");
             return disp_make_cons(us_sym, disp_make_cons(spliced, NIL));
         } else {
             // , -> unquote
-            disp_val *unquoted = parse_sexpr(next_c, f);
+            disp_box unquoted = parse_sexpr(next_c, f);
             if (!unquoted) return NIL;
-            disp_val *uq_sym = disp_find_symbol(NULL, "unquote");
+            disp_box uq_sym = disp_find_symbol(NULL, "unquote");
             return disp_make_cons(uq_sym, disp_make_cons(unquoted, NIL));
         }
     } else if (first == ')') {
@@ -305,14 +305,14 @@ extern int parse_current_line;
 extern int parse_current_col;
 extern void disp_update_current_pos(int line, int col); // 更新栈顶位置
 
-disp_val* disp_read(FILE *f) {
+disp_box disp_read(FILE *f) {
     int c = skip_and_get(f);
     if (c == EOF) return NULL;
     // 记录当前表达式开始的位置（此时行列号已指向该字符的下一个位置）
     int start_line = parse_current_line;
     int start_col = parse_current_col - 1;
     if (start_col == 0) { start_line--; start_col = 1; }
-    disp_val *expr = parse_sexpr(c, f);
+    disp_box expr = parse_sexpr(c, f);
     if (expr) {
         disp_update_current_pos(start_line, start_col);
     }

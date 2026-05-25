@@ -29,12 +29,12 @@ GC_STRUCT_TI(disp_thread_t,
 
 /* 线程入口函数 */
 static void* thread_entry(void *arg) {
-    disp_val *thread_obj = (disp_val*)arg;
+    disp_box thread_obj = (disp_box)arg;
     disp_thread_t *t = thread_obj->data->thread;
-    disp_val *func = t->func;
+    disp_box func = t->func;
     
     /* 执行闭包，不传参数 */
-    disp_val *result = disp_apply_closure(func, NULL, 0);
+    disp_box result = disp_apply_closure(func, NULL, 0);
     
     /* 保存结果并通知等待者 */
     gc_pthread_mutex_lock(t->lock);
@@ -49,11 +49,11 @@ static void* thread_entry(void *arg) {
 /* ======================== 系统调用 ======================== */
 
 /* (make-thread func) -> thread */
-static disp_val* make_thread_syscall(disp_val **args, int count) {
+static disp_box make_thread_syscall(disp_box *args, int count) {
     if (count != 1 || T(args[0]) != DISP_CLOSURE)
         ERET(NIL, "make-thread expects a closure");
     
-    disp_val *v = DISP_ALLOC_TI(DISP_THREAD);
+    disp_box v = DISP_ALLOC_TI(DISP_THREAD);
     disp_thread_t *t = gc_typed_calloc(1, sizeof(disp_thread_t), &struct_disp_thread_t_ti);
     if (!t) {
         gc_free(v->data); gc_free(v);
@@ -87,18 +87,18 @@ static disp_val* make_thread_syscall(disp_val **args, int count) {
 }
 
 /* (thread-join thread) -> result */
-static disp_val* thread_join_syscall(disp_val **args, int count) {
+static disp_box thread_join_syscall(disp_box *args, int count) {
     if (count != 1 || T(args[0]) != DISP_THREAD)
         ERET(NIL, "thread-join expects a thread object");
     
-    disp_val *thread_obj = args[0];
+    disp_box thread_obj = args[0];
     disp_thread_t *t = thread_obj->data->thread;
     
     gc_pthread_mutex_lock(t->lock);
     while (!t->finished) {
         gc_pthread_cond_wait(t->cond, t->lock);
     }
-    disp_val *result = t->result;
+    disp_box result = t->result;
     gc_pthread_mutex_unlock(t->lock);
     
     /* 可选：分离线程以回收资源（已结束，可安全 join）*/
@@ -108,10 +108,10 @@ static disp_val* thread_join_syscall(disp_val **args, int count) {
 }
 
 /* (make-mutex) -> mutex */
-static disp_val* make_mutex_syscall(disp_val **args, int count) {
+static disp_box make_mutex_syscall(disp_box *args, int count) {
     (void)args; (void)count;
     
-    disp_val *v = DISP_ALLOC_TI(DISP_MUTEX);
+    disp_box v = DISP_ALLOC_TI(DISP_MUTEX);
     if (gc_pthread_mutex_init(&v->data->mutex, NULL) != 0) {
         gc_free(v->data); gc_free(v);
         ERET(NIL, "make-mutex: init failed");
@@ -120,7 +120,7 @@ static disp_val* make_mutex_syscall(disp_val **args, int count) {
 }
 
 /* (lock mutex) -> true */
-static disp_val* lock_mutex_syscall(disp_val **args, int count) {
+static disp_box lock_mutex_syscall(disp_box *args, int count) {
     if (count != 1 || T(args[0]) != DISP_MUTEX)
         ERET(NIL, "lock expects a mutex");
     gc_mutex_t *m = args[0]->data->mutex;
@@ -130,7 +130,7 @@ static disp_val* lock_mutex_syscall(disp_val **args, int count) {
 }
 
 /* (unlock mutex) -> true */
-static disp_val* unlock_mutex_syscall(disp_val **args, int count) {
+static disp_box unlock_mutex_syscall(disp_box *args, int count) {
     if (count != 1 || T(args[0]) != DISP_MUTEX)
         ERET(NIL, "unlock expects a mutex");
     gc_mutex_t *m = args[0]->data->mutex;
@@ -140,10 +140,10 @@ static disp_val* unlock_mutex_syscall(disp_val **args, int count) {
 }
 
 /* (make-condition) -> cond */
-static disp_val* make_condition_syscall(disp_val **args, int count) {
+static disp_box make_condition_syscall(disp_box *args, int count) {
     (void)args; (void)count;
     
-    disp_val *v = DISP_ALLOC_TI(DISP_COND);
+    disp_box v = DISP_ALLOC_TI(DISP_COND);
     if (gc_pthread_cond_init(&v->data->cond, NULL) != 0) {
         gc_free(v->data); gc_free(v);
         ERET(NIL, "make-condition: init failed");
@@ -152,7 +152,7 @@ static disp_val* make_condition_syscall(disp_val **args, int count) {
 }
 
 /* (condition-wait cond mutex) -> true */
-static disp_val* condition_wait_syscall(disp_val **args, int count) {
+static disp_box condition_wait_syscall(disp_box *args, int count) {
     if (count != 2 || T(args[0]) != DISP_COND || T(args[1]) != DISP_MUTEX)
         ERET(NIL, "condition-wait expects (cond mutex)");
     gc_cond_t *c = args[0]->data->cond;
@@ -163,7 +163,7 @@ static disp_val* condition_wait_syscall(disp_val **args, int count) {
 }
 
 /* (condition-signal cond) -> true */
-static disp_val* condition_signal_syscall(disp_val **args, int count) {
+static disp_box condition_signal_syscall(disp_box *args, int count) {
     if (count != 1 || T(args[0]) != DISP_COND)
         ERET(NIL, "condition-signal expects a cond");
     gc_cond_t *c = args[0]->data->cond;
@@ -173,7 +173,7 @@ static disp_val* condition_signal_syscall(disp_val **args, int count) {
 }
 
 /* (condition-broadcast cond) -> true */
-static disp_val* condition_broadcast_syscall(disp_val **args, int count) {
+static disp_box condition_broadcast_syscall(disp_box *args, int count) {
     if (count != 1 || T(args[0]) != DISP_COND)
         ERET(NIL, "condition-broadcast expects a cond");
     gc_cond_t *c = args[0]->data->cond;
@@ -183,7 +183,7 @@ static disp_val* condition_broadcast_syscall(disp_val **args, int count) {
 }
 
 /* (thread-sleep seconds) -> nil */
-static disp_val* thread_sleep_syscall(disp_val **args, int count) {
+static disp_box thread_sleep_syscall(disp_box *args, int count) {
     if (count != 1) ERET(NIL, "thread-sleep expects seconds");
     double secs = 0.0;
     if (T(args[0]) == DISP_BYTE)

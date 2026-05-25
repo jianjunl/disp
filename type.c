@@ -20,7 +20,7 @@ union disp_data {
     /* 类型 */
     struct {
         char *name;
-        disp_val *decl;
+        disp_box decl;
     } type_val;
 };
 
@@ -29,22 +29,22 @@ GC_UNION_TI(disp_data,
     GC_OFF(disp_data, type_val.decl)
 );
 
-char* disp_get_type_name(disp_val *v) {
+char* disp_get_type_name(disp_box v) {
     if (v->flag != DISP_TYPE) {
 	ERRO("disp_get_type_name failed: %s\n", strerror (errno));
     }
     return v->data->type_val.name;
 }
 
-disp_val* disp_get_type_decl(disp_val *v) {
+disp_box disp_get_type_decl(disp_box v) {
     if (v->flag != DISP_TYPE) {
 	ERRO("T_decl failed: %s\n", strerror (errno));
     }
     return v->data->type_val.decl;
 }
 
-disp_val* disp_define_type(char *name, disp_val *decl) {
-    disp_val *v = DISP_ALLOC_TI(DISP_TYPE);
+disp_box disp_define_type(char *name, disp_box decl) {
+    disp_box v = DISP_ALLOC_TI(DISP_TYPE);
     v->data->type_val.name = name;
     v->data->type_val.decl = decl;
     return disp_define_symbol(NULL, name, v, 1);

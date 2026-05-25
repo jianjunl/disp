@@ -13,38 +13,38 @@
 #endif
 #include "../disp.h"
 
-static disp_val* let_builtin(disp_scope_t *scope, disp_val *expr) {
-    disp_val *rest = disp_cdr(expr);
+static disp_box let_builtin(disp_scope_t *scope, disp_box expr) {
+    disp_box rest = disp_cdr(expr);
     if (!rest || T(rest) != DISP_CONS)
         ERET(NIL, "let: missing binding list");
 
-    disp_val *first = disp_car(rest);
+    disp_box first = disp_car(rest);
     if (T(first) == DISP_SYMBOL) {
-        disp_val *second_rest = disp_cdr(rest);
+        disp_box second_rest = disp_cdr(rest);
         if (second_rest && T(second_rest) == DISP_CONS)
             return disp_letf(scope, expr);
     }
 
-    disp_val *bindings = disp_car(rest);
-    disp_val *body = disp_cdr(rest);
+    disp_box bindings = disp_car(rest);
+    disp_box body = disp_cdr(rest);
     if (!body)
         ERET(NIL, "let: missing body");
 
     int var_count = 0;
-    for (disp_val *b = bindings; b && T(b) == DISP_CONS; b = disp_cdr(b))
+    for (disp_box b = bindings; b && T(b) == DISP_CONS; b = disp_cdr(b))
         var_count++;
 
     if (var_count == 0)
         return disp_eval_body(scope, body);
 
     /* 提取变量符号和初值表达式 */
-    GC_ROOT(disp_val*, var_syms) = gc_typed_malloc(var_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
-    GC_ROOT(disp_val*, init_exprs) = gc_typed_malloc(var_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
+    GC_ROOT(disp_box, var_syms) = gc_typed_malloc(var_count * sizeof(disp_box), &GC_TYPE_PTR_ARRAY);
+    GC_ROOT(disp_box, init_exprs) = gc_typed_malloc(var_count * sizeof(disp_box), &GC_TYPE_PTR_ARRAY);
 
     int idx = 0;
-    disp_val *b = bindings;
+    disp_box b = bindings;
     while (b && T(b) == DISP_CONS) {
-        disp_val *pair = disp_car(b);
+        disp_box pair = disp_car(b);
         if (T(pair) != DISP_CONS || T(disp_car(pair)) != DISP_SYMBOL) {
             gc_free(init_exprs);
             gc_free(var_syms);
@@ -59,11 +59,11 @@ static disp_val* let_builtin(disp_scope_t *scope, disp_val *expr) {
     /* 创建新作用域，父作用域为当前 scope */
     GC_ROOT(disp_scope_t, new_scope) = disp_new_scope(scope);
 
-    disp_val *result = NIL;
+    disp_box result = NIL;
 
     if (disp_car(expr) == LETA) {   /* let* : 顺序绑定 */
         for (int i = 0; i < var_count; i++) {
-            disp_val *val = disp_eval(new_scope, init_exprs[i]);
+            disp_box val = disp_eval(new_scope, init_exprs[i]);
             /* 立即绑定到新作用域 */
             const char *name = disp_get_symbol_name(var_syms[i]);
             disp_define_symbol(new_scope, name, val, 0);
@@ -71,7 +71,7 @@ static disp_val* let_builtin(disp_scope_t *scope, disp_val *expr) {
         result = disp_eval_body(new_scope, body);
     } else {                         /* let : 并行绑定 */
         /* 在当前作用域中计算所有初值 */
-        GC_ROOT(disp_val*, values) = gc_typed_malloc(var_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
+        GC_ROOT(disp_box, values) = gc_typed_malloc(var_count * sizeof(disp_box), &GC_TYPE_PTR_ARRAY);
         for (int i = 0; i < var_count; i++) {
             values[i] = disp_eval(new_scope, init_exprs[i]);
         }

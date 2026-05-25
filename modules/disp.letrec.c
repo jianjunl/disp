@@ -13,37 +13,37 @@
 #endif
 #include "../disp.h"
 
-static disp_val* letrec_builtin(disp_scope_t *scope, disp_val *expr) {
-    disp_val *rest = disp_cdr(expr);
+static disp_box letrec_builtin(disp_scope_t *scope, disp_box expr) {
+    disp_box rest = disp_cdr(expr);
     if (!rest || T(rest) != DISP_CONS)
         ERET(NIL, "letrec: missing binding list");
 
-    disp_val *first = disp_car(rest);
+    disp_box first = disp_car(rest);
     if (T(first) == DISP_SYMBOL) {
-        disp_val *second_rest = disp_cdr(rest);
+        disp_box second_rest = disp_cdr(rest);
         if (second_rest && T(second_rest) == DISP_CONS)
             return disp_letf(scope, expr);
     }
 
-    disp_val *bindings = disp_car(rest);
-    disp_val *body = disp_cdr(rest);
+    disp_box bindings = disp_car(rest);
+    disp_box body = disp_cdr(rest);
     if (!body)
         ERET(NIL, "letrec: missing body");
 
     int var_count = 0;
-    for (disp_val *b = bindings; b && T(b) == DISP_CONS; b = disp_cdr(b))
+    for (disp_box b = bindings; b && T(b) == DISP_CONS; b = disp_cdr(b))
         var_count++;
 
     if (var_count == 0)
         return disp_eval_body(scope, body);
 
-    GC_ROOT(disp_val*, var_syms) = gc_typed_malloc(var_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
-    GC_ROOT(disp_val*, init_exprs) = gc_typed_malloc(var_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
+    GC_ROOT(disp_box, var_syms) = gc_typed_malloc(var_count * sizeof(disp_box), &GC_TYPE_PTR_ARRAY);
+    GC_ROOT(disp_box, init_exprs) = gc_typed_malloc(var_count * sizeof(disp_box), &GC_TYPE_PTR_ARRAY);
 
     int idx = 0;
-    disp_val *b = bindings;
+    disp_box b = bindings;
     while (b && T(b) == DISP_CONS) {
-        disp_val *pair = disp_car(b);
+        disp_box pair = disp_car(b);
         if (T(pair) != DISP_CONS || T(disp_car(pair)) != DISP_SYMBOL) {
             gc_free(init_exprs);
             gc_free(var_syms);
@@ -65,7 +65,7 @@ static disp_val* letrec_builtin(disp_scope_t *scope, disp_val *expr) {
     }
 
     /* 计算所有初值（在新作用域中，此时变量已存在但值为 NIL） */
-    GC_ROOT(disp_val*, values) = gc_typed_malloc(var_count * sizeof(disp_val*), &GC_TYPE_PTR_ARRAY);
+    GC_ROOT(disp_box, values) = gc_typed_malloc(var_count * sizeof(disp_box), &GC_TYPE_PTR_ARRAY);
     if (disp_car(expr) == LETRECA) {   /* letrec* : 顺序初始化 */
         for (int i = 0; i < var_count; i++) {
             values[i] = disp_eval(new_scope, init_exprs[i]);
@@ -84,7 +84,7 @@ static disp_val* letrec_builtin(disp_scope_t *scope, disp_val *expr) {
     }
 
     /* 执行 body */
-    disp_val *result = disp_eval_body(new_scope, body);
+    disp_box result = disp_eval_body(new_scope, body);
 
     /* 清理 */
     gc_free(values);

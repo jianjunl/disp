@@ -19,10 +19,10 @@
 typedef struct eval_result {
     int kind;   // 0 = normal, 1 = tail_recurse
     union {
-        disp_val *normal;
+        disp_box normal;
         struct {
-            disp_val *target;      // 要调用的目标函数
-            disp_val **new_args;
+            disp_box target;      // 要调用的目标函数
+            disp_box *new_args;
             int arg_count;
         } tail;
     };
@@ -30,13 +30,13 @@ typedef struct eval_result {
 
 eval_result_t* result_nil();
 eval_result_t* result_true();
-eval_result_t* result_normal(disp_val *normal);
-eval_result_t* disp_eval_tail(disp_scope_t *env, disp_val *expr, int is_tail, disp_val *current_closure);
-eval_result_t* disp_eval_tail_flow(disp_scope_t *env, disp_val *expr, int is_tail, disp_val *current_closure);
-eval_result_t* disp_eval_tail_let(disp_scope_t *env, disp_val *expr, int is_tail, disp_val *current_closure);
-eval_result_t* disp_eval_tail_leta(disp_scope_t *env, disp_val *expr, int is_tail, disp_val *current_closure);
-eval_result_t* disp_eval_tail_letrec(disp_scope_t *env, disp_val *expr, int is_tail, disp_val *current_closure);
-eval_result_t* disp_eval_tail_letreca(disp_scope_t *env, disp_val *expr, int is_tail, disp_val *current_closure);
+eval_result_t* result_normal(disp_box normal);
+eval_result_t* disp_eval_tail(disp_scope_t *env, disp_box expr, int is_tail, disp_box current_closure);
+eval_result_t* disp_eval_tail_flow(disp_scope_t *env, disp_box expr, int is_tail, disp_box current_closure);
+eval_result_t* disp_eval_tail_let(disp_scope_t *env, disp_box expr, int is_tail, disp_box current_closure);
+eval_result_t* disp_eval_tail_leta(disp_scope_t *env, disp_box expr, int is_tail, disp_box current_closure);
+eval_result_t* disp_eval_tail_letrec(disp_scope_t *env, disp_box expr, int is_tail, disp_box current_closure);
+eval_result_t* disp_eval_tail_letreca(disp_scope_t *env, disp_box expr, int is_tail, disp_box current_closure);
 
 /* 从参数数组调用内置函数（构造临时表达式） */
-disp_val* disp_apply_builtin_from_array(disp_val *builtin, disp_scope_t *env, disp_val **args, int arg_count);
+disp_box disp_apply_builtin_from_array(disp_box builtin, disp_scope_t *env, disp_box *args, int arg_count);
