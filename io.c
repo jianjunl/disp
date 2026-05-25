@@ -87,17 +87,17 @@ void disp_fprint(FILE *out, disp_box v) {
             }
             fputc(')', out);
             break;
-        case FLAG_BUILTIN:  fprintf(out, "#<builtin>"); break;
+        case FLAG_BUILTIN:  fprintf(out, "#<builtin>");  break;
         case FLAG_SYSCALL:  fprintf(out, "#<function>"); break;
         case FLAG_VOID: {
             if (v == NIL) fprintf(out, "nil");
             else fprintf(out, "true");
         }; break;
-        case FLAG_CLOSURE: fprintf(out, "#<closure>"); break;
-        case FLAG_MACRO:   fprintf(out, "#<macro>");   break;
-        case FLAG_THREAD:  fprintf(out, "#<thread>");  break;
-        case FLAG_MUTEX:   fprintf(out, "#<mutex>");   break;
-        case FLAG_COND:    fprintf(out, "#<cond>");    break;
+        case FLAG_CLOSURE:  fprintf(out, "#<closure>"); break;
+        case FLAG_MACRO:    fprintf(out, "#<macro>");   break;
+        case FLAG_THREAD:   fprintf(out, "#<thread>");  break;
+        case FLAG_MUTEX:    fprintf(out, "#<mutex>");   break;
+        case FLAG_COND:     fprintf(out, "#<cond>");    break;
         case FLAG_SOCKET:
             fprintf(out, "#<socket %d>", disp_get_socket_fd(v));
             break;

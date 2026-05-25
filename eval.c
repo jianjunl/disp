@@ -60,6 +60,7 @@ disp_box disp_eval(disp_scope_t *scope, disp_box expr) {
         case FLAG_SHORT:
         case FLAG_INT:
         case FLAG_LONG:
+        case FLAG_LONG_LONG:
         case FLAG_FLOAT:
         case FLAG_DOUBLE:
         case FLAG_STRING:
