@@ -30,14 +30,14 @@ GC_UNION_TI(disp_data,
 );
 
 char* disp_get_type_name(disp_box v) {
-    if (v->flag != TAG_TYPE) {
+    if (T(v) != TAG_TYPE) {
 	ERRO("disp_get_type_name failed: %s\n", strerror (errno));
     }
     return v->data->type_val.name;
 }
 
 disp_box disp_get_type_decl(disp_box v) {
-    if (v->flag != TAG_TYPE) {
+    if (T(v) != TAG_TYPE) {
 	ERRO("T_decl failed: %s\n", strerror (errno));
     }
     return v->data->type_val.decl;

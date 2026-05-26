@@ -139,7 +139,7 @@ static disp_box current_coro_syscall(disp_box *args, int count) {
 
 void scheduler_add(disp_box coro) {
     if (!coro || T(coro) != TAG_CORO) {
-        INFO("scheduler_add: invalid coro %p (flag=%d)", (void*)coro, coro != NULL ? T(coro) : FLAG_FALSE);
+        INFO("scheduler_add: invalid coro %p (flag=%d)", (void*)coro, coro != NULL ? T(coro) : FLAG_VOID);
         exit(1);
     }
     if (ready_head == NULL) {

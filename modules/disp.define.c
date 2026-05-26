@@ -36,10 +36,10 @@ static disp_box define_builtin(disp_scope_t *scope, disp_box expr) {
                 // 原来构造 lambda_expr 再求值，改为直接创建闭包
                 //disp_box lambda_expr = disp_make_cons(LAMBDA, disp_make_cons(params, body_rest));
                 //disp_box closure = disp_eval(scope, lambda_expr);
-                //disp_define_symbol(scope, S(first_arg), closure, 0);
+                //disp_define_symbol(scope, SN(first_arg), closure, 0);
                 // 直接创建可尾递归优化的闭包
                 disp_box closure = disp_make_closure(scope, params, body_rest, 1);
-                disp_define_symbol(scope, S(first_arg), closure, 0);
+                disp_define_symbol(scope, SN(first_arg), closure, 0);
                 return first_arg;
             }
         }
@@ -48,7 +48,7 @@ static disp_box define_builtin(disp_scope_t *scope, disp_box expr) {
         if (!rest || T(rest) != FLAG_CONS) 
             ERET(NIL, "define: missing expression");
         disp_box value = disp_eval(scope, disp_car(rest));
-        disp_define_symbol(scope, S(first_arg), value, 0);
+        disp_define_symbol(scope, SN(first_arg), value, 0);
         return first_arg;
     } else if (T(first_arg) == FLAG_CONS) {
         // 原有 (define (name params) body ...) 语法
@@ -61,10 +61,10 @@ static disp_box define_builtin(disp_scope_t *scope, disp_box expr) {
         // 原来构造 lambda_expr 再求值，改为直接创建闭包
         //disp_box lambda_expr = disp_make_cons(LAMBDA, disp_make_cons(params, rest));
         //disp_box closure = disp_eval(scope, lambda_expr);
-        //disp_define_symbol(scope, S(name_sym), closure, 0);
+        //disp_define_symbol(scope, SN(name_sym), closure, 0);
         // 直接创建可尾递归优化的闭包
         disp_box closure = disp_make_closure(scope, params, rest, 1);
-        disp_define_symbol(scope, S(name_sym), closure, 0);
+        disp_define_symbol(scope, SN(name_sym), closure, 0);
         return name_sym;
         
     } else {

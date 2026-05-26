@@ -69,7 +69,7 @@ disp_box disp_letf(disp_scope_t *scope, disp_box expr) {
     disp_box closure = disp_make_closure(loop_scope, params, body, 1);
     
     // 4. 将闭包绑定到 loop_scope 中的同名符号
-    disp_define_symbol(loop_scope, S(name), closure, 1);
+    disp_define_symbol(loop_scope, SN(name), closure, 1);
     
     // 5. 调用闭包（传入初始参数，这些参数不会覆盖闭包自身的绑定）
     disp_box result = disp_apply_closure(closure, args, var_count);

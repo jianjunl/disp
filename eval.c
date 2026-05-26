@@ -63,18 +63,18 @@ disp_box disp_eval(disp_scope_t *scope, disp_box expr) {
         case FLAG_FLOAT:
         case FLAG_DOUBLE:
         case FLAG_STRING:
-        case FLAG_TRUE:
-        case FLAG_FALSE:
+        case FLAG_VOID:
+        case FLAG_NAN:
             return expr;
         case FLAG_SYMBOL: {
-            if (V(expr) == QUIT) {
+            if (SV(expr) == QUIT) {
                 exit(0);
             }
-            disp_box val = disp_find_symbol(scope, S(expr));
+            disp_box val = disp_find_symbol(scope, SN(expr));
             if (!val || val == NIL) {
-                ERET(NIL, "undefined symbol: %s", S(expr));
+                ERET(NIL, "undefined symbol: %s", SN(expr));
             }
-            disp_box value = V(val);   // 注意：需要查找后取其 value
+            disp_box value = SV(val);   // 注意：需要查找后取其 value
             return value;
         }
         case FLAG_CONS: {

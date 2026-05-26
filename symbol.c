@@ -29,7 +29,7 @@ GC_STRUCT_TI(disp_val,
 disp_box disp_alloc(int flag, disp_data *data) {
     disp_box v = gc_typed_calloc(1, sizeof(struct disp_val), &struct_disp_val_ti);
     v->data = data;
-    v->flag = flag;
+    T(v) = flag;
     return v;
 }
 
@@ -69,7 +69,7 @@ disp_box disp_make_symbol(const char *name) {
 }
 
 char* disp_get_symbol_name(disp_box v) {
-    if (!v || v->flag != FLAG_SYMBOL) {
+    if (!v || T(v) != FLAG_SYMBOL) {
         ERRO("disp_get_symbol_name failed");
         return NULL;
     }
@@ -78,7 +78,7 @@ char* disp_get_symbol_name(disp_box v) {
 }
 
 disp_box disp_get_symbol_value(disp_box v) {
-    if (!v || v->flag != FLAG_SYMBOL) {
+    if (!v || T(v) != FLAG_SYMBOL) {
         ERRO("disp_get_symbol_value failed");
     }
     return v->data->symbol.value;
@@ -87,9 +87,9 @@ disp_box disp_get_symbol_value(disp_box v) {
 /* ======================== GC 初始化和全局常量 ======================== */
 
 void disp_init_symbol() {
-    NIL  = ALLOC_TI(FLAG_FALSE);
-    TRUE = ALLOC_TI(FLAG_TRUE);
-    QUIT = ALLOC_TI(FLAG_FALSE);
+    NIL  = ALLOC_TI(FLAG_VOID);
+    TRUE = ALLOC_TI(FLAG_VOID);
+    QUIT = ALLOC_TI(FLAG_VOID);
     DEF("nil",   NIL,  1);
     DEF("false", NIL,  1);
     DEF("true",  TRUE, 1);

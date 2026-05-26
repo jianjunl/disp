@@ -20,7 +20,7 @@ disp_box disp_make_symbol(const char *name);
 char* disp_get_symbol_name(disp_box v);
 disp_box disp_get_symbol_value(disp_box v);
 
-#define S disp_get_symbol_name
-#define V disp_get_symbol_value
+#define SN(v) disp_get_symbol_name(v)
+#define SV(v) disp_get_symbol_value(v)
  
 #endif // SYMBOL_H

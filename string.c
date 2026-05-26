@@ -30,14 +30,14 @@ GC_UNION_TI(disp_data,
 );
 
 char* disp_get_str(disp_box v) {
-    if (v->flag != FLAG_STRING) {
+    if (T(v) != FLAG_STRING) {
 	ERRO("disp_get_string failed: %s\n", strerror (errno));
     }
     return v->data->string_val.str;
 }
 
 size_t disp_get_str_len(disp_box v) {
-    if (v->flag != FLAG_STRING) {
+    if (T(v) != FLAG_STRING) {
 	ERRO("disp_get_string failed: %s\n", strerror (errno));
     }
     return v->data->string_val.len;

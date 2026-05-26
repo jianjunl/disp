@@ -38,17 +38,17 @@ disp_box disp_make_cons(disp_box car, disp_box cdr) {
 }
 
 disp_box disp_car(disp_box cons) {
-    return (cons && cons->flag == FLAG_CONS) ? cons->data->cons.car : NIL;
+    return (cons && T(cons) == FLAG_CONS) ? cons->data->cons.car : NIL;
 }
 
 disp_box disp_cdr(disp_box cons) {
-    return (cons && cons->flag == FLAG_CONS) ? cons->data->cons.cdr : NIL;
+    return (cons && T(cons) == FLAG_CONS) ? cons->data->cons.cdr : NIL;
 }
 
 void disp_set_car(disp_box cons, disp_box car) {
-    if (cons && cons->flag == FLAG_CONS) GC_ASSIGN_PTR(cons->data->cons.car, car);
+    if (cons && T(cons) == FLAG_CONS) GC_ASSIGN_PTR(cons->data->cons.car, car);
 }
 
 void disp_set_cdr(disp_box cons, disp_box cdr) {
-    if (cons && cons->flag == FLAG_CONS) GC_ASSIGN_PTR(cons->data->cons.cdr, cdr);
+    if (cons && T(cons) == FLAG_CONS) GC_ASSIGN_PTR(cons->data->cons.cdr, cdr);
 }

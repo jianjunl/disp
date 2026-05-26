@@ -355,11 +355,11 @@ static void pretty_print_obj(disp_box v, int indent, int newline) {
         case FLAG_DOUBLE:
             printf("%g", disp_get_double(v));
             break; 
-        case FLAG_TRUE:
-            printf("true");
+        case FLAG_VOID:
+            v == TRUE ? printf("true") : printf("nil");
             break;
-        case FLAG_FALSE:
-            printf("nil");
+        case FLAG_NAN:
+            printf("NaN");
             break;
         default:
             disp_print(v);

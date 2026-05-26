@@ -34,28 +34,28 @@ GC_UNION_TI(disp_data,
 );
 
 disp_builtin_t disp_get_builtin(disp_box v) {
-    if (v->flag == FLAG_BUILTIN) {
+    if (T(v) == FLAG_BUILTIN) {
         return v->data->builtin.func;
     }
     ERET(NULL, "disp_get_builtin failed: %s\n", disp_str(v));
 }
 
 char* disp_get_builtin_desc(disp_box v) {
-    if (v->flag == FLAG_BUILTIN) {
+    if (T(v) == FLAG_BUILTIN) {
         return v->data->builtin.desc;
     }
     ERET(NULL, "disp_get_builtin_desc failed: %s\n", strerror (errno));
 }
 
 disp_syscall_t disp_get_syscall(disp_box v) {
-    if (v->flag == FLAG_SYSCALL) {
+    if (T(v) == FLAG_SYSCALL) {
         return v->data->syscall.func;
     }
     ERET(NULL, "disp_get_syscall failed: %s\n", strerror (errno));
 }
 
 char* disp_get_syscall_desc(disp_box v) {
-    if (v->flag == FLAG_SYSCALL) {
+    if (T(v) == FLAG_SYSCALL) {
         return v->data->syscall.desc;
     }
     ERET(NULL, "disp_get_syscall_desc failed: %s\n", strerror (errno));

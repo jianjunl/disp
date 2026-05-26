@@ -87,8 +87,8 @@ void disp_fprint(FILE *out, disp_box v) {
             }
             fputc(')', out);
             break;
-        case FLAG_TRUE:     fprintf(out, "true"); break;
-        case FLAG_FALSE:    fprintf(out, "nil"); break;
+        case FLAG_VOID: v == TRUE ? fprintf(out, "true") : fprintf(out, "nil"); break;
+        case FLAG_NAN: fprintf(out, "NaN"); break;
         case FLAG_BUILTIN:  fprintf(out, "#<builtin>"); break;
         case FLAG_SYSCALL:  fprintf(out, "#<function>"); break;
         case FLAG_CLOSURE:  fprintf(out, "#<closure>"); break;
@@ -144,8 +144,8 @@ void disp_fwrite(FILE *out, disp_box v) {
             }
             fputc(')', out);
             break;
-        case FLAG_TRUE:     fprintf(out, "true"); break;
-        case FLAG_FALSE:    fprintf(out, "nil"); break;
+        case FLAG_VOID: v == TRUE ? fprintf(out, "true") : fprintf(out, "nil"); break;
+        case FLAG_NAN: fprintf(out, "NaN"); break;
         case FLAG_SYSCALL:  fprintf(out, "#<function>"); break;
         case FLAG_BUILTIN:  fprintf(out, "#<builtin>"); break;
         case FLAG_CLOSURE: fprintf(out, "#<closure>"); break;

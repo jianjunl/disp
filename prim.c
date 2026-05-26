@@ -18,6 +18,8 @@
 #endif
 #include "disp.h"
 
+#if ~NAN_BOXING
+
 union disp_data {
     /* 基本数值类型 */
     char byte_val;
@@ -26,97 +28,129 @@ union disp_data {
     long long_val;
     float float_val;
     double double_val;
-    /* 套接字 */
-    struct {
-        int fd;
-    } socket_val;
 };
 
-char disp_get_byte(disp_box v) {
-    if (v->flag != FLAG_BYTE) {
-	ERRO("disp_get_byte failed: %s\n", strerror (errno));
-    }
+inline char disp_get_byte(disp_box v) {
+    if (T(v) != FLAG_BYTE) ERRO("disp_get_byte failed");
     return v->data->byte_val;
 }
 
-short disp_get_short(disp_box v) {
-    if (v->flag != FLAG_SHORT) {
-	ERRO("disp_get_short failed: %s\n", strerror (errno));
-    }
+inline short disp_get_short(disp_box v) {
+    if (T(v) != FLAG_SHORT) ERRO("disp_get_short failed");
     return v->data->short_val;
 }
 
-int disp_get_int(disp_box v) {
-    if (v->flag != FLAG_INT) {
-	ERRO("disp_get_int failed: %s\n", strerror (errno));
-    }
+inline int disp_get_int(disp_box v) {
+    if (T(v) != FLAG_INT) ERRO("disp_get_int failed");
     return v->data->int_val;
 }
 
-long disp_get_long(disp_box v) {
-    if (v->flag != FLAG_LONG) {
-	ERRO("disp_get_long failed: %s\n", strerror (errno));
-    }
+inline long disp_get_long(disp_box v) {
+    if (T(v) != FLAG_LONG) ERRO("disp_get_long failed");
     return v->data->long_val;
 }
 
-float disp_get_float(disp_box v) {
-    if (v->flag != FLAG_FLOAT) {
-	ERRO("disp_get_float failed: %s\n", strerror (errno));
-    }
+inline float disp_get_float(disp_box v) {
+    if (T(v) != FLAG_FLOAT) ERRO("disp_get_float failed");
     return v->data->float_val;
 }
 
-double disp_get_double(disp_box v) {
-    if (v->flag != FLAG_DOUBLE) {
-	ERRO("disp_get_double failed: %s\n", strerror (errno));
-    }
+inline double disp_get_double(disp_box v) {
+    if (T(v) != FLAG_DOUBLE) ERRO("disp_get_double failed");
     return v->data->double_val;
 }
 
-disp_box disp_make_byte(char c) {
+inline disp_box disp_make_byte(char c) {
     disp_box v = ALLOC(FLAG_BYTE);
     v->data->byte_val = c;
     return v;
 }
 
-disp_box disp_make_short(short i) {
+inline disp_box disp_make_short(short s) {
     disp_box v = ALLOC(FLAG_SHORT);
-    v->data->int_val = i;
+    v->data->short_val = s;
     return v;
 }
 
-disp_box disp_make_int(int i) {
+inline disp_box disp_make_int(int i) {
     disp_box v = ALLOC(FLAG_INT);
     v->data->int_val = i;
     return v;
 }
 
-disp_box disp_make_long(long l) {
+inline disp_box disp_make_long(long l) {
     disp_box v = ALLOC(FLAG_LONG);
     v->data->long_val = l;
     return v;
 }
 
-disp_box disp_make_float(float f) {
+inline disp_box disp_make_float(float f) {
     disp_box v = ALLOC(FLAG_FLOAT);
     v->data->float_val = f;
     return v;
 }
 
-disp_box disp_make_double(double d) {
+inline disp_box disp_make_double(double d) {
     disp_box v = ALLOC(FLAG_DOUBLE);
     v->data->double_val = d;
     return v;
 }
 
-disp_box disp_make_socket(int fd) {
-    disp_box v = ALLOC(TAG_SOCKET);
-    v->data->socket_val.fd = fd;
-    return v;
+#else // NAN_BOXING
+
+inline char disp_get_byte(disp_box v) {
+    if (T(v) != FLAG_BYTE) ERRO("disp_get_byte failed");
+    return (char)NAN_UNBOX(v);
 }
 
-int disp_get_socket_fd(disp_box v) {
-    if (v->flag != TAG_SOCKET) return -1;
-    return v->data->socket_val.fd;
+inline short disp_get_short(disp_box v) {
+    if (T(v) != FLAG_SHORT) ERRO("disp_get_short failed");
+    return (short)NAN_UNBOX(v);
 }
+
+inline int disp_get_int(disp_box v) {
+    if (T(v) != FLAG_INT) ERRO("disp_get_int failed");
+    return (int)(int32_t)NAN_UNBOX(v);
+}
+
+inline long disp_get_long(disp_box v) {
+    if (v & NAN_MASK) ERRO("disp_get_long failed");
+    return (long)(double)v;
+}
+
+inline float disp_get_float(disp_box v) {
+    if (T(v) != FLAG_FLOAT) ERRO("disp_get_float failed");
+    return (float)(double)NAN_UNBOX(v);
+}
+
+inline double disp_get_double(disp_box v) {
+    if (v & NAN_MASK) ERRO("disp_get_double failed");
+    return (double)v;
+}
+
+inline disp_box disp_make_byte(char c) {
+    return NAN_BOX(FLAG_BYTE, (disp_box)(unsigned char)c);
+}
+
+inline disp_box disp_make_short(short s) {
+    return NAN_BOX(FLAG_SHORT, (disp_box)(unsigned short)s);
+}
+
+inline disp_box disp_make_int(int i) {
+    return NAN_BOX(FLAG_INT, (disp_box)(uint32_t)i);
+}
+
+inline disp_box disp_make_long(long l) {
+    return disp_make_double((double)l);
+}
+
+inline disp_box disp_make_float(float f) {
+    return NAN_BOX(FLAG_FLOAT (disp_box)(double)f);
+}
+
+inline disp_box disp_make_double(double d) {
+    if (d != d) ERRO("can not box NaN");
+    return (disp_box)d;
+}
+
+#endif // ~NAN_BOXING
