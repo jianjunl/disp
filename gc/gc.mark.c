@@ -99,6 +99,7 @@ static void gc_scan_region(void *start, void *end) {
         /* Single traversal: gc_find_block returns NULL if not managed */
         gc_block_t *blk = gc_find_block(candidate);
         if (blk && !blk->marked) {
+            LOG_DEBUG("found pointer %p at address %p, marking block %p", candidate, p, blk);
             blk->marked = true;
             gc_scan_block_content(blk);
         }

@@ -15,7 +15,8 @@
 #endif
 #include "disp.h"
 
-disp_val __attribute__((section("gc_roots"))) disp_builtin_roots[NUM_BUILTIN_ROOTS] = { DNULL };
+//disp_val __attribute__((section("gc_roots"))) disp_builtin_roots[NUM_BUILTIN_ROOTS] = {};
+disp_val disp_builtin_roots[NUM_BUILTIN_ROOTS] = {};
 
 /* ======================== Built‑in 'load' ======================== */
 static disp_val import_syscall(disp_val *args, int argc) {
