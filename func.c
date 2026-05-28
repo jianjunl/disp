@@ -16,7 +16,13 @@
 
 /* ======================== Funcs ======================== */
 
+#if DISP_NAN_BOXING
+struct disp_data {
+    disp_flag_t tag;
+    union {
+#else
 union disp_data {
+#endif
     /* 内置函数 / 系统调用 */
     struct {
         disp_builtin_t func;
@@ -26,6 +32,9 @@ union disp_data {
         disp_syscall_t func;
         char *desc;
     } syscall; // for function/primitive
+#if DISP_NAN_BOXING
+    };
+#endif
 };
 
 GC_UNION_TI(disp_data,

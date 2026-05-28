@@ -16,6 +16,26 @@
 
 /* ======================== Funcs ======================== */
 
+#if DISP_NAN_BOXING
+struct disp_data {
+    disp_flag_t tag;
+    /* 闭包 / 宏 */
+    struct {
+        disp_val params;
+        disp_val body;
+        disp_scope_t *env;
+        int reuse_scope;    /* 1: 可复用调用时的作用域（优化尾递归） */
+    } closure;
+};
+
+GC_STRUCT_TI(disp_data,
+    GC_OFF(disp_data, closure.params),
+    GC_OFF(disp_data, closure.body),
+    GC_OFF(disp_data, closure.env)
+);
+
+#else // DISP_NAN_BOXING
+
 union disp_data {
     /* 闭包 / 宏 */
     struct {
@@ -32,6 +52,8 @@ GC_UNION_TI(disp_data,
     GC_OFF(disp_data, closure.env)
 );
 
+#endif
+
 static void intern_params(disp_scope_t *env, disp_val params) {
     for (disp_val p = params; NN(p) && T(p) == FLAG_CONS; p = disp_cdr(p)) {
         disp_val sym = disp_car(p);
@@ -47,20 +69,20 @@ static void intern_params(disp_scope_t *env, disp_val params) {
 disp_val disp_make_closure(disp_scope_t *env, disp_val params, disp_val body, int reuse_scope) {
     intern_params(env, params);
     disp_val v = ALLOC_TI(FLAG_CLOSURE, 0);
-    v.data->closure.params = params;
-    v.data->closure.body   = body;
-    v.data->closure.env    = env;
-    v.data->closure.reuse_scope = reuse_scope;
+    D(v)->closure.params = params;
+    D(v)->closure.body   = body;
+    D(v)->closure.env    = env;
+    D(v)->closure.reuse_scope = reuse_scope;
     return v;
 }
 
 disp_val disp_make_macro(disp_scope_t *env, disp_val params, disp_val body, int reuse_scope) {
     intern_params(env, params);
     disp_val v = ALLOC_TI(FLAG_MACRO, 0);
-    v.data->closure.params = params;
-    v.data->closure.body   = body;
-    v.data->closure.env    = env;
-    v.data->closure.reuse_scope = reuse_scope;
+    D(v)->closure.params = params;
+    D(v)->closure.body   = body;
+    D(v)->closure.env    = env;
+    D(v)->closure.reuse_scope = reuse_scope;
     return v;
 }
 
@@ -69,7 +91,7 @@ disp_val disp_get_closure_params(disp_val closure) {
         ERRO("disp_get_closure_params: not a closure/macro\n");
         return NIL;
     }
-    return closure.data->closure.params;
+    return D(closure)->closure.params;
 }
 
 disp_val disp_get_closure_body(disp_val closure) {
@@ -77,7 +99,7 @@ disp_val disp_get_closure_body(disp_val closure) {
         ERRO("disp_get_closure_body: not a closure/macro\n");
         return NIL;
     }
-    return closure.data->closure.body;
+    return D(closure)->closure.body;
 }
 
 disp_scope_t* disp_get_closure_env(disp_val closure) {
@@ -85,7 +107,7 @@ disp_scope_t* disp_get_closure_env(disp_val closure) {
         ERRO("disp_get_closure_env: not a closure/macro\n");
         return NULL;
     }
-    return closure.data->closure.env;
+    return D(closure)->closure.env;
 }
 
 void bind_arguments_to_scope(disp_scope_t *scope, disp_val params, disp_val *args, int arg_count) {
@@ -140,16 +162,16 @@ void bind_arguments_to_scope(disp_scope_t *scope, disp_val params, disp_val *arg
 #include "tail.h"
 
 disp_val disp_apply_closure(disp_val closure, disp_val *args, int arg_count) {
-    if (!closure.data->closure.reuse_scope) {
-        GC_ROOT(disp_scope_t, new_scope) = disp_new_scope(closure.data->closure.env);
-        bind_arguments_to_scope(new_scope, closure.data->closure.params, args, arg_count);
-        disp_val ret = disp_eval_body(new_scope, closure.data->closure.body);
+    if (!D(closure)->closure.reuse_scope) {
+        GC_ROOT(disp_scope_t, new_scope) = disp_new_scope(D(closure)->closure.env);
+        bind_arguments_to_scope(new_scope, D(closure)->closure.params, args, arg_count);
+        disp_val ret = disp_eval_body(new_scope, D(closure)->closure.body);
         return ret;
     }
 
-    disp_scope_t *env = closure.data->closure.env;
-    disp_val params = closure.data->closure.params;
-    disp_val body = closure.data->closure.body;
+    disp_scope_t *env = D(closure)->closure.env;
+    disp_val params = D(closure)->closure.params;
+    disp_val body = D(closure)->closure.body;
     disp_val *current_args = args;
     int current_argc = arg_count;
     eval_result_t res;

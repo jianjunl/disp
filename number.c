@@ -18,63 +18,7 @@
 #endif
 #include "disp.h"
 
-#if ~DISP_NAN_BOXING
-
-inline char disp_get_byte(disp_val v) {
-    if (T(v) != FLAG_BYTE) ERRO("disp_get_byte failed");
-    return v.byte_val;
-}
-
-inline short disp_get_short(disp_val v) {
-    if (T(v) != FLAG_SHORT) ERRO("disp_get_short failed");
-    return v.short_val;
-}
-
-inline int disp_get_int(disp_val v) {
-    if (T(v) != FLAG_INT) ERRO("disp_get_int failed");
-    return v.int_val;
-}
-
-inline long disp_get_long(disp_val v) {
-    if (T(v) != FLAG_LONG) ERRO("disp_get_long failed");
-    return v.long_val;
-}
-
-inline float disp_get_float(disp_val v) {
-    if (T(v) != FLAG_FLOAT) ERRO("disp_get_float failed");
-    return v.float_val;
-}
-
-inline double disp_get_double(disp_val v) {
-    if (T(v) != FLAG_DOUBLE) ERRO("disp_get_double failed");
-    return v.double_val;
-}
-
-inline disp_val disp_make_byte(char c) {
-    return (disp_val){.flag = FLAG_BYTE, .byte_val = c};
-}
-
-inline disp_val disp_make_short(short s) {
-    return (disp_val){.flag = FLAG_SHORT, .short_val = s};
-}
-
-inline disp_val disp_make_int(int i) {
-    return (disp_val){.flag = FLAG_INT, .int_val = i};
-}
-
-inline disp_val disp_make_long(long l) {
-    return (disp_val){.flag = FLAG_LONG, .long_val = l};
-}
-
-inline disp_val disp_make_float(float f) {
-    return (disp_val){.flag = FLAG_FLOAT, .float_val = f};
-}
-
-inline disp_val disp_make_double(double d) {
-    return (disp_val){.flag = FLAG_DOUBLE, .double_val = d};
-}
-
-#else // DISP_NAN_BOXING
+#if DISP_NAN_BOXING
 
 inline char disp_get_byte(disp_val v) {
     if (T(v) != FLAG_BYTE) ERRO("disp_get_byte failed");
@@ -129,6 +73,62 @@ inline disp_val disp_make_float(float f) {
 inline disp_val disp_make_double(double d) {
     if (d != d) ERRO("can not box NaN");
     return (disp_val)d;
+}
+
+#else // DISP_NAN_BOXING
+
+inline char disp_get_byte(disp_val v) {
+    if (T(v) != FLAG_BYTE) ERRO("disp_get_byte failed");
+    return v.byte_val;
+}
+
+inline short disp_get_short(disp_val v) {
+    if (T(v) != FLAG_SHORT) ERRO("disp_get_short failed");
+    return v.short_val;
+}
+
+inline int disp_get_int(disp_val v) {
+    if (T(v) != FLAG_INT) ERRO("disp_get_int failed");
+    return v.int_val;
+}
+
+inline long disp_get_long(disp_val v) {
+    if (T(v) != FLAG_LONG) ERRO("disp_get_long failed");
+    return v.long_val;
+}
+
+inline float disp_get_float(disp_val v) {
+    if (T(v) != FLAG_FLOAT) ERRO("disp_get_float failed");
+    return v.float_val;
+}
+
+inline double disp_get_double(disp_val v) {
+    if (T(v) != FLAG_DOUBLE) ERRO("disp_get_double failed");
+    return v.double_val;
+}
+
+inline disp_val disp_make_byte(char c) {
+    return (disp_val){.flag = FLAG_BYTE, .byte_val = c};
+}
+
+inline disp_val disp_make_short(short s) {
+    return (disp_val){.flag = FLAG_SHORT, .short_val = s};
+}
+
+inline disp_val disp_make_int(int i) {
+    return (disp_val){.flag = FLAG_INT, .int_val = i};
+}
+
+inline disp_val disp_make_long(long l) {
+    return (disp_val){.flag = FLAG_LONG, .long_val = l};
+}
+
+inline disp_val disp_make_float(float f) {
+    return (disp_val){.flag = FLAG_FLOAT, .float_val = f};
+}
+
+inline disp_val disp_make_double(double d) {
+    return (disp_val){.flag = FLAG_DOUBLE, .double_val = d};
 }
 
 #endif // ~DISP_NAN_BOXING

@@ -14,6 +14,21 @@
 #endif
 #include "disp.h"
 
+#if DISP_NAN_BOXING
+struct disp_data {
+    disp_flag_t tag;
+    struct {
+        uint64_t id;
+        disp_val value;
+    } symbol;
+};
+
+GC_STRUCT_TI(disp_data,
+    GC_OFF(disp_data, symbol.value)
+);
+
+#else // DISP_NAN_BOXING
+
 union disp_data {
     struct {
         uint64_t id;
@@ -25,6 +40,8 @@ GC_UNION_TI(disp_data,
     GC_OFF(disp_data, symbol.value)
 );
 
+#endif
+
 /* ======================== 符号表 ======================== */
 #define SYM_TABLE_SIZE 1024
 
@@ -33,8 +50,9 @@ void disp_set_symbol_value(disp_val sym, disp_val value) {
         ERRO("disp_set_symbol_value: not a symbol");
         return;
     }
-    GC_ASSIGN_PTR(sym.data->symbol.value, value);
+    D(sym)->symbol.value = value;
 }
+
 disp_val disp_make_symbol(const char *name) {
     disp_val v = ALLOC_TI(FLAG_SYMBOL, 0);
     if (N(v)) return DNULL;

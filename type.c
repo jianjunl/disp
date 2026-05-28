@@ -16,6 +16,23 @@
 
 /* ======================== Funcs ======================== */
 
+#if DISP_NAN_BOXING
+struct disp_data {
+    disp_flag_t tag;
+    /* 类型 */
+    struct {
+        char *name;
+        disp_val decl;
+    } type_val;
+};
+
+GC_STRUCT_TI(disp_data,
+    GC_OFF(disp_data, type_val.name),
+    GC_OFF(disp_data, type_val.decl)
+);
+
+#else // DISP_NAN_BOXING
+
 union disp_data {
     /* 类型 */
     struct {
@@ -28,6 +45,8 @@ GC_UNION_TI(disp_data,
     GC_OFF(disp_data, type_val.name),
     GC_OFF(disp_data, type_val.decl)
 );
+
+#endif // DISP_NAN_BOXING
 
 char* disp_get_type_name(disp_val v) {
     if (T(v) != TAG_TYPE) {

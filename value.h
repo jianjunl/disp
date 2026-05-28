@@ -11,7 +11,6 @@
 #include <stdbool.h>
 
 typedef uint16_t disp_flag_t;
-typedef union disp_data disp_data;
 
 // Flags of Primitives (0xFFF8 - 0xFFFF)
 #define FLAG_VOID       0xFFF8
@@ -51,6 +50,8 @@ typedef union disp_data disp_data;
 
 typedef uint64_t disp_val;
 
+typedef struct disp_data disp_data;
+
 // Flags (High 16 bits)
 #define TAG_SHIFT       48
 #define TAG_MASK        0x0000FFFFFFFFFFFFULL
@@ -59,9 +60,9 @@ typedef uint64_t disp_val;
 
 #define NAN_UNBOX(v) (v & TAG_MASK)
 
-#define NAN_BOX(t, v) ((((disp_val)t) << TAG_SHIFT) | (v & TAG_MASK))
+#define NAN_BOX(t, v) ((((disp_val)t) << TAG_SHIFT) | (((disp_val)v) & TAG_MASK))
 
-#define D(v) (disp_data*)NAN_UNBOX(v);
+#define D(v) ((disp_data *)NAN_UNBOX(v))
 
 #define T(v) (NAN_FLAG(v) == FLAG_EXTRA ? D(v)->tag : NAN_FLAG(v))
 
@@ -73,11 +74,13 @@ typedef uint64_t disp_val;
 
 #define DNULL V(FLAG_VOID, 0, NULL)
 
-#define N(v) (D(v) == NULL) 
+#define N(v) (T(v) == FLAG_VOID && D(v) == NULL)
 
 #define NN(v) !N(v)
 
 #else // DISP_NAN_BOXING = 0
+
+typedef union disp_data disp_data;
 
 typedef struct disp_val {
     union {

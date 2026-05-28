@@ -14,6 +14,22 @@
 
 /* ======================== FILE ======================== */
 
+#if DISP_NAN_BOXING
+struct disp_data {
+    disp_flag_t tag;
+    /* 文件 */
+    struct {
+        FILE *file;
+        char *mode;
+    } file_val;
+};
+
+GC_STRUCT_TI(disp_data,
+    GC_OFF(disp_data, file_val.mode)
+);
+
+#else // DISP_NAN_BOXING
+
 union disp_data {
     /* 文件 */
     struct {
@@ -25,6 +41,8 @@ union disp_data {
 GC_UNION_TI(disp_data,
     GC_OFF(disp_data, file_val.mode)
 );
+
+#endif // DISP_NAN_BOXING
 
 disp_val disp_make_file(FILE *f, char *mode) {
     disp_val v = ALLOC_TI(FLAG_EXTRA, TAG_FILE);

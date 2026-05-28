@@ -18,12 +18,25 @@
 #endif
 #include "disp.h"
 
+#if DISP_NAN_BOXING
+struct disp_data {
+    disp_flag_t tag;
+    /* 套接字 */
+    struct {
+        int fd;
+    } socket_val;
+};
+
+#else // DISP_NAN_BOXING
+
 union disp_data {
     /* 套接字 */
     struct {
         int fd;
     } socket_val;
 };
+
+#endif // DISP_NAN_BOXING
 
 disp_val disp_make_socket(int fd) {
     disp_val v = ALLOC(FLAG_EXTRA, TAG_SOCKET);

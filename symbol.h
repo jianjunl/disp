@@ -9,8 +9,9 @@
 #include <ctype.h>
 
 /* --- Allocation --- */
-#define ALLOC_TI(f, t) V(f, t, gc_typed_calloc(1, sizeof(union disp_data), &union_disp_data_ti))
-#define ALLOC(f, t) V(f, t, gc_calloc(1, sizeof(union disp_data)))
+
+#define ALLOC_TI(f, t) V(f, t, gc_typed_calloc(1, sizeof(disp_data), &union_disp_data_ti))
+#define ALLOC(f, t) V(f, t, gc_calloc(1, sizeof(disp_data)))
 
 /* --- Symbol table --- */
 void disp_init_symbol(void);

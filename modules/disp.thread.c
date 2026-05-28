@@ -90,7 +90,7 @@ static disp_val thread_join_syscall(disp_val *args, int count) {
         ERET(NIL, "thread-join expects a thread object");
     
     disp_val thread_obj = args[0];
-    disp_thread_t *t = thread_obj.data->thread;
+    disp_thread_t *t = D(thread_obj)->thread;
     
     gc_pthread_mutex_lock(t->lock);
     while (!t->finished) {
@@ -121,7 +121,7 @@ static disp_val make_mutex_syscall(disp_val *args, int count) {
 static disp_val lock_mutex_syscall(disp_val *args, int count) {
     if (count != 1 || T(args[0]) != TAG_MUTEX)
         ERET(NIL, "lock expects a mutex");
-    gc_mutex_t *m = args[0].data->mutex;
+    gc_mutex_t *m = D(args[0])->mutex;
     if (gc_pthread_mutex_lock(m) != 0)
         ERET(NIL, "lock: failed");
     return TRUE;
@@ -131,7 +131,7 @@ static disp_val lock_mutex_syscall(disp_val *args, int count) {
 static disp_val unlock_mutex_syscall(disp_val *args, int count) {
     if (count != 1 || T(args[0]) != TAG_MUTEX)
         ERET(NIL, "unlock expects a mutex");
-    gc_mutex_t *m = args[0].data->mutex;
+    gc_mutex_t *m = D(args[0])->mutex;
     if (gc_pthread_mutex_unlock(m) != 0)
         ERET(NIL, "unlock: failed");
     return TRUE;
@@ -164,7 +164,7 @@ static disp_val condition_wait_syscall(disp_val *args, int count) {
 static disp_val condition_signal_syscall(disp_val *args, int count) {
     if (count != 1 || T(args[0]) != TAG_COND)
         ERET(NIL, "condition-signal expects a cond");
-    gc_cond_t *c = args[0].data->cond;
+    gc_cond_t *c = D(args[0])->cond;
     if (gc_pthread_cond_signal(c) != 0)
         ERET(NIL, "condition-signal: failed");
     return TRUE;
@@ -174,7 +174,7 @@ static disp_val condition_signal_syscall(disp_val *args, int count) {
 static disp_val condition_broadcast_syscall(disp_val *args, int count) {
     if (count != 1 || T(args[0]) != TAG_COND)
         ERET(NIL, "condition-broadcast expects a cond");
-    gc_cond_t *c = args[0].data->cond;
+    gc_cond_t *c = D(args[0])->cond;
     if (gc_pthread_cond_broadcast(c) != 0)
         ERET(NIL, "condition-broadcast: failed");
     return TRUE;
