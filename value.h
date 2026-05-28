@@ -105,7 +105,7 @@ typedef struct disp_val {
 
 #define DNULL V(FLAG_VOID, 0, NULL)
 
-#define N(v) (D(v) == NULL) 
+#define N(v) (T(v) == FLAG_VOID && D(v) == NULL)
 
 #define NN(v) !N(v)
 

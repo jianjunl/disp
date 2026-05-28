@@ -126,7 +126,7 @@ static disp_val eq_syscall(disp_val *args, int count) {
         case FLAG_LONG: a = disp_get_long(v); break;
         case FLAG_FLOAT: a = disp_get_float(v); break;
         case FLAG_DOUBLE: a = disp_get_double(v); break;
-        default: { if (NE(v, NIL)) ERRO("=: left operand not numeric");}
+        default: ERRO("=: left operand not numeric");
     }
     v = disp_eval(NULL, args[1]);
     switch (T(v)) {
@@ -136,7 +136,7 @@ static disp_val eq_syscall(disp_val *args, int count) {
         case FLAG_LONG: b = disp_get_long(v); break;
         case FLAG_FLOAT: b = disp_get_float(v); break;
         case FLAG_DOUBLE: b = disp_get_double(v); break;
-        default: { if (NE(v, NIL)) ERRO("=: right operand not numeric");}
+        default: ERRO("=: right operand not numeric");
     }
     return (a == b) ? TRUE : NIL;
 }
