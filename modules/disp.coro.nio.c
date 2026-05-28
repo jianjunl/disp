@@ -27,7 +27,7 @@ static int set_nonblocking(int fd) {
 
 // 辅助：从文件对象获取 fd，并确保非阻塞
 #pragma GCC diagnostic ignored "-Wunused-function"
-static int get_nonblock_fd(disp_box file_obj) {
+static int get_nonblock_fd(disp_val file_obj) {
     if (T(file_obj) != TAG_FILE) return -1;
     FILE *f = disp_get_file(file_obj);
     if (!f) return -1;
@@ -38,7 +38,7 @@ static int get_nonblock_fd(disp_box file_obj) {
     return fd;
 }
 
-static disp_box fread_nb_syscall(disp_box *args, int count) {
+static disp_val fread_nb_syscall(disp_val *args, int count) {
     if (count != 1 || T(args[0]) != TAG_FILE)
         ERET(NIL, "fread-nb expects a file object");
     FILE *f = disp_get_file(args[0]);
@@ -52,7 +52,7 @@ static disp_box fread_nb_syscall(disp_box *args, int count) {
     if (n == -1) {
         if (errno == EAGAIN || errno == EWOULDBLOCK) {
             // 数据未就绪，挂起协程等待可读
-            disp_box current = disp_get_current_coro();
+            disp_val current = disp_get_current_coro();
             event_loop_add_fd(fd, current, EPOLLIN);
             scheduler_suspend();
             // 唤醒后重试
@@ -70,7 +70,7 @@ static disp_box fread_nb_syscall(disp_box *args, int count) {
     return disp_make_string(buf);
 }
 
-static disp_box fwrite_nb_syscall(disp_box *args, int count) {
+static disp_val fwrite_nb_syscall(disp_val *args, int count) {
     if (count != 2 || T(args[0]) != TAG_FILE || T(args[1]) != FLAG_STRING)
         ERET(NIL, "fwrite-nb expects (file string)");
     FILE *f = disp_get_file(args[0]);
@@ -86,7 +86,7 @@ static disp_box fwrite_nb_syscall(disp_box *args, int count) {
         ssize_t n = write(fd, str + written, len - written);
         if (n == -1) {
             if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                disp_box current = disp_get_current_coro();
+                disp_val current = disp_get_current_coro();
                 event_loop_add_fd(fd, current, EPOLLOUT);
                 scheduler_suspend();
                 continue;
@@ -101,15 +101,15 @@ static disp_box fwrite_nb_syscall(disp_box *args, int count) {
 
 /* =============================== go 和 sleep =============================== */
 
-static disp_box go_syscall(disp_box *args, int count) {
+static disp_val go_syscall(disp_val *args, int count) {
     if (count != 1 || T(args[0]) != FLAG_CLOSURE)
         ERET(NIL, "go expects a lambda");
-    disp_box coro = disp_make_coroutine(args[0], 65536);
+    disp_val coro = disp_make_coroutine(args[0], 65536);
     scheduler_add(coro);
     return coro;
 }
 
-static disp_box sleep_ms_syscall(disp_box *args, int count) {
+static disp_val sleep_ms_syscall(disp_val *args, int count) {
     if (count != 1) ERET(NIL, "sleep-ms expects milliseconds");
     long ms = 0;
     if (T(args[0]) == FLAG_INT)

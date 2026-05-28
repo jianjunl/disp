@@ -27,6 +27,7 @@ int main(int argc, char **argv) {
     disp_push_source("<stdin>");
 
     disp_import(argc > 1 ? argv[1] : "init.disp");
+    //if (argc > 1) disp_import(argv[1]);
 
     disp_repl();
 

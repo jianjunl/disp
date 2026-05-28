@@ -20,8 +20,8 @@
 
 union disp_data {
     struct {
-        disp_box car;
-        disp_box cdr;
+        disp_val car;
+        disp_val cdr;
     } cons;
 };
 
@@ -30,25 +30,25 @@ GC_UNION_TI(disp_data,
     GC_OFF(disp_data, cons.cdr)
 );
 
-disp_box disp_make_cons(disp_box car, disp_box cdr) {
-    disp_box v = ALLOC_TI(FLAG_CONS);
-    GC_ASSIGN_PTR(v->data->cons.car, car);
-    GC_ASSIGN_PTR(v->data->cons.cdr, cdr);
+disp_val disp_make_cons(disp_val car, disp_val cdr) {
+    disp_val v = ALLOC_TI(FLAG_CONS, 0);
+    D(v)->cons.car = car;
+    D(v)->cons.cdr = cdr;
     return v;
 }
 
-disp_box disp_car(disp_box cons) {
-    return (cons && T(cons) == FLAG_CONS) ? cons->data->cons.car : NIL;
+disp_val disp_car(disp_val cons) {
+    return (NN(cons) && T(cons) == FLAG_CONS) ? D(cons)->cons.car : NIL;
 }
 
-disp_box disp_cdr(disp_box cons) {
-    return (cons && T(cons) == FLAG_CONS) ? cons->data->cons.cdr : NIL;
+disp_val disp_cdr(disp_val cons) {
+    return (NN(cons) && T(cons) == FLAG_CONS) ? D(cons)->cons.cdr : NIL;
 }
 
-void disp_set_car(disp_box cons, disp_box car) {
-    if (cons && T(cons) == FLAG_CONS) GC_ASSIGN_PTR(cons->data->cons.car, car);
+void disp_set_car(disp_val cons, disp_val car) {
+    if (NN(cons) && T(cons) == FLAG_CONS) D(cons)->cons.car = car;
 }
 
-void disp_set_cdr(disp_box cons, disp_box cdr) {
-    if (cons && T(cons) == FLAG_CONS) GC_ASSIGN_PTR(cons->data->cons.cdr, cdr);
+void disp_set_cdr(disp_val cons, disp_val cdr) {
+    if (NN(cons) && T(cons) == FLAG_CONS) D(cons)->cons.cdr = cdr;
 }

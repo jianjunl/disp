@@ -16,74 +16,74 @@
 
 #include "tail.h"
 
-eval_result_t* disp_eval_tail_leta(disp_scope_t *env, disp_box expr, int is_tail, disp_box current_closure) {
-    disp_box op = disp_car(expr);
-    disp_box args = disp_cdr(expr);
+eval_result_t disp_eval_tail_leta(disp_scope_t *env, disp_val expr, int is_tail, disp_val current_closure) {
+    disp_val op = disp_car(expr);
+    disp_val args = disp_cdr(expr);
 
     // 特殊形式处理
     if (T(op) == FLAG_SYMBOL) {
         // let* : 顺序绑定，每个初值在扩展后的作用域中求值
-        if (op == LETA) {
-            if (!args || T(args) != FLAG_CONS) {
+        if (E(op, LETA)) {
+            if (N(args) || T(args) != FLAG_CONS) {
                 ERRO("malformed let*");
-                return result_nil();
+                return RESULT_NORMAL(NIL);
             }
 
-            disp_box first = disp_car(args);
+            disp_val first = disp_car(args);
     
             // 命名 let: (let name ((var val) ...) body ...)
             if (T(first) == FLAG_SYMBOL) {
-                disp_box rest = disp_cdr(args);
-                if (rest && T(rest) == FLAG_CONS) {
+                disp_val rest = disp_cdr(args);
+                if (NN(rest) && T(rest) == FLAG_CONS) {
                     // 调用 disp_letf 处理命名 let，返回最终结果
-                    disp_box result = disp_letf(env, expr);
-                    return result_normal(result);
+                    disp_val result = disp_letf(env, expr);
+                    return RESULT_NORMAL(result);
                 }
             }
 
-            disp_box bindings = first;
-            disp_box body_exprs = disp_cdr(args);
-            if (!body_exprs) {
+            disp_val bindings = first;
+            disp_val body_exprs = disp_cdr(args);
+            if (N(body_exprs)) {
                 ERRO("let*: missing body");
-                return result_nil();
+                return RESULT_NORMAL(NIL);
             }
 
             // 创建新作用域，父作用域为当前 env
             GC_ROOT(disp_scope_t, new_scope) = disp_new_scope(env);
 
             // 顺序处理每个绑定
-            disp_box b = bindings;
-            while (b && T(b) == FLAG_CONS) {
-                disp_box pair = disp_car(b);
+            disp_val b = bindings;
+            while (NN(b) && T(b) == FLAG_CONS) {
+                disp_val pair = disp_car(b);
                 if (T(pair) != FLAG_CONS || T(disp_car(pair)) != FLAG_SYMBOL) {
                     ERRO("malformed let* binding");
-                    return result_nil();
+                    return RESULT_NORMAL(NIL);
                 }
-                disp_box sym = disp_car(pair);
+                disp_val sym = disp_car(pair);
                 const char *name = disp_get_symbol_name(sym);
-                disp_box init_expr = disp_car(disp_cdr(pair));
+                disp_val init_expr = disp_car(disp_cdr(pair));
                 // 在新作用域中求值初值（可以引用之前绑定的变量）
-                disp_box val = disp_eval(new_scope, init_expr);
+                disp_val val = disp_eval(new_scope, init_expr);
                 disp_define_symbol(new_scope, name, val, 0);
                 b = disp_cdr(b);
             }
 
             // 对 body 序列进行尾求值（类似于 begin）
-            while (body_exprs && T(body_exprs) == FLAG_CONS) {
-                disp_box cur = disp_car(body_exprs);
-                disp_box next = disp_cdr(body_exprs);
-                if (next == NIL) {
+            while (NN(body_exprs) && T(body_exprs) == FLAG_CONS) {
+                disp_val cur = disp_car(body_exprs);
+                disp_val next = disp_cdr(body_exprs);
+                if (E(next, NIL)) {
                     return disp_eval_tail(new_scope, cur, is_tail, current_closure);
                 } else {
                     disp_eval(new_scope, cur);
                     body_exprs = next;
                 }
             }
-            return result_nil();
+            return RESULT_NORMAL(NIL);
         }
         ERRO("not leta branch");
-        return result_nil();
+        return RESULT_NORMAL(NIL);
     }
     ERRO("not leta branch");
-    return result_nil();
+    return RESULT_NORMAL(NIL);
 }

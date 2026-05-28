@@ -23,7 +23,7 @@
 /* =============================== select 语句 =============================== */
 
 /* 简化的通道访问宏 */
-#define CHAN(v)             v->data->chan
+#define CHAN(v)             v.data->chan
 #define CAP(c)              c->cap
 #define SIZE(c)             c->size
 #define SIZE_INC(c)         c->size++
@@ -51,11 +51,11 @@ typedef enum {
 
 typedef struct case_info_t {
     case_type_t type;
-    disp_box channel;      // evaluated channel object
-    disp_box value;        // evaluated value (for send)
+    disp_val channel;      // evaluated channel object
+    disp_val value;        // evaluated value (for send)
     long timeout_ms;        // for after
     int timer_fd;           // for after
-    disp_box body;         // list of expressions to evaluate
+    disp_val body;         // list of expressions to evaluate
 } case_info_t;
 
 GC_STRUCT_TI(case_info_t,
@@ -65,35 +65,35 @@ GC_STRUCT_TI(case_info_t,
 );
 
 /* 从等待队列中移除指定协程 */
-static void remove_from_queue(disp_box *head, disp_box coro) {
-    disp_box prev = NULL, cur = *head;
-    while (cur) {
-        if (cur == coro) {
-            if (prev)
-                prev->data->coro->next = cur->data->coro->next;
+static void remove_from_queue(disp_val *head, disp_val coro) {
+    disp_val prev = DNULL, cur = *head;
+    while (NN(cur)) {
+        if (E(cur, coro)) {
+            if (NN(prev))
+                D(prev)->coro->next = D(cur)->coro->next;
             else
-                *head = cur->data->coro->next;
+                *head = D(cur)->coro->next;
             break;
         }
         prev = cur;
-        cur = cur->data->coro->next;
+        cur = D(cur)->coro->next;
     }
 }
 
 /* ======================== 立即尝试操作（在锁内调用） ======================== */
 
 /* 尝试 recv：返回 1 表示成功，*value 被赋值；0 表示不可立即执行 */
-static int try_recv_locked(disp_channel_t *c, disp_box *value) {
+static int try_recv_locked(disp_channel_t *c, disp_val *value) {
     if (CAP(c) == 0) {
         // 无缓冲通道：优先检查是否有等待的发送者，其次检查 direct_value（由已唤醒的发送者留下）
-        if (WAIT_SEND(c)) {
-            disp_box waiter = WAIT_SEND(c);
-            SET_WAIT_SEND(c, waiter->data->coro->next);
+        if (NN(WAIT_SEND(c))) {
+            disp_val waiter = WAIT_SEND(c);
+            SET_WAIT_SEND(c, waiter.data->coro->next);
             *value = DIRECT(c);
             SET_DIRECT(c, NIL);
             scheduler_add(waiter);
             return 1;
-        } else if (DIRECT(c) != NIL) {
+        } else if (NE(DIRECT(c), NIL)) {
             // 发送者已经将值放入 direct_value（例如在 select 唤醒后）
             *value = DIRECT(c);
             SET_DIRECT(c, NIL);
@@ -109,9 +109,9 @@ static int try_recv_locked(disp_channel_t *c, disp_box *value) {
             *value = BUF(c)[HEAD(c)];
             SET_HEAD(c, (HEAD(c) + 1) % CAP(c));
             SIZE_DEC(c);
-            if (WAIT_SEND(c)) {
-                disp_box waiter = WAIT_SEND(c);
-                SET_WAIT_SEND(c, waiter->data->coro->next);
+            if (NN(WAIT_SEND(c))) {
+                disp_val waiter = WAIT_SEND(c);
+                SET_WAIT_SEND(c, waiter.data->coro->next);
                 scheduler_add(waiter);
             }
             return 1;
@@ -124,11 +124,11 @@ static int try_recv_locked(disp_channel_t *c, disp_box *value) {
 }
 
 /* 尝试 send：返回 1 表示成功；0 表示不可立即执行 */
-static int try_send_locked(disp_channel_t *c, disp_box val) {
+static int try_send_locked(disp_channel_t *c, disp_val val) {
     if (CAP(c) == 0) {
-        if (WAIT_RECV(c)) {
-            disp_box waiter = WAIT_RECV(c);
-            SET_WAIT_RECV(c, waiter->data->coro->next);
+        if (NN(WAIT_RECV(c))) {
+            disp_val waiter = WAIT_RECV(c);
+            SET_WAIT_RECV(c, waiter.data->coro->next);
             SET_DIRECT(c, val);
             scheduler_add(waiter);
             return 1;
@@ -140,9 +140,9 @@ static int try_send_locked(disp_channel_t *c, disp_box val) {
             BUF(c)[TAIL(c)] = val;
             SET_TAIL(c, (TAIL(c) + 1) % CAP(c));
             SIZE_INC(c);
-            if (WAIT_RECV(c)) {
-                disp_box waiter = WAIT_RECV(c);
-                SET_WAIT_RECV(c, waiter->data->coro->next);
+            if (NN(WAIT_RECV(c))) {
+                disp_val waiter = WAIT_RECV(c);
+                SET_WAIT_RECV(c, waiter.data->coro->next);
                 scheduler_add(waiter);
             }
             return 1;
@@ -152,27 +152,27 @@ static int try_send_locked(disp_channel_t *c, disp_box val) {
 }
 
 /* 外部接口：尝试 recv，若成功执行 body 并返回结果 */
-static disp_box try_recv(disp_box ch, disp_box body, int *executed) {
+static disp_val try_recv(disp_val ch, disp_val body, int *executed) {
     disp_channel_t *c = CHAN(ch);
     gc_pthread_mutex_lock(LOCK(c));
-    disp_box value = NULL;
+    disp_val value = DNULL;
     int ok = try_recv_locked(c, &value);
     gc_pthread_mutex_unlock(LOCK(c));
-    if (!ok) return NULL;
+    if (!ok) return DNULL;
 
     // 绑定 'it' 并执行 body
-    disp_box it_sym = disp_find_symbol(NULL, "it");
-    disp_box old_it = it_sym ? disp_get_symbol_value(it_sym) : NIL;
+    disp_val it_sym = disp_find_symbol(NULL, "it");
+    disp_val old_it = NN(it_sym) ? disp_get_symbol_value(it_sym) : NIL;
     disp_define_symbol(NULL, "it", value, 0);
 
-    disp_box result = NIL;
-    disp_box body_it = body;
-    while (body_it && T(body_it) == FLAG_CONS) {
+    disp_val result = NIL;
+    disp_val body_it = body;
+    while (NN(body_it) && T(body_it) == FLAG_CONS) {
         result = disp_eval(NULL, disp_car(body_it));
         body_it = disp_cdr(body_it);
     }
 
-    if (it_sym)
+    if (NN(it_sym))
         disp_define_symbol(NULL, "it", old_it, 0);
     else
         disp_define_symbol(NULL, "it", NIL, 0);
@@ -182,7 +182,7 @@ static disp_box try_recv(disp_box ch, disp_box body, int *executed) {
 }
 
 /* 外部接口：尝试 send，若成功执行 body 并返回结果 */
-static disp_box try_send(disp_box ch, disp_box val, disp_box body, int *executed) {
+static disp_val try_send(disp_val ch, disp_val val, disp_val body, int *executed) {
     disp_channel_t *c = CHAN(ch);
     gc_pthread_mutex_lock(LOCK(c));
     if (CLOSED(c)) {
@@ -191,11 +191,11 @@ static disp_box try_send(disp_box ch, disp_box val, disp_box body, int *executed
     }
     int ok = try_send_locked(c, val);
     gc_pthread_mutex_unlock(LOCK(c));
-    if (!ok) return NULL;
+    if (!ok) return DNULL;
 
-    disp_box result = NIL;
-    disp_box body_it = body;
-    while (body_it && T(body_it) == FLAG_CONS) {
+    disp_val result = NIL;
+    disp_val body_it = body;
+    while (NN(body_it) && T(body_it) == FLAG_CONS) {
         result = disp_eval(NULL, disp_car(body_it));
         body_it = disp_cdr(body_it);
     }
@@ -204,18 +204,18 @@ static disp_box try_send(disp_box ch, disp_box val, disp_box body, int *executed
 }
 
 /* 立即尝试 after (timeout_ms == 0) */
-static disp_box try_after(case_info_t *info, int *executed) {
+static disp_val try_after(case_info_t *info, int *executed) {
     if (info->timeout_ms == 0) {
-        disp_box result = NIL;
-        disp_box body_it = info->body;
-        while (body_it && T(body_it) == FLAG_CONS) {
+        disp_val result = NIL;
+        disp_val body_it = info->body;
+        while (NN(body_it) && T(body_it) == FLAG_CONS) {
             result = disp_eval(NULL, disp_car(body_it));
             body_it = disp_cdr(body_it);
         }
         *executed = 1;
         return result;
     }
-    return NULL;
+    return DNULL;
 }
 
 /* ======================== 注册等待（挂起前） ======================== */
@@ -227,12 +227,12 @@ static int is_case_ready(case_info_t *info) {
     int ready = 0;
     if (info->type == CASE_RECV) {
         if (CAP(c) == 0)
-            ready = (WAIT_SEND(c) != NULL) || (DIRECT(c) != NIL) || CLOSED(c);
+            ready = (NN(WAIT_SEND(c))) || NE(DIRECT(c), NIL) || CLOSED(c);
         else
             ready = (SIZE(c) > 0) || CLOSED(c);
     } else if (info->type == CASE_SEND) {
         if (CAP(c) == 0)
-            ready = (WAIT_RECV(c) != NULL);
+            ready = NN(WAIT_RECV(c));
         else
             ready = (!CLOSED(c) && SIZE(c) < CAP(c));
     }
@@ -241,21 +241,21 @@ static int is_case_ready(case_info_t *info) {
 }
 
 /* 注册当前协程到等待队列（假设当前没有就绪） */
-static void register_case(case_info_t *info, disp_box current) {
+static void register_case(case_info_t *info, disp_val current) {
     disp_channel_t *c = CHAN(info->channel);
     gc_pthread_mutex_lock(LOCK(c));
     if (info->type == CASE_RECV) {
-        current->data->coro->next = WAIT_RECV(c);
+        current.data->coro->next = WAIT_RECV(c);
         SET_WAIT_RECV(c, current);
     } else if (info->type == CASE_SEND) {
-        current->data->coro->next = WAIT_SEND(c);
+        current.data->coro->next = WAIT_SEND(c);
         SET_WAIT_SEND(c, current);
     }
     gc_pthread_mutex_unlock(LOCK(c));
 }
 
 /* 注册所有 case，如果发现有任何一个 case 在锁内变得就绪，则返回 -1 表示需要重试 */
-static int register_all_cases(case_info_t *infos, int count, disp_box current) {
+static int register_all_cases(case_info_t *infos, int count, disp_val current) {
     for (int i = 0; i < count; i++) {
         case_info_t *info = &infos[i];
         if (info->type == CASE_RECV || info->type == CASE_SEND) {
@@ -290,32 +290,32 @@ static int register_all_cases(case_info_t *infos, int count, disp_box current) {
 /* ======================== 唤醒后处理 ======================== */
 
 /* 唤醒后，找出就绪的 case 并执行其 body，同时清理其他 case 的等待注册 */
-static disp_box handle_ready_cases(case_info_t *infos, int count, disp_box current) {
+static disp_val handle_ready_cases(case_info_t *infos, int count, disp_val current) {
     int executed = 0;
-    disp_box result = NIL;
+    disp_val result = NIL;
 
     for (int i = 0; i < count && !executed; i++) {
         case_info_t *info = &infos[i];
         if (info->type == CASE_RECV) {
             disp_channel_t *c = CHAN(info->channel);
             gc_pthread_mutex_lock(LOCK(c));
-            disp_box value = NULL;
+            disp_val value = DNULL;
             int ok = try_recv_locked(c, &value);
             if (ok) {
                 gc_pthread_mutex_unlock(LOCK(c));
                 // 绑定 'it' 并执行 body
-                disp_box it_sym = disp_find_symbol(NULL, "it");
-                disp_box old_it = it_sym ? disp_get_symbol_value(it_sym) : NIL;
+                disp_val it_sym = disp_find_symbol(NULL, "it");
+                disp_val old_it = NN(it_sym) ? disp_get_symbol_value(it_sym) : NIL;
                 disp_define_symbol(NULL, "it", value, 0);
 
-                disp_box body_it = info->body;
+                disp_val body_it = info->body;
                 result = NIL;
-                while (body_it && T(body_it) == FLAG_CONS) {
+                while (NN(body_it) && T(body_it) == FLAG_CONS) {
                     result = disp_eval(NULL, disp_car(body_it));
                     body_it = disp_cdr(body_it);
                 }
 
-                if (it_sym)
+                if (NN(it_sym))
                     disp_define_symbol(NULL, "it", old_it, 0);
                 else
                     disp_define_symbol(NULL, "it", NIL, 0);
@@ -335,9 +335,9 @@ static disp_box handle_ready_cases(case_info_t *infos, int count, disp_box curre
             int ok = try_send_locked(c, info->value);
             if (ok) {
                 gc_pthread_mutex_unlock(LOCK(c));
-                disp_box body_it = info->body;
+                disp_val body_it = info->body;
                 result = NIL;
-                while (body_it && T(body_it) == FLAG_CONS) {
+                while (NN(body_it) && T(body_it) == FLAG_CONS) {
                     result = disp_eval(NULL, disp_car(body_it));
                     body_it = disp_cdr(body_it);
                 }
@@ -353,9 +353,9 @@ static disp_box handle_ready_cases(case_info_t *infos, int count, disp_box curre
             close(info->timer_fd);
             info->timer_fd = -1;
 
-            disp_box body_it = info->body;
+            disp_val body_it = info->body;
             result = NIL;
-            while (body_it && T(body_it) == FLAG_CONS) {
+            while (NN(body_it) && T(body_it) == FLAG_CONS) {
                 result = disp_eval(NULL, disp_car(body_it));
                 body_it = disp_cdr(body_it);
             }
@@ -374,18 +374,18 @@ static disp_box handle_ready_cases(case_info_t *infos, int count, disp_box curre
 }
 
 /* ======================== select 主函数 ======================== */
-static disp_box select_builtin(disp_scope_t *scope, disp_box expr) {
-    disp_box clauses = disp_cdr(expr);
-    if (!clauses || T(clauses) != FLAG_CONS)
+static disp_val select_builtin(disp_scope_t *scope, disp_val expr) {
+    disp_val clauses = disp_cdr(expr);
+    if (N(clauses) || T(clauses) != FLAG_CONS)
         ERET(NIL, "select: missing clauses");
 
-    disp_box current = disp_get_current_coro();
-    if (current == NIL)
+    disp_val current = disp_get_current_coro();
+    if (E(current, NIL))
         ERET(NIL, "select must be called from a coroutine (use 'go')");
 
     // 统计 clause 个数
     int case_count = 0;
-    for (disp_box c = clauses; c && T(c) == FLAG_CONS; c = disp_cdr(c))
+    for (disp_val c = clauses; NN(c) && T(c) == FLAG_CONS; c = disp_cdr(c))
         case_count++;
     if (case_count == 0)
         ERET(NIL, "select: no clauses");
@@ -395,14 +395,14 @@ static disp_box select_builtin(disp_scope_t *scope, disp_box expr) {
     int default_idx = -1;
 
     int i = 0;
-    for (disp_box c = clauses; c && T(c) == FLAG_CONS; c = disp_cdr(c), i++) {
-        disp_box clause = disp_car(c);
+    for (disp_val c = clauses; NN(c) && T(c) == FLAG_CONS; c = disp_cdr(c), i++) {
+        disp_val clause = disp_car(c);
         if (T(clause) != FLAG_CONS) {
             gc_free(infos);
             ERET(NIL, "select: malformed clause");
         }
-        disp_box op = disp_car(clause);
-        disp_box body = disp_cdr(clause);
+        disp_val op = disp_car(clause);
+        disp_val body = disp_cdr(clause);
 
         if (T(op) == FLAG_SYMBOL && strcmp(disp_get_symbol_name(op), "default") == 0) {
             infos[i].type = CASE_DEFAULT;
@@ -415,7 +415,7 @@ static disp_box select_builtin(disp_scope_t *scope, disp_box expr) {
             gc_free(infos);
             ERET(NIL, "select: operation must be (recv ...), (send ...) or (after ...)");
         }
-        disp_box op_name = disp_car(op);
+        disp_val op_name = disp_car(op);
         if (T(op_name) != FLAG_SYMBOL) {
             gc_free(infos);
             ERET(NIL, "select: unknown operation");
@@ -423,13 +423,13 @@ static disp_box select_builtin(disp_scope_t *scope, disp_box expr) {
         const char *op_str = disp_get_symbol_name(op_name);
 
         if (strcmp(op_str, "recv") == 0) {
-            disp_box rest = disp_cdr(op);
-            if (!rest || T(rest) != FLAG_CONS) {
+            disp_val rest = disp_cdr(op);
+            if (N(rest) || T(rest) != FLAG_CONS) {
                 gc_free(infos);
                 ERET(NIL, "select: recv expects (recv ch)");
             }
-            disp_box ch_expr = disp_car(rest);
-            disp_box ch_arg = disp_eval(NULL, ch_expr);
+            disp_val ch_expr = disp_car(rest);
+            disp_val ch_arg = disp_eval(NULL, ch_expr);
             if (T(ch_arg) != TAG_CHAN) {
                 gc_free(infos);
                 ERET(NIL, "select: recv argument must be a channel");
@@ -438,31 +438,31 @@ static disp_box select_builtin(disp_scope_t *scope, disp_box expr) {
             infos[i].channel = ch_arg;
             infos[i].body = body;
         } else if (strcmp(op_str, "send") == 0) {
-            disp_box rest = disp_cdr(op);
-            if (!rest || T(rest) != FLAG_CONS) {
+            disp_val rest = disp_cdr(op);
+            if (N(rest) || T(rest) != FLAG_CONS) {
                 gc_free(infos);
                 ERET(NIL, "select: send expects (send ch val)");
             }
-            disp_box ch_expr = disp_car(rest);
-            disp_box ch_arg = disp_eval(NULL, ch_expr);
+            disp_val ch_expr = disp_car(rest);
+            disp_val ch_arg = disp_eval(NULL, ch_expr);
             if (T(ch_arg) != TAG_CHAN) {
                 gc_free(infos);
                 ERET(NIL, "select: send channel must be a channel");
             }
-            disp_box val_expr = disp_car(disp_cdr(rest));
-            disp_box val_arg = disp_eval(NULL, val_expr);
+            disp_val val_expr = disp_car(disp_cdr(rest));
+            disp_val val_arg = disp_eval(NULL, val_expr);
             infos[i].type = CASE_SEND;
             infos[i].channel = ch_arg;
             infos[i].value = val_arg;
             infos[i].body = body;
         } else if (strcmp(op_str, "after") == 0) {
-            disp_box rest = disp_cdr(op);
-            if (!rest || T(rest) != FLAG_CONS) {
+            disp_val rest = disp_cdr(op);
+            if (N(rest) || T(rest) != FLAG_CONS) {
                 gc_free(infos);
                 ERET(NIL, "select: after expects (after ms)");
             }
-            disp_box ms_expr = disp_car(rest);
-            disp_box ms_val = disp_eval(NULL, ms_expr);
+            disp_val ms_expr = disp_car(rest);
+            disp_val ms_val = disp_eval(NULL, ms_expr);
             long ms = 0;
             if (T(ms_val) == FLAG_INT)
                 ms = disp_get_int(ms_val);
@@ -483,7 +483,7 @@ static disp_box select_builtin(disp_scope_t *scope, disp_box expr) {
     }
 
     int executed = 0;
-    disp_box result = NIL;
+    disp_val result = NIL;
 
     // 第一轮：尝试立即执行
     for (i = 0; i < case_count && !executed; i++) {
@@ -503,9 +503,9 @@ static disp_box select_builtin(disp_scope_t *scope, disp_box expr) {
 
     // 如果有 default 分支，直接执行
     if (default_idx != -1) {
-        disp_box body_it = infos[default_idx].body;
+        disp_val body_it = infos[default_idx].body;
         result = NIL;
-        while (body_it && T(body_it) == FLAG_CONS) {
+        while (NN(body_it) && T(body_it) == FLAG_CONS) {
             result = disp_eval(NULL, disp_car(body_it));
             body_it = disp_cdr(body_it);
         }

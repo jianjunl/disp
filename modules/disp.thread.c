@@ -29,12 +29,12 @@ GC_STRUCT_TI(disp_thread_t,
 
 /* 线程入口函数 */
 static void* thread_entry(void *arg) {
-    disp_box thread_obj = (disp_box)arg;
-    disp_thread_t *t = thread_obj->data->thread;
-    disp_box func = t->func;
+    disp_val thread_obj = V(FLAG_EXTRA, TAG_THREAD, (disp_data *)arg);
+    disp_thread_t *t = D(thread_obj)->thread;
+    disp_val func = t->func;
     
     /* 执行闭包，不传参数 */
-    disp_box result = disp_apply_closure(func, NULL, 0);
+    disp_val result = disp_apply_closure(func, NULL, 0);
     
     /* 保存结果并通知等待者 */
     gc_pthread_mutex_lock(t->lock);
@@ -49,37 +49,35 @@ static void* thread_entry(void *arg) {
 /* ======================== 系统调用 ======================== */
 
 /* (make-thread func) -> thread */
-static disp_box make_thread_syscall(disp_box *args, int count) {
+static disp_val make_thread_syscall(disp_val *args, int count) {
     if (count != 1 || T(args[0]) != FLAG_CLOSURE)
         ERET(NIL, "make-thread expects a closure");
     
-    disp_box v = ALLOC_TI(TAG_THREAD);
+    disp_val v = ALLOC_TI(FLAG_EXTRA, TAG_THREAD);
     disp_thread_t *t = gc_typed_calloc(1, sizeof(disp_thread_t), &struct_disp_thread_t_ti);
     if (!t) {
-        gc_free(v->data); gc_free(v);
+        gc_free(D(v));
         return NIL;
     }
-    v->data->thread = t;
+    D(v)->thread = t;
     t->func = args[0];
     t->finished = 0;
     t->result = NIL;
-    //static gc_mutex_t lock = GC_PTHREAD_MUTEX_INITIALIZER;
-    //t->lock = &lock;
     
     if (gc_pthread_mutex_init(&t->lock, NULL) != 0) {
-        gc_free(t); gc_free(v->data); gc_free(v);
+        gc_free(t); gc_free(D(v));
         ERET(NIL, "make-thread: mutex init failed");
     }
     if (gc_pthread_cond_init(&t->cond, NULL) != 0) {
         gc_pthread_mutex_destroy(t->lock);
-        gc_free(t); gc_free(v->data); gc_free(v);
+        gc_free(t); gc_free(D(v));
         ERET(NIL, "make-thread: cond init failed");
     }
     
-    if (gc_pthread_create(&t->tid, NULL, thread_entry, v) != 0) {
+    if (gc_pthread_create(&t->tid, NULL, thread_entry, D(v)) != 0) {
         gc_pthread_cond_destroy(t->cond);
         gc_pthread_mutex_destroy(t->lock);
-        gc_free(t); gc_free(v->data); gc_free(v);
+        gc_free(t); gc_free(D(v));
         ERET(NIL, "make-thread: gc_pthread_create failed");
     }
     
@@ -87,18 +85,18 @@ static disp_box make_thread_syscall(disp_box *args, int count) {
 }
 
 /* (thread-join thread) -> result */
-static disp_box thread_join_syscall(disp_box *args, int count) {
+static disp_val thread_join_syscall(disp_val *args, int count) {
     if (count != 1 || T(args[0]) != TAG_THREAD)
         ERET(NIL, "thread-join expects a thread object");
     
-    disp_box thread_obj = args[0];
-    disp_thread_t *t = thread_obj->data->thread;
+    disp_val thread_obj = args[0];
+    disp_thread_t *t = thread_obj.data->thread;
     
     gc_pthread_mutex_lock(t->lock);
     while (!t->finished) {
         gc_pthread_cond_wait(t->cond, t->lock);
     }
-    disp_box result = t->result;
+    disp_val result = t->result;
     gc_pthread_mutex_unlock(t->lock);
     
     /* 可选：分离线程以回收资源（已结束，可安全 join）*/
@@ -108,82 +106,82 @@ static disp_box thread_join_syscall(disp_box *args, int count) {
 }
 
 /* (make-mutex) -> mutex */
-static disp_box make_mutex_syscall(disp_box *args, int count) {
+static disp_val make_mutex_syscall(disp_val *args, int count) {
     (void)args; (void)count;
     
-    disp_box v = ALLOC_TI(TAG_MUTEX);
-    if (gc_pthread_mutex_init(&v->data->mutex, NULL) != 0) {
-        gc_free(v->data); gc_free(v);
+    disp_val v = ALLOC_TI(FLAG_EXTRA, TAG_MUTEX);
+    if (gc_pthread_mutex_init(&D(v)->mutex, NULL) != 0) {
+        gc_free(D(v));
         ERET(NIL, "make-mutex: init failed");
     }
     return v;
 }
 
 /* (lock mutex) -> true */
-static disp_box lock_mutex_syscall(disp_box *args, int count) {
+static disp_val lock_mutex_syscall(disp_val *args, int count) {
     if (count != 1 || T(args[0]) != TAG_MUTEX)
         ERET(NIL, "lock expects a mutex");
-    gc_mutex_t *m = args[0]->data->mutex;
+    gc_mutex_t *m = args[0].data->mutex;
     if (gc_pthread_mutex_lock(m) != 0)
         ERET(NIL, "lock: failed");
     return TRUE;
 }
 
 /* (unlock mutex) -> true */
-static disp_box unlock_mutex_syscall(disp_box *args, int count) {
+static disp_val unlock_mutex_syscall(disp_val *args, int count) {
     if (count != 1 || T(args[0]) != TAG_MUTEX)
         ERET(NIL, "unlock expects a mutex");
-    gc_mutex_t *m = args[0]->data->mutex;
+    gc_mutex_t *m = args[0].data->mutex;
     if (gc_pthread_mutex_unlock(m) != 0)
         ERET(NIL, "unlock: failed");
     return TRUE;
 }
 
 /* (make-condition) -> cond */
-static disp_box make_condition_syscall(disp_box *args, int count) {
+static disp_val make_condition_syscall(disp_val *args, int count) {
     (void)args; (void)count;
     
-    disp_box v = ALLOC_TI(TAG_COND);
-    if (gc_pthread_cond_init(&v->data->cond, NULL) != 0) {
-        gc_free(v->data); gc_free(v);
+    disp_val v = ALLOC_TI(FLAG_EXTRA, TAG_COND);
+    if (gc_pthread_cond_init(&D(v)->cond, NULL) != 0) {
+        gc_free(D(v));
         ERET(NIL, "make-condition: init failed");
     }
     return v;
 }
 
 /* (condition-wait cond mutex) -> true */
-static disp_box condition_wait_syscall(disp_box *args, int count) {
+static disp_val condition_wait_syscall(disp_val *args, int count) {
     if (count != 2 || T(args[0]) != TAG_COND || T(args[1]) != TAG_MUTEX)
         ERET(NIL, "condition-wait expects (cond mutex)");
-    gc_cond_t *c = args[0]->data->cond;
-    gc_mutex_t *m = args[1]->data->mutex;
+    gc_cond_t *c = D(args[0])->cond;
+    gc_mutex_t *m = D(args[1])->mutex;
     if (gc_pthread_cond_wait(c, m) != 0)
         ERET(NIL, "condition-wait: failed");
     return TRUE;
 }
 
 /* (condition-signal cond) -> true */
-static disp_box condition_signal_syscall(disp_box *args, int count) {
+static disp_val condition_signal_syscall(disp_val *args, int count) {
     if (count != 1 || T(args[0]) != TAG_COND)
         ERET(NIL, "condition-signal expects a cond");
-    gc_cond_t *c = args[0]->data->cond;
+    gc_cond_t *c = args[0].data->cond;
     if (gc_pthread_cond_signal(c) != 0)
         ERET(NIL, "condition-signal: failed");
     return TRUE;
 }
 
 /* (condition-broadcast cond) -> true */
-static disp_box condition_broadcast_syscall(disp_box *args, int count) {
+static disp_val condition_broadcast_syscall(disp_val *args, int count) {
     if (count != 1 || T(args[0]) != TAG_COND)
         ERET(NIL, "condition-broadcast expects a cond");
-    gc_cond_t *c = args[0]->data->cond;
+    gc_cond_t *c = args[0].data->cond;
     if (gc_pthread_cond_broadcast(c) != 0)
         ERET(NIL, "condition-broadcast: failed");
     return TRUE;
 }
 
 /* (thread-sleep seconds) -> nil */
-static disp_box thread_sleep_syscall(disp_box *args, int count) {
+static disp_val thread_sleep_syscall(disp_val *args, int count) {
     if (count != 1) ERET(NIL, "thread-sleep expects seconds");
     double secs = 0.0;
     if (T(args[0]) == FLAG_BYTE)

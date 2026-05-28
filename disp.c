@@ -15,10 +15,10 @@
 #endif
 #include "disp.h"
 
-disp_box __attribute__((section("gc_roots"))) disp_builtin_roots[NUM_BUILTIN_ROOTS] = { NULL };
+disp_val __attribute__((section("gc_roots"))) disp_builtin_roots[NUM_BUILTIN_ROOTS] = { DNULL };
 
 /* ======================== Built‑in 'load' ======================== */
-static disp_box import_syscall(disp_box *args, int argc) {
+static disp_val import_syscall(disp_val *args, int argc) {
     if (argc != 1 || T(args[0]) != FLAG_STRING) {
         ERET(NIL, "import expects a string filename\n");
     }
@@ -26,15 +26,15 @@ static disp_box import_syscall(disp_box *args, int argc) {
     return disp_import(disp_get_str(args[0]));
 }
 
-static disp_box load_builtin(disp_scope_t *env, disp_box expr) {
-   disp_box rest = disp_cdr(expr);
-    if (rest == NIL) {
+static disp_val load_builtin(disp_scope_t *env, disp_val expr) {
+   disp_val rest = disp_cdr(expr);
+    if (E(rest, NIL)) {
         ERET(NIL, "load expects a string filename\n");
     }
-    if (disp_cdr(rest) != NIL) {
+    if (NE(disp_cdr(rest), NIL)) {
         ERRO("load: warning - extra arguments ignored");
     }
-    disp_box arg0 = disp_eval(env, disp_car(rest));
+    disp_val arg0 = disp_eval(env, disp_car(rest));
     if (T(arg0) != FLAG_STRING) {
         ERET(NIL, "load expects a string filename\n");
     }
@@ -43,7 +43,7 @@ static disp_box load_builtin(disp_scope_t *env, disp_box expr) {
 }
 
 
-static disp_box gc_syscall(disp_box *args, int count) {
+static disp_val gc_syscall(disp_val *args, int count) {
     (void)args;
     if (count != 0)
         ERET(NIL, "gc expects no arguments");
@@ -53,23 +53,23 @@ static disp_box gc_syscall(disp_box *args, int count) {
 }
 
 // 内置函数：返回 (filename line column) 列表（栈顶）
-static disp_box info_syscall(disp_box *args, int arg_count) {
+static disp_val info_syscall(disp_val *args, int arg_count) {
     (void)args; (void)arg_count;
     disp_info_t *info = disp_get_current_info();
     if (!info || !info->filename) return NIL;
-    disp_box fname = disp_make_string(info->filename);
-    disp_box line  = disp_make_int(info->line);
-    disp_box col   = disp_make_int(info->column);
+    disp_val fname = disp_make_string(info->filename);
+    disp_val line  = disp_make_int(info->line);
+    disp_val col   = disp_make_int(info->column);
     return disp_make_cons(fname, disp_make_cons(line, disp_make_cons(col, NIL)));
 }
 
 // 内置函数：返回调用栈列表，每个元素是 (filename line column)
-static disp_box trace_syscall(disp_box *args, int arg_count) {
+static disp_val trace_syscall(disp_val *args, int arg_count) {
     (void)args; (void)arg_count;
-    disp_box trace = NIL;
+    disp_val trace = NIL;
     for (disp_info_t *p = disp_get_current_info(); p; p = p->next) {
         if (!p->filename) continue;
-        disp_box frame = disp_make_cons(disp_make_string(p->filename),
+        disp_val frame = disp_make_cons(disp_make_string(p->filename),
                          disp_make_cons(disp_make_int(p->line),
                          disp_make_cons(disp_make_int(p->column), NIL)));
         trace = disp_make_cons(frame, trace);
@@ -77,6 +77,7 @@ static disp_box trace_syscall(disp_box *args, int arg_count) {
     return trace;  // 栈顶在列表头部
 }
 
+#if DISP_NAN_BOXING
 static void* disp_gc_validate(void *ptr) {
     uint64_t val = (uint64_t)ptr;
     uint64_t tag = val >> 48;
@@ -90,11 +91,14 @@ static void* disp_gc_validate(void *ptr) {
     }
     return NULL;
 }
+#endif
 
 /* ======================== Initialisation ======================== */
 void disp_init_globals() {
     gc_init();
+#if DISP_NAN_BOXING
     gc_set_validate_hook(disp_gc_validate);
+#endif
     disp_init_info();
     disp_init_name_table();
     disp_init_scope();
@@ -122,7 +126,7 @@ void disp_init_globals() {
     DEF("stdin"  , disp_make_file(stdin ,"r"), 1);
     DEF("stdout" , disp_make_file(stdout,"w"), 1);
     DEF("stderr" , disp_make_file(stderr,"w"), 1);
-//*
+
     DEF("import", MKF(import_syscall , "<import>"), 1);
     DEF("load"  , MKB(load_builtin   , "<#load>"), 1);
     DEF("gc"    , MKF(gc_syscall     , "<gc>"   ), 1);
@@ -132,7 +136,7 @@ void disp_init_globals() {
     // make else evaluate to true (so cond's default clause works)
     DEF("else", TRUE, 1);
     ELSE              = disp_find_symbol(NULL, "else");
-
+///*
     disp_import("disp.data.so");
     CONS              = disp_find_symbol(NULL, "cons");
     LIST              = disp_find_symbol(NULL, "list");

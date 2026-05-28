@@ -9,12 +9,12 @@
 #include <ctype.h>
 
 /* --- I/O --- */
-disp_box disp_read(FILE *f);
-char* disp_string(disp_box v);
-char* disp_str(disp_box v);
-void disp_write(disp_box v);
-void disp_print(disp_box v);
-void disp_fprint(FILE *f, disp_box v);
-void disp_fwrite(FILE *f, disp_box v);
+disp_val disp_read(FILE *f);
+char* disp_string(disp_val v);
+char* disp_str(disp_val v);
+void disp_write(disp_val v);
+void disp_print(disp_val v);
+void disp_fprint(FILE *f, disp_val v);
+void disp_fwrite(FILE *f, disp_val v);
 
 #endif // IO_H

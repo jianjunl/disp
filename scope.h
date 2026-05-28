@@ -17,12 +17,12 @@ extern disp_scope_t *disp_global_scope;                     // 全局作用域�
 void gc_root_cleanup_disp_scope_t(disp_scope_t **ptr_addr);
 disp_scope_t* disp_new_scope(disp_scope_t *parent);
 disp_scope_t* disp_dup_scope(disp_scope_t *old);
-disp_box disp_find_symbol_by_id(const disp_scope_t *scope, uint64_t id);
-disp_box disp_define_symbol_by_id(const disp_scope_t *scope, uint64_t id, disp_box value, int final);
-disp_box disp_intern_symbol_by_id(const disp_scope_t *scope, uint64_t id);
-disp_box disp_find_symbol(const disp_scope_t *scope, const char *name);
-disp_box disp_define_symbol(const disp_scope_t *scope, const char *name, disp_box value, int final);
-disp_box disp_intern_symbol(const disp_scope_t *scope, const char *name);
+disp_val disp_find_symbol_by_id(const disp_scope_t *scope, uint64_t id);
+disp_val disp_define_symbol_by_id(const disp_scope_t *scope, uint64_t id, disp_val value, int final);
+disp_val disp_intern_symbol_by_id(const disp_scope_t *scope, uint64_t id);
+disp_val disp_find_symbol(const disp_scope_t *scope, const char *name);
+disp_val disp_define_symbol(const disp_scope_t *scope, const char *name, disp_val value, int final);
+disp_val disp_intern_symbol(const disp_scope_t *scope, const char *name);
 
 #define DEF(n, v, i) disp_define_symbol(NULL, n, v, i)
  

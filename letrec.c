@@ -16,70 +16,70 @@
 
 #include "tail.h"
 
-eval_result_t* disp_eval_tail_letrec(disp_scope_t *env, disp_box expr, int is_tail, disp_box current_closure) {
-    disp_box op = disp_car(expr);
-    disp_box args = disp_cdr(expr);
+eval_result_t disp_eval_tail_letrec(disp_scope_t *env, disp_val expr, int is_tail, disp_val current_closure) {
+    disp_val op = disp_car(expr);
+    disp_val args = disp_cdr(expr);
 
     // 特殊形式处理
     if (T(op) == FLAG_SYMBOL) {
         // letrec : 并行绑定，所有初值在同一作用域内求值，变量可互相引用
         // letrec : 并行绑定（使用堆分配 + GC 根保护）
-        if (op == LETREC) {
-            if (!args || T(args) != FLAG_CONS) {
+        if (E(op, LETREC)) {
+            if (N(args) || T(args) != FLAG_CONS) {
                 ERRO("malformed letrec");
-                return result_nil();
+                return RESULT_NORMAL(NIL);
             }
 
-            disp_box first = disp_car(args);
+            disp_val first = disp_car(args);
     
             // 命名 let: (let name ((var val) ...) body ...)
             if (T(first) == FLAG_SYMBOL) {
-                disp_box rest = disp_cdr(args);
-                if (rest && T(rest) == FLAG_CONS) {
+                disp_val rest = disp_cdr(args);
+                if (NN(rest) && T(rest) == FLAG_CONS) {
                     // 调用 disp_letf 处理命名 let，返回最终结果
-                    disp_box result = disp_letf(env, expr);
-                    return result_normal(result);
+                    disp_val result = disp_letf(env, expr);
+                    return RESULT_NORMAL(result);
                 }
             }
 
-            disp_box bindings = first;
-            disp_box body_exprs = disp_cdr(args);
-            if (!body_exprs) {
+            disp_val bindings = first;
+            disp_val body_exprs = disp_cdr(args);
+            if (N(body_exprs)) {
                 ERRO("letrec: missing body");
-                return result_nil();
+                return RESULT_NORMAL(NIL);
             }
 
             // 统计绑定数量
             int var_count = 0;
-            for (disp_box b = bindings; b && T(b) == FLAG_CONS; b = disp_cdr(b)) var_count++;
+            for (disp_val b = bindings; NN(b) && T(b) == FLAG_CONS; b = disp_cdr(b)) var_count++;
             if (var_count == 0) {
                 // 无绑定，直接求值 body
-                while (body_exprs && T(body_exprs) == FLAG_CONS) {
-                    disp_box cur = disp_car(body_exprs);
-                    disp_box next = disp_cdr(body_exprs);
-                    if (next == NIL)
+                while (NN(body_exprs) && T(body_exprs) == FLAG_CONS) {
+                    disp_val cur = disp_car(body_exprs);
+                    disp_val next = disp_cdr(body_exprs);
+                    if (E(next, NIL))
                         return disp_eval_tail(env, cur, is_tail, current_closure);
                     else
                         disp_eval(env, cur);
                     body_exprs = next;
                 }
-                return result_nil();
+                return RESULT_NORMAL(NIL);
             }
 
             // 分配临时数组并加入 GC 根
-            GC_ROOT(disp_box, var_syms) = gc_typed_malloc(var_count * sizeof(disp_box), &GC_TYPE_PTR_ARRAY);
-            GC_ROOT(disp_box, init_exprs) = gc_typed_malloc(var_count * sizeof(disp_box), &GC_TYPE_PTR_ARRAY);
+            GC_ROOT(disp_val, var_syms) = gc_typed_malloc(var_count * sizeof(disp_val), &GC_TYPE_PTR_ARRAY);
+            GC_ROOT(disp_val, init_exprs) = gc_typed_malloc(var_count * sizeof(disp_val), &GC_TYPE_PTR_ARRAY);
 
             // 解析绑定
             int idx = 0;
-            disp_box b = bindings;
-            while (b && T(b) == FLAG_CONS) {
-                disp_box pair = disp_car(b);
+            disp_val b = bindings;
+            while (NN(b) && T(b) == FLAG_CONS) {
+                disp_val pair = disp_car(b);
                 if (T(pair) != FLAG_CONS || T(disp_car(pair)) != FLAG_SYMBOL) {
                     gc_free(init_exprs);
                     gc_free(var_syms);
                     ERRO("malformed letrec binding");
-                    return result_nil();
+                    return RESULT_NORMAL(NIL);
                 }
                 var_syms[idx] = disp_car(pair);
                 init_exprs[idx] = disp_car(disp_cdr(pair));
@@ -97,7 +97,7 @@ eval_result_t* disp_eval_tail_letrec(disp_scope_t *env, disp_box expr, int is_ta
             }
 
             // 并行求值所有初值
-            GC_ROOT(disp_box, init_vals) = gc_typed_malloc(var_count * sizeof(disp_box), &GC_TYPE_PTR_ARRAY);
+            GC_ROOT(disp_val, init_vals) = gc_typed_malloc(var_count * sizeof(disp_val), &GC_TYPE_PTR_ARRAY);
             for (int i = 0; i < var_count; i++) {
                 init_vals[i] = disp_eval(new_scope, init_exprs[i]);
             }
@@ -114,21 +114,21 @@ eval_result_t* disp_eval_tail_letrec(disp_scope_t *env, disp_box expr, int is_ta
             gc_free(var_syms);
 
             // 对 body 序列进行尾求值
-            while (body_exprs && T(body_exprs) == FLAG_CONS) {
-                disp_box cur = disp_car(body_exprs);
-                disp_box next = disp_cdr(body_exprs);
-                if (next == NIL) {
+            while (NN(body_exprs) && T(body_exprs) == FLAG_CONS) {
+                disp_val cur = disp_car(body_exprs);
+                disp_val next = disp_cdr(body_exprs);
+                if (E(next, NIL)) {
                     return disp_eval_tail(new_scope, cur, is_tail, current_closure);
                 } else {
                     disp_eval(new_scope, cur);
                     body_exprs = next;
                 }
             }
-            return result_nil();
+            return RESULT_NORMAL(NIL);
         }
         ERRO("not letrec branch");
-        return result_nil();
+        return RESULT_NORMAL(NIL);
     }
     ERRO("not letrec branch");
-    return result_nil();
+    return RESULT_NORMAL(NIL);
 }

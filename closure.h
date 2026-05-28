@@ -9,13 +9,13 @@
 #include <ctype.h>
 
 /* --- Closures and macros --- */
-void disp_closure_reuse(disp_box closure);
-disp_box disp_make_closure(disp_scope_t *env, disp_box params, disp_box body, int reuse_scope);
-disp_box disp_make_macro(disp_scope_t *env, disp_box params, disp_box body, int reuse_scope);
-disp_box disp_get_closure_params(disp_box closure);
-disp_box disp_get_closure_body(disp_box closure);
-disp_box disp_apply_closure(disp_box closure, disp_box *args, int arg_count);
-disp_box disp_letf(disp_scope_t *scope, disp_box expr);
-void bind_arguments_to_scope(disp_scope_t *scope, disp_box params, disp_box *args, int arg_count);
+void disp_closure_reuse(disp_val closure);
+disp_val disp_make_closure(disp_scope_t *env, disp_val params, disp_val body, int reuse_scope);
+disp_val disp_make_macro(disp_scope_t *env, disp_val params, disp_val body, int reuse_scope);
+disp_val disp_get_closure_params(disp_val closure);
+disp_val disp_get_closure_body(disp_val closure);
+disp_val disp_apply_closure(disp_val closure, disp_val *args, int arg_count);
+disp_val disp_letf(disp_scope_t *scope, disp_val expr);
+void bind_arguments_to_scope(disp_scope_t *scope, disp_val params, disp_val *args, int arg_count);
 
 #endif // CLOSURE_H

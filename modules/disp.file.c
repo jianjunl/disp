@@ -15,7 +15,7 @@
 // ======================== 文件操作 ========================
 
 // (fopen filename mode) -> file 或 nil
-static disp_box fopen_syscall(disp_box *args, int count) {
+static disp_val fopen_syscall(disp_val *args, int count) {
     if (count != 2 || T(args[0]) != FLAG_STRING || T(args[1]) != FLAG_STRING) {
         ERET(NIL, "fopen: expects (filename mode)");
     }
@@ -37,7 +37,7 @@ static disp_box fopen_syscall(disp_box *args, int count) {
 }
 
 // (fclose file) -> bool
-static disp_box fclose_syscall(disp_box *args, int count) {
+static disp_val fclose_syscall(disp_val *args, int count) {
     if (count != 1 || T(args[0]) != TAG_FILE) {
         ERET(NIL, "fclose: expects a file object");
     }
@@ -59,7 +59,7 @@ static disp_box fclose_syscall(disp_box *args, int count) {
 }
 
 // (fread file) -> string 或 nil (读取一行)
-static disp_box fread_syscall(disp_box *args, int count) {
+static disp_val fread_syscall(disp_val *args, int count) {
     if (count != 1 || T(args[0]) != TAG_FILE) {
         ERET(NIL, "fread: expects a file object");
     }
@@ -76,7 +76,7 @@ static disp_box fread_syscall(disp_box *args, int count) {
 }
 
 // (fwrite file string) -> bool
-static disp_box fwrite_syscall(disp_box *args, int count) {
+static disp_val fwrite_syscall(disp_val *args, int count) {
     if (count != 2 || T(args[0]) != TAG_FILE || T(args[1]) != FLAG_STRING) {
         ERET(NIL, "fwrite: expects (file string)");
     }
@@ -89,7 +89,7 @@ static disp_box fwrite_syscall(disp_box *args, int count) {
 }
 
 // (feof file) -> bool
-static disp_box feof_syscall(disp_box *args, int count) {
+static disp_val feof_syscall(disp_val *args, int count) {
     if (count != 1 || T(args[0]) != TAG_FILE) {
         ERET(NIL, "feof: expects a file object");
     }

@@ -13,52 +13,52 @@
 #include "../disp.h"
 
 // List primitives
-static disp_box cons_syscall(disp_box *args, int count) {
+static disp_val cons_syscall(disp_val *args, int count) {
     if (count != 2) {
         ERET(NIL, "cons expects two arguments");
     }
     return disp_make_cons(args[0], args[1]);
 }
 
-static disp_box car_syscall(disp_box *args, int count) {
+static disp_val car_syscall(disp_val *args, int count) {
     if (count != 1) {
         ERET(NIL, "car expects one argument");
     }
     return disp_car(args[0]);
 }
 
-static disp_box cdr_syscall(disp_box *args, int count) {
+static disp_val cdr_syscall(disp_val *args, int count) {
     if (count != 1) {
         ERET(NIL, "cdr expects one argument");
     }
     return disp_cdr(args[0]);
 }
 
-static disp_box list_syscall(disp_box *args, int count) {
-    disp_box result = NIL;
+static disp_val list_syscall(disp_val *args, int count) {
+    disp_val result = NIL;
     for (int i = count - 1; i >= 0; i--)
         result = disp_make_cons(args[i], result);
     return result;
 }
 
 // --- not ---
-static disp_box not_syscall(disp_box *args, int count) {
+static disp_val not_syscall(disp_val *args, int count) {
     if (count != 1) {
         ERET(NIL, "not: expected one argument");
     }
-    return (args[0] == NIL) ? TRUE : NIL;
+    return E(args[0], NIL) ? TRUE : NIL;
 }
 
 // --- eq? --- (simple pointer comparison)
-static disp_box eqp_syscall(disp_box *args, int count) {
+static disp_val eqp_syscall(disp_val *args, int count) {
     if (count != 2) {
         ERET(NIL, "eq?: expected two arguments");
     }
-    return (args[0] == args[1]) ? TRUE : NIL;
+    return E(args[0], args[1]) ? TRUE : NIL;
 }
 
 // --- < --- (numeric comparison)
-static disp_box lt_syscall(disp_box *args, int count) {
+static disp_val lt_syscall(disp_val *args, int count) {
     if (count != 2) {
         ERET(NIL, "<: expected two arguments");
     }
@@ -81,7 +81,7 @@ static disp_box lt_syscall(disp_box *args, int count) {
     return (a < b) ? TRUE : NIL;
 }
 
-static disp_box gt_syscall(disp_box *args, int count) {
+static disp_val gt_syscall(disp_val *args, int count) {
     if (count != 2) {
         ERET(NIL, ">: expected two arguments");
     }
@@ -103,34 +103,46 @@ static disp_box gt_syscall(disp_box *args, int count) {
     return (a > b) ? TRUE : NIL;
 }
 
-static disp_box eq_syscall(disp_box *args, int count) {
+static disp_val eq_syscall(disp_val *args, int count) {
     if (count != 2) {
         ERET(NIL, "=: expected two arguments");
     }
 
+    /* 比较 NIL */
+/*
+    if (E(args[0], NIL) && E(args[1], NIL)) return TRUE;
+    if (E(args[0], NIL) || E(args[1], NIL)) return NIL;
+    if (E(args[0], TRUE) && NE(args[1], NIL)) return TRUE;
+    if (E(args[0], TRUE) && NE(args[1], NIL)) return TRUE;
+*/
+
     // Compare numbers, with type promotion
     long double a = 0, b = 0;
-    disp_box v = disp_eval(NULL, args[0]);
+    disp_val v = disp_eval(NULL, args[0]);
     switch (T(v)) {
+        case FLAG_BYTE: a = disp_get_int(v); break;
+        case FLAG_SHORT: a = disp_get_int(v); break;
         case FLAG_INT: a = disp_get_int(v); break;
         case FLAG_LONG: a = disp_get_long(v); break;
         case FLAG_FLOAT: a = disp_get_float(v); break;
         case FLAG_DOUBLE: a = disp_get_double(v); break;
-        default: ERRO("=: left operand not numeric");
+        default: { if (NE(v, NIL)) ERRO("=: left operand not numeric");}
     }
     v = disp_eval(NULL, args[1]);
     switch (T(v)) {
+        case FLAG_BYTE: b = disp_get_int(v); break;
+        case FLAG_SHORT: b = disp_get_int(v); break;
         case FLAG_INT: b = disp_get_int(v); break;
         case FLAG_LONG: b = disp_get_long(v); break;
         case FLAG_FLOAT: b = disp_get_float(v); break;
         case FLAG_DOUBLE: b = disp_get_double(v); break;
-        default: ERRO("=: right operand not numeric");
+        default: { if (NE(v, NIL)) ERRO("=: right operand not numeric");}
     }
     return (a == b) ? TRUE : NIL;
 }
 
 // --- eval ---
-static disp_box eval_syscall(disp_box *args, int count) {
+static disp_val eval_syscall(disp_val *args, int count) {
     if (count != 1) {
         ERET(NIL, "eval: expected one argument");
     }
@@ -139,61 +151,61 @@ static disp_box eval_syscall(disp_box *args, int count) {
 }
 
 /* ----- 类型谓词 ----- */
-static disp_box nullp_syscall(disp_box *args, int count) {
+static disp_val nullp_syscall(disp_val *args, int count) {
     if (count != 1) ERET(NIL, "null?: expects one argument");
-    return (args[0] == NIL) ? TRUE : NIL;
+    return E(args[0], NIL) ? TRUE : NIL;
 }
 
 /* ----- 类型谓词 ----- */
-static disp_box symbolp_syscall(disp_box *args, int count) {
+static disp_val symbolp_syscall(disp_val *args, int count) {
     if (count != 1) ERET(NIL, "symbol?: expects one argument");
     return (T(args[0]) == FLAG_SYMBOL) ? TRUE : NIL;
 }
 
 /* ----- 类型谓词 ----- */
-static disp_box stringp_syscall(disp_box *args, int count) {
+static disp_val stringp_syscall(disp_val *args, int count) {
     if (count != 1) ERET(NIL, "string?: expects one argument");
     return (T(args[0]) == FLAG_STRING) ? TRUE : NIL;
 }
 
 /* ----- 类型谓词 ----- */
-static disp_box bytep_syscall(disp_box *args, int count) {
+static disp_val bytep_syscall(disp_val *args, int count) {
     if (count != 1) ERET(NIL, "byte?: expects one argument");
     return (T(args[0]) == FLAG_BYTE) ? TRUE : NIL;
 }
 
 /* ----- 类型谓词 ----- */
-static disp_box shortp_syscall(disp_box *args, int count) {
+static disp_val shortp_syscall(disp_val *args, int count) {
     if (count != 1) ERET(NIL, "short?: expects one argument");
     return (T(args[0]) == FLAG_SHORT) ? TRUE : NIL;
 }
 
 /* ----- 类型谓词 ----- */
-static disp_box intp_syscall(disp_box *args, int count) {
+static disp_val intp_syscall(disp_val *args, int count) {
     if (count != 1) ERET(NIL, "int?: expects one argument");
     return (T(args[0]) == FLAG_INT) ? TRUE : NIL;
 }
 
 /* ----- 类型谓词 ----- */
-static disp_box longp_syscall(disp_box *args, int count) {
+static disp_val longp_syscall(disp_val *args, int count) {
     if (count != 1) ERET(NIL, "long?: expects one argument");
     return (T(args[0]) == FLAG_LONG) ? TRUE : NIL;
 }
 
 /* ----- 类型谓词 ----- */
-static disp_box floatp_syscall(disp_box *args, int count) {
+static disp_val floatp_syscall(disp_val *args, int count) {
     if (count != 1) ERET(NIL, "float?: expects one argument");
     return (T(args[0]) == FLAG_FLOAT) ? TRUE : NIL;
 }
 
 /* ----- 类型谓词 ----- */
-static disp_box doublep_syscall(disp_box *args, int count) {
+static disp_val doublep_syscall(disp_val *args, int count) {
     if (count != 1) ERET(NIL, "double?: expects one argument");
     return (T(args[0]) == FLAG_DOUBLE) ? TRUE : NIL;
 }
 
 /* ----- 类型谓词 ----- */
-static disp_box integerp_syscall(disp_box *args, int count) {
+static disp_val integerp_syscall(disp_val *args, int count) {
     if (count != 1) ERET(NIL, "integer?: expects one argument");
     if (
         T(args[0]) == FLAG_BYTE   ||
@@ -205,7 +217,7 @@ static disp_box integerp_syscall(disp_box *args, int count) {
 }
 
 /* ----- 类型谓词 ----- */
-static disp_box decimalp_syscall(disp_box *args, int count) {
+static disp_val decimalp_syscall(disp_val *args, int count) {
     if (count != 1) ERET(NIL, "decimal?: expects one argument");
     if (
         T(args[0]) == FLAG_BYTE   ||
@@ -219,7 +231,7 @@ static disp_box decimalp_syscall(disp_box *args, int count) {
 }
 
 /* ----- 类型谓词 ----- */
-static disp_box numberp_syscall(disp_box *args, int count) {
+static disp_val numberp_syscall(disp_val *args, int count) {
     if (count != 1) ERET(NIL, "number?: expects one argument");
     if (
         T(args[0]) == FLAG_BYTE   ||
@@ -233,7 +245,7 @@ static disp_box numberp_syscall(disp_box *args, int count) {
 }
 
 /* ----- set-car! ----- */
-static disp_box set_car_syscall(disp_box *args, int count) {
+static disp_val set_car_syscall(disp_val *args, int count) {
     if (count != 2) {
         ERET(NIL, "set-car! expects two arguments (cons new-value)");
     }
@@ -245,7 +257,7 @@ static disp_box set_car_syscall(disp_box *args, int count) {
 }
 
 /* ----- set-cdr! ----- */
-static disp_box set_cdr_syscall(disp_box *args, int count) {
+static disp_val set_cdr_syscall(disp_val *args, int count) {
     if (count != 2) {
         ERET(NIL, "set-cdr! expects two arguments (cons new-value)");
     }
@@ -261,23 +273,23 @@ static disp_box set_cdr_syscall(disp_box *args, int count) {
  * 递归比较内容，支持 NIL、数值、字符串、符号、cons。
  * 为防止循环结构，设置递归深度上限。
  */
-static disp_box equal_syscall(disp_box *args, int count) {
+static disp_val equal_syscall(disp_val *args, int count) {
     if (count != 2) {
         ERET(NIL, "equal: expected two arguments");
     }
 
-    disp_box a = args[0];
-    disp_box b = args[1];
+    disp_val a = args[0];
+    disp_val b = args[1];
 
     /* 递归深度保护（简单实现，避免无限循环） */
     static _Thread_local int depth = 0;
     if (depth > 1000) ERET(NIL, "equal: exceeded recursion depth");
 
     /* 比较 NIL */
-    if (a == NIL && b == NIL) return TRUE;
-    if (a == NIL || b == NIL) return NIL;
-    if (a == TRUE && b != NIL) return TRUE;
-    if (b == TRUE && a != NIL) return TRUE;
+    if (E(a, NIL) && E(b, NIL)) return TRUE;
+    if (E(a, NIL) || E(b, NIL)) return NIL;
+    if (E(a, TRUE) && NE(b, NIL)) return TRUE;
+    if (E(b, TRUE) && NE(a, NIL)) return TRUE;
 
     /* 类型不同，快速失败 */
     if (T(a) != T(b)) return NIL;
@@ -303,9 +315,9 @@ static disp_box equal_syscall(disp_box *args, int count) {
         }
         case FLAG_CONS: {
             depth++;
-            disp_box car_eq = equal_syscall((disp_box[]){disp_car(a), disp_car(b)}, 2);
-            if (car_eq == NIL) { depth--; return NIL; }
-            disp_box cdr_eq = equal_syscall((disp_box[]){disp_cdr(a), disp_cdr(b)}, 2);
+            disp_val car_eq = equal_syscall((disp_val[]){disp_car(a), disp_car(b)}, 2);
+            if (E(car_eq, NIL)) { depth--; return NIL; }
+            disp_val cdr_eq = equal_syscall((disp_val[]){disp_cdr(a), disp_cdr(b)}, 2);
             depth--;
             return cdr_eq;
         }

@@ -13,27 +13,27 @@
 #endif
 #include "../disp.h"
 
-disp_box disp_letf(disp_scope_t *scope, disp_box expr) {
+disp_val disp_letf(disp_scope_t *scope, disp_val expr) {
     // 解析命名 let 语法
-    disp_box rest = disp_cdr(expr);
-    if (!rest || T(rest) != FLAG_CONS) ERET(NIL, "named let: missing name");
-    disp_box name = disp_car(rest);
+    disp_val rest = disp_cdr(expr);
+    if (N(rest) || T(rest) != FLAG_CONS) ERET(NIL, "named let: missing name");
+    disp_val name = disp_car(rest);
     if (T(name) != FLAG_SYMBOL) ERET(NIL, "named let: name must be a symbol");
     
-    disp_box bindings_rest = disp_cdr(rest);
-    if (!bindings_rest || T(bindings_rest) != FLAG_CONS) ERET(NIL, "named let: missing bindings");
-    disp_box bindings = disp_car(bindings_rest);
-    disp_box body = disp_cdr(bindings_rest);
-    if (!body) ERET(NIL, "named let: missing body");
+    disp_val bindings_rest = disp_cdr(rest);
+    if (N(bindings_rest) || T(bindings_rest) != FLAG_CONS) ERET(NIL, "named let: missing bindings");
+    disp_val bindings = disp_car(bindings_rest);
+    disp_val body = disp_cdr(bindings_rest);
+    if (N(body)) ERET(NIL, "named let: missing body");
     
     // 提取变量和初值
     int var_count = 0;
-    for (disp_box b = bindings; b && T(b) == FLAG_CONS; b = disp_cdr(b)) var_count++;
-    GC_ROOT(disp_box, var_syms) = gc_typed_malloc(var_count * sizeof(disp_box), &GC_TYPE_PTR_ARRAY);
-    GC_ROOT(disp_box, init_exprs) = gc_typed_malloc(var_count * sizeof(disp_box), &GC_TYPE_PTR_ARRAY);
+    for (disp_val b = bindings; NN(b) && T(b) == FLAG_CONS; b = disp_cdr(b)) var_count++;
+    GC_ROOT(disp_val, var_syms) = gc_typed_malloc(var_count * sizeof(disp_val), &GC_TYPE_PTR_ARRAY);
+    GC_ROOT(disp_val, init_exprs) = gc_typed_malloc(var_count * sizeof(disp_val), &GC_TYPE_PTR_ARRAY);
     int idx = 0;
-    for (disp_box b = bindings; b && T(b) == FLAG_CONS; b = disp_cdr(b)) {
-        disp_box pair = disp_car(b);
+    for (disp_val b = bindings; NN(b) && T(b) == FLAG_CONS; b = disp_cdr(b)) {
+        disp_val pair = disp_car(b);
         if (T(pair) != FLAG_CONS || T(disp_car(pair)) != FLAG_SYMBOL) {
             gc_free(init_exprs); gc_free(var_syms);
             ERET(NIL, "named let: malformed binding");
@@ -49,30 +49,30 @@ disp_box disp_letf(disp_scope_t *scope, disp_box expr) {
     
     // 1. 先绑定所有变量初值（此时闭包尚未创建）
     for (int i = 0; i < var_count; i++) {
-        disp_box init_val = disp_eval(scope, init_exprs[i]);
+        disp_val init_val = disp_eval(scope, init_exprs[i]);
         const char *vname = disp_get_symbol_name(var_syms[i]);
         disp_define_symbol(loop_scope, vname, init_val, 0);
     }
     
     // 2. 提取当前变量的值作为调用闭包的初始参数（此时所有变量都是初值）
-    GC_ROOT(disp_box, args) = gc_typed_malloc(var_count * sizeof(disp_box), &GC_TYPE_PTR_ARRAY);
+    GC_ROOT(disp_val, args) = gc_typed_malloc(var_count * sizeof(disp_val), &GC_TYPE_PTR_ARRAY);
     for (int i = 0; i < var_count; i++) {
         const char *vname = disp_get_symbol_name(var_syms[i]);
-        disp_box sym = disp_find_symbol(loop_scope, vname);
+        disp_val sym = disp_find_symbol(loop_scope, vname);
         args[i] = disp_get_symbol_value(sym);
     }
     
     // 3. 创建闭包（参数列表为变量符号，body 为原 body）
-    disp_box params = NIL;
+    disp_val params = NIL;
     for (int i = var_count - 1; i >= 0; i--) 
         params = disp_make_cons(var_syms[i], params);
-    disp_box closure = disp_make_closure(loop_scope, params, body, 1);
+    disp_val closure = disp_make_closure(loop_scope, params, body, 1);
     
     // 4. 将闭包绑定到 loop_scope 中的同名符号
     disp_define_symbol(loop_scope, SN(name), closure, 1);
     
     // 5. 调用闭包（传入初始参数，这些参数不会覆盖闭包自身的绑定）
-    disp_box result = disp_apply_closure(closure, args, var_count);
+    disp_val result = disp_apply_closure(closure, args, var_count);
     
     // 清理
     gc_free(args);

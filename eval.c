@@ -18,42 +18,42 @@
 /* ======================== Evaluator ======================== */
 
 // 宏展开时使用定义环境求值宏体
-static disp_box expand_macro(disp_box macro, disp_box expr) {
-    disp_box args = disp_cdr(expr);
-    disp_box params = disp_get_closure_params(macro);
-    disp_box body = disp_get_closure_body(macro);
+static disp_val expand_macro(disp_val macro, disp_val expr) {
+    disp_val args = disp_cdr(expr);
+    disp_val params = disp_get_closure_params(macro);
+    disp_val body = disp_get_closure_body(macro);
     disp_scope_t *macro_env = disp_get_closure_env(macro);
 
     // 创建新作用域：children of macro_env
     GC_ROOT(disp_scope_t, expand_scope) = disp_new_scope(macro_env);
     // 将实际参数（未求值）绑定到 expand_scope
     int arg_count = 0;
-    for (disp_box a = args; a && T(a) == FLAG_CONS; a = disp_cdr(a)) arg_count++;
-    disp_box *arg_forms = gc_typed_malloc(arg_count * sizeof(disp_box), &GC_TYPE_PTR_ARRAY);
+    for (disp_val a = args; NN(a) && T(a) == FLAG_CONS; a = disp_cdr(a)) arg_count++;
+    disp_val *arg_forms = gc_typed_malloc(arg_count * sizeof(disp_val), &GC_TYPE_PTR_ARRAY);
     int i = 0;
-    for (disp_box a = args; a && T(a) == FLAG_CONS; a = disp_cdr(a)) {
+    for (disp_val a = args; NN(a) && T(a) == FLAG_CONS; a = disp_cdr(a)) {
         arg_forms[i] = disp_car(a);
         i++;
     }
     bind_arguments_to_scope(expand_scope, params, arg_forms, arg_count);
     // 在 expand_scope 中求值宏体，得到展开式
-    disp_box expansion = disp_eval_body(expand_scope, body);
+    disp_val expansion = disp_eval_body(expand_scope, body);
     gc_free(arg_forms);
     return expansion;
 }
 
-disp_box disp_eval_body(disp_scope_t *scope, disp_box body) {
+disp_val disp_eval_body(disp_scope_t *scope, disp_val body) {
     GC_ROOT_AUTO(body);
-    disp_box result = NIL;
-    while (body && T(body) == FLAG_CONS) {
+    disp_val result = NIL;
+    while (NN(body) && T(body) == FLAG_CONS) {
         result = disp_eval(scope, disp_car(body));
         body = disp_cdr(body);
     }
     return result;
 }
 
-disp_box disp_eval(disp_scope_t *scope, disp_box expr) {
-    if (!expr) return NIL;
+disp_val disp_eval(disp_scope_t *scope, disp_val expr) {
+    if (N(expr)) return NIL;
     if (!scope) scope = disp_global_scope;
     switch (T(expr)) {
         case FLAG_BYTE:
@@ -67,23 +67,23 @@ disp_box disp_eval(disp_scope_t *scope, disp_box expr) {
         case FLAG_NAN:
             return expr;
         case FLAG_SYMBOL: {
-            if (SV(expr) == QUIT) {
+            if (E(SV(expr), QUIT)) {
                 exit(0);
             }
-            disp_box val = disp_find_symbol(scope, SN(expr));
-            if (!val || val == NIL) {
+            disp_val val = disp_find_symbol(scope, SN(expr));
+            if (N(val) || E(val, NIL)) {
                 ERET(NIL, "undefined symbol: %s", SN(expr));
             }
-            disp_box value = SV(val);   // 注意：需要查找后取其 value
+            disp_val value = SV(val);   // 注意：需要查找后取其 value
             return value;
         }
         case FLAG_CONS: {
             // Evaluate the function (car) – could be built‑in, closure, or macro
-            disp_box func_val = disp_eval(scope, disp_car(expr));  // 函数、宏也是表达式
+            disp_val func_val = disp_eval(scope, disp_car(expr));  // 函数、宏也是表达式
             // 宏展开
             if (T(func_val) == FLAG_MACRO) {
-                disp_box expansion = expand_macro(func_val, expr);
-                if (expansion == NIL) {
+                disp_val expansion = expand_macro(func_val, expr);
+                if (E(expansion, NIL)) {
                     return NIL;
                 }
                 return disp_eval(scope, expansion);
@@ -95,16 +95,16 @@ disp_box disp_eval(disp_scope_t *scope, disp_box expr) {
 
             // Collect evaluated arguments
             int arg_count = 0;
-            disp_box arg_list = disp_cdr(expr);
-            for (disp_box a = arg_list; a && T(a) == FLAG_CONS; a = disp_cdr(a))
+            disp_val arg_list = disp_cdr(expr);
+            for (disp_val a = arg_list; NN(a) && T(a) == FLAG_CONS; a = disp_cdr(a))
                 arg_count++;
-            disp_box *args = gc_typed_malloc(arg_count * sizeof(disp_box), &GC_TYPE_PTR_ARRAY);
+            disp_val *args = gc_typed_malloc(arg_count * sizeof(disp_val), &GC_TYPE_PTR_ARRAY);
             int i = 0;
-            for (disp_box a = arg_list; a && T(a) == FLAG_CONS; a = disp_cdr(a)) {
+            for (disp_val a = arg_list; NN(a) && T(a) == FLAG_CONS; a = disp_cdr(a)) {
                 args[i++] = disp_eval(scope, disp_car(a));
             }
 
-            disp_box result;
+            disp_val result;
             if (T(func_val) == FLAG_CLOSURE) {
                 result = disp_apply_closure(func_val, args, arg_count);
             } else if (T(func_val) == FLAG_SYSCALL) {

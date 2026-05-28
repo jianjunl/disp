@@ -14,59 +14,59 @@
 #include "../disp.h"
 
 // --- lambda ---
-static disp_box lambda_builtin(disp_scope_t *scope, disp_box expr) {
+static disp_val lambda_builtin(disp_scope_t *scope, disp_val expr) {
     // (lambda (params) body...)
-    disp_box rest = disp_cdr(expr);
-    if (!rest || T(rest) != FLAG_CONS) ERET(NIL, "lambda: missing parameter list");
-    disp_box params = disp_car(rest);
-    disp_box body = disp_cdr(rest);
-    if (!body) ERET(NIL, "lambda: missing body");
+    disp_val rest = disp_cdr(expr);
+    if (N(rest) || T(rest) != FLAG_CONS) ERET(NIL, "lambda: missing parameter list");
+    disp_val params = disp_car(rest);
+    disp_val body = disp_cdr(rest);
+    if (N(body)) ERET(NIL, "lambda: missing body");
     return disp_make_closure(scope, params, body, 0);
 }
 
 // --- macro ---
-static disp_box macro_builtin(disp_scope_t *scope, disp_box expr) {
+static disp_val macro_builtin(disp_scope_t *scope, disp_val expr) {
     // (macro (params) body...)
-    disp_box rest = disp_cdr(expr);
-    if (!rest || T(rest) != FLAG_CONS) ERET(NIL, "macro: missing parameter list");
-    disp_box params = disp_car(rest);
-    disp_box body = disp_cdr(rest);
-    if (!body) ERET(NIL, "macro: missing body");
+    disp_val rest = disp_cdr(expr);
+    if (N(rest) || T(rest) != FLAG_CONS) ERET(NIL, "macro: missing parameter list");
+    disp_val params = disp_car(rest);
+    disp_val body = disp_cdr(rest);
+    if (N(body)) ERET(NIL, "macro: missing body");
     return disp_make_macro(scope, params, body, 0);
 }
 
 /* ----- apply ----- */
-static disp_box apply_syscall(disp_box *args, int count) {
+static disp_val apply_syscall(disp_val *args, int count) {
     if (count != 2) {
         ERET(NIL, "apply: expects two arguments (func arg-list)");
     }
-    disp_box func = args[0];
-    disp_box arg_list = args[1];
+    disp_val func = args[0];
+    disp_val arg_list = args[1];
 
     // 检查参数列表是否为 proper list（末尾必须是 nil）
-    disp_box p = arg_list;
-    while (p != NIL && T(p) == FLAG_CONS) {
+    disp_val p = arg_list;
+    while (NE(p, NIL) && T(p) == FLAG_CONS) {
         p = disp_cdr(p);
     }
-    if (p != NIL) {
+    if (NE(p, NIL)) {
         ERET(NIL, "apply: argument list must be a proper list");
     }
 
     // 计算列表长度
     int arg_count = 0;
-    for (disp_box a = arg_list; a != NIL; a = disp_cdr(a)) {
+    for (disp_val a = arg_list; NE(a, NIL); a = disp_cdr(a)) {
         arg_count++;
     }
 
     // 分配参数数组
-    disp_box *argv = gc_typed_malloc(arg_count * sizeof(disp_box), &GC_TYPE_PTR_ARRAY);
+    disp_val *argv = gc_typed_malloc(arg_count * sizeof(disp_val), &GC_TYPE_PTR_ARRAY);
     if (!argv) return NIL;
     int i = 0;
-    for (disp_box a = arg_list; a != NIL; a = disp_cdr(a)) {
+    for (disp_val a = arg_list; NE(a, NIL); a = disp_cdr(a)) {
         argv[i++] = disp_car(a);
     }
 
-    disp_box result = NIL;
+    disp_val result = NIL;
     if (T(func) == FLAG_SYSCALL) {
         result = disp_get_syscall(func)(argv, arg_count);
     } else if (T(func) == FLAG_CLOSURE) {

@@ -14,15 +14,15 @@
 
 /* ======================== Printer ======================== */
 
-void disp_print(disp_box v) {
+void disp_print(disp_val v) {
     disp_fprint(stdout, v);
 }
 
-void disp_write(disp_box v) {
+void disp_write(disp_val v) {
     disp_fwrite(stdout, v);
 }
 
-char* disp_string(disp_box v) {
+char* disp_string(disp_val v) {
     char *buf = NULL;
     size_t size = 0;
     FILE *mem = open_memstream(&buf, &size);
@@ -34,7 +34,7 @@ char* disp_string(disp_box v) {
     return s;
 }
 
-char* disp_str(disp_box v) {
+char* disp_str(disp_val v) {
     char *buf = NULL;
     size_t size = 0;
     FILE *mem = open_memstream(&buf, &size);
@@ -46,8 +46,8 @@ char* disp_str(disp_box v) {
     return s;
 }
 
-void disp_fprint(FILE *out, disp_box v) {
-    if (!v) {
+void disp_fprint(FILE *out, disp_val v) {
+    if (N(v)) {
         fprintf(out, "nil");
         return;
     }
@@ -75,19 +75,19 @@ void disp_fprint(FILE *out, disp_box v) {
         case FLAG_CONS:
             fputc('(', out);
             disp_fprint(out, disp_car(v));
-            disp_box rest = disp_cdr(v);
-            while (rest && T(rest) == FLAG_CONS) {
+            disp_val rest = disp_cdr(v);
+            while (NN(rest) && T(rest) == FLAG_CONS) {
                 fputc(' ', out);
                 disp_fprint(out, disp_car(rest));
                 rest = disp_cdr(rest);
             }
-            if (rest && rest != NIL) {
+            if (NN(rest) && NE(rest, NIL)) {
                 fprintf(out, " . ");
                 disp_fprint(out, rest);
             }
             fputc(')', out);
             break;
-        case FLAG_VOID: v == TRUE ? fprintf(out, "true") : fprintf(out, "nil"); break;
+        case FLAG_VOID: E(v, TRUE) ? fprintf(out, "true") : fprintf(out, "nil"); break;
         case FLAG_NAN: fprintf(out, "NaN"); break;
         case FLAG_BUILTIN:  fprintf(out, "#<builtin>"); break;
         case FLAG_SYSCALL:  fprintf(out, "#<function>"); break;
@@ -103,8 +103,8 @@ void disp_fprint(FILE *out, disp_box v) {
     }
 }
 
-void disp_fwrite(FILE *out, disp_box v) {
-    if (!v) {
+void disp_fwrite(FILE *out, disp_val v) {
+    if (N(v)) {
         fprintf(out, "nil");
         return;
     }
@@ -132,19 +132,19 @@ void disp_fwrite(FILE *out, disp_box v) {
         case FLAG_CONS:
             fputc('(', out);
             disp_fwrite(out, disp_car(v));
-            disp_box rest = disp_cdr(v);
-            while (rest && T(rest) == FLAG_CONS) {
+            disp_val rest = disp_cdr(v);
+            while (NN(rest) && T(rest) == FLAG_CONS) {
                 fputc(' ', out);
                 disp_fwrite(out, disp_car(rest));
                 rest = disp_cdr(rest);
             }
-            if (rest && rest != NIL) {
+            if (NN(rest) && !E(rest, NIL)) {
                 fprintf(out, " . ");
                 disp_fwrite(out, rest);
             }
             fputc(')', out);
             break;
-        case FLAG_VOID: v == TRUE ? fprintf(out, "true") : fprintf(out, "nil"); break;
+        case FLAG_VOID: E(v, TRUE) ? fprintf(out, "true") : fprintf(out, "nil"); break;
         case FLAG_NAN: fprintf(out, "NaN"); break;
         case FLAG_SYSCALL:  fprintf(out, "#<function>"); break;
         case FLAG_BUILTIN:  fprintf(out, "#<builtin>"); break;

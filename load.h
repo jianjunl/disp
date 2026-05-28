@@ -9,7 +9,7 @@
 #include <pthread.h>
 
 /* --- Loading --- */
-disp_box disp_import(const char *filename);
-disp_box disp_load(disp_scope_t *env, const char *filename);
+disp_val disp_import(const char *filename);
+disp_val disp_load(disp_scope_t *env, const char *filename);
 
 #endif // LOAD_H

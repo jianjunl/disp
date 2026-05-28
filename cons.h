@@ -9,10 +9,10 @@
 #include <ctype.h>
 
 /* --- Accessors (for cons cells) --- */
-disp_box disp_car(disp_box cons);
-disp_box disp_cdr(disp_box cons);
-void disp_set_car(disp_box cons, disp_box car);   /* use with care – immutable by convention */
-void disp_set_cdr(disp_box cons, disp_box cdr);
-disp_box disp_make_cons(disp_box car, disp_box cdr);
+disp_val disp_car(disp_val cons);
+disp_val disp_cdr(disp_val cons);
+void disp_set_car(disp_val cons, disp_val car);   /* use with care – immutable by convention */
+void disp_set_cdr(disp_val cons, disp_val cdr);
+disp_val disp_make_cons(disp_val car, disp_val cdr);
 
 #endif // CONS_H

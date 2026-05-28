@@ -33,29 +33,29 @@ GC_STRUCT_TI(disp_coro_t,
 /* =============================== 协程核心 =============================== */
 
 static ucontext_t main_ctx;      // 调度器（事件循环）的主上下文
-static disp_box current_coro = NULL;
+static disp_val current_coro = DNULL;
 
 // 全局就绪队列
-static disp_box ready_head = NULL;
-static disp_box ready_tail = NULL;
+static disp_val ready_head = DNULL;
+static disp_val ready_tail = DNULL;
 
-static void coroutine_entry(disp_box coro) {
+static void coroutine_entry(disp_val coro) {
     gc_add_root(&coro);
     current_coro = coro;
-    coro->data->coro->status = 1;
-    disp_box func = coro->data->coro->func;
-    disp_box result = disp_apply_closure(func, NULL, 0);
-    GC_ASSIGN_PTR(coro->data->coro->final_result, result);
-    coro->data->coro->status = 2;
-    current_coro = NULL;
-    swapcontext(&coro->data->coro->ctx, &main_ctx);
+    D(coro)->coro->status = 1;
+    disp_val func = D(coro)->coro->func;
+    disp_val result = disp_apply_closure(func, NULL, 0);
+    GC_ASSIGN_PTR(D(coro)->coro->final_result, result);
+    D(coro)->coro->status = 2;
+    current_coro = DNULL;
+    swapcontext(&D(coro)->coro->ctx, &main_ctx);
     gc_remove_root(&coro);
 }
 
-disp_box disp_make_coroutine(disp_box func, size_t stack_size) {
-    disp_box v = ALLOC_TI(TAG_CORO);
+disp_val disp_make_coroutine(disp_val func, size_t stack_size) {
+    disp_val v = ALLOC_TI(FLAG_EXTRA, TAG_CORO);
     disp_coro_t *c = gc_typed_calloc(1, sizeof(struct disp_coro_t), &struct_disp_coro_t_ti);
-    v->data->coro = c;
+    D(v)->coro = c;
     c->status = 0;
     c->func = func;
     c->yield_value = NIL;
@@ -64,9 +64,9 @@ disp_box disp_make_coroutine(disp_box func, size_t stack_size) {
     c->timer_fd = -1;
     c->select_data = NULL;
     void *s = gc_typed_malloc(stack_size, &GC_TYPE_PTR_ARRAY);
-    v->data->coro->stack = s;
+    D(v)->coro->stack = s;
     if (!s) {
-        gc_free(v); gc_free(c);
+        gc_free(D(v)); gc_free(c);
         return NIL;
     }
     getcontext(&c->ctx);
@@ -77,95 +77,95 @@ disp_box disp_make_coroutine(disp_box func, size_t stack_size) {
     return v;
 }
 
-static disp_box make_coroutine_syscall(disp_box *args, int count) {
+static disp_val make_coroutine_syscall(disp_val *args, int count) {
     if (count != 1 || T(args[0]) != FLAG_CLOSURE)
         ERET(NIL, "make-coroutine expects a lambda");
     return disp_make_coroutine(args[0], 65536);
 }
 
-static disp_box yield_syscall(disp_box *args, int count) {
-    if (current_coro == NULL)
+static disp_val yield_syscall(disp_val *args, int count) {
+    if (N(current_coro))
         ERET(NIL, "yield called outside coroutine");
-    disp_coro_t *c = current_coro->data->coro;
+    disp_coro_t *c = D(current_coro)->coro;
     c->yield_value = (count >= 1) ? args[0] : NIL;
     // 主动让出：放回就绪队列
     if (c->status == 1) {
-        if (ready_head == NULL) {
+        if (N(ready_head)) {
             ready_head = ready_tail = current_coro;
         } else {
-            ready_tail->data->coro->next = current_coro;
+            D(ready_tail)->coro->next = current_coro;
             ready_tail = current_coro;
         }
-        current_coro->data->coro->next = NULL;
+        D(current_coro)->coro->next = DNULL;
     }
-    current_coro = NULL;
+    current_coro = DNULL;
     swapcontext(&c->ctx, &main_ctx);
     // 恢复后，获取 resume 传入的参数
-    disp_box arg = c->resume_arg;
+    disp_val arg = c->resume_arg;
     c->resume_arg = NIL;
     return arg;
 }
 
-static disp_box resume_syscall(disp_box *args, int count) {
+static disp_val resume_syscall(disp_val *args, int count) {
     if (count < 1 || T(args[0]) != TAG_CORO)
         ERET(NIL, "resume expects a coroutine and optional argument");
-    disp_box coro = args[0];
-    disp_coro_t *c =coro->data->coro;
+    disp_val coro = args[0];
+    disp_coro_t *c = D(coro)->coro;
     if (c->status == 2)
-        return c->final_result ? c->final_result : NIL;
-    if (current_coro != NULL)
+        return NN(c->final_result) ? c->final_result : NIL;
+    if (NN(current_coro))
         ERET(NIL, "resume: already inside a coroutine (call yield first)");
     c->resume_arg = (count >= 2) ? args[1] : NIL;
     current_coro = coro;
     c->status = 1;
     swapcontext(&main_ctx, &c->ctx);
     if (c->status == 2)
-        return c->final_result ? c->final_result : NIL;
+        return NN(c->final_result) ? c->final_result : NIL;
     else {
-        disp_box result = c->yield_value;
+        disp_val result = c->yield_value;
         c->yield_value = NIL;
         return result;
     }
 }
 
-disp_box disp_get_current_coro() {
-    return current_coro ? current_coro : NIL;
+disp_val disp_get_current_coro() {
+    return NN(current_coro) ? current_coro : NIL;
 }
 
-static disp_box current_coro_syscall(disp_box *args, int count) {
+static disp_val current_coro_syscall(disp_val *args, int count) {
     (void)args; (void)count;
-    return current_coro ? current_coro : NIL;
+    return NN(current_coro) ? current_coro : NIL;
 }
 
-void scheduler_add(disp_box coro) {
-    if (!coro || T(coro) != TAG_CORO) {
-        INFO("scheduler_add: invalid coro %p (flag=%d)", (void*)coro, coro != NULL ? T(coro) : FLAG_VOID);
+void scheduler_add(disp_val coro) {
+    if (N(coro) || T(coro) != TAG_CORO) {
+        INFO("scheduler_add: invalid coro %p (flag=%d)", D(coro), NN(coro) ? T(coro) : FLAG_VOID);
         exit(1);
     }
-    if (ready_head == NULL) {
+    if (N(ready_head)) {
         ready_head = ready_tail = coro;
     } else {
-        ready_tail->data->coro->next = coro;
+        D(ready_tail)->coro->next = coro;
         ready_tail = coro;
     }
-    coro->data->coro->next = NULL;
+    D(coro)->coro->next = DNULL;
 }
 
 void scheduler_yield(void) {
-    if (current_coro == NULL) return;
-    disp_coro_t *c = current_coro->data->coro;
+    if (N(current_coro)) return;
+    disp_coro_t *c = D(current_coro)->coro;
     if (c->status == 1) {
         scheduler_add(current_coro);
     }
-    current_coro = NULL;
+    current_coro = DNULL;
     swapcontext(&c->ctx, &main_ctx);
 }
 
 void scheduler_suspend(void) {
-    if (current_coro == NULL) return;
-    disp_coro_t *c = current_coro->data->coro;
+    if (N(current_coro)) return;
+    disp_coro_t *c = D(current_coro)->coro;
     c->status = 0;          // 标记为挂起
-    current_coro = NULL;
+    current_coro = DNULL;
     swapcontext(&c->ctx, &main_ctx);
 }
 
@@ -183,11 +183,11 @@ void event_loop_init(void) {
     }
 }
 
-void event_loop_add_fd(int fd, disp_box coro, int events) {
+void event_loop_add_fd(int fd, disp_val coro, int events) {
     if (epfd == -1) event_loop_init();
     struct epoll_event ev;
     ev.events = events;
-    ev.data.ptr = coro;
+    ev.data.ptr = D(coro);
     AAA(coro, data, coro);
     if (epoll_ctl(epfd, EPOLL_CTL_ADD, fd, &ev) == -1) {
         if (errno == EEXIST) {
@@ -198,17 +198,17 @@ void event_loop_add_fd(int fd, disp_box coro, int events) {
             perror("epoll_ctl ADD");
         }
     }
-    coro->data->coro->status = 0;   // 挂起
+    D(coro)->coro->status = 0;   // 挂起
 }
 
-void event_loop_add_timer(long milliseconds, disp_box coro) {
+void event_loop_add_timer(long milliseconds, disp_val coro) {
     int tfd = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK);
     if (tfd == -1) {
         perror("timerfd_create");
         return;
     }
     // 记录 timerfd 到协程对象
-    disp_coro_t *c = coro->data->coro;
+    disp_coro_t *c = D(coro)->coro;
     c->timer_fd = tfd;
 
     struct itimerspec its;
@@ -230,16 +230,16 @@ void event_loop_run(void) {
     getcontext(&main_ctx);          // 初始化主上下文
     while (1) {
         // 先运行就绪队列中的协程
-        if (ready_head) {
-            disp_box next = ready_head;
+        if (NN(ready_head)) {
+            disp_val next = ready_head;
             if (T(next) != TAG_CORO) {
                 INFO("event_loop_run: non-coroutine in ready queue! flag=%d\n", T(next));
                 exit(1);
             }
-            ready_head = ready_head->data->coro->next;
-            if (ready_head == NULL) ready_tail = NULL;
-            if (next != current_coro) {
-                disp_coro_t *c = next->data->coro;
+            ready_head = D(ready_head)->coro->next;
+            if (N(ready_head)) ready_tail = DNULL;
+            if (NE(next, current_coro)) {
+                disp_coro_t *c = D(next)->coro;
                 current_coro = next;
                 c->status = 1;
                 swapcontext(&main_ctx, &c->ctx);
@@ -249,20 +249,20 @@ void event_loop_run(void) {
         // 没有就绪协程，等待 epoll 事件
         int n = epoll_wait(epfd, events, MAX_EVENTS, -1);
         for (int i = 0; i < n; i++) {
-            disp_box coro = events[i].data.ptr;
-            disp_coro_t *c = coro->data->coro;
+            disp_val coro = V(FLAG_EXTRA, TAG_CORO, (disp_data *)events[i].data.ptr);
+            disp_coro_t *c = D(coro)->coro;
             // 关闭 timerfd（如果有）
             if (c->timer_fd != -1) {
                 close(c->timer_fd);
                 c->timer_fd = -1;
             }
             scheduler_add(coro);
-            coro->data->coro->status = 1;
+            D(coro)->coro->status = 1;
         }
     }
 }
 
-static disp_box event_loop_run_syscall(disp_box *args, int count) {
+static disp_val event_loop_run_syscall(disp_val *args, int count) {
     (void)args; (void)count;
     event_loop_run();
     return TRUE; // never reached

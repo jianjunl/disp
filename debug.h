@@ -4,7 +4,7 @@
 
 #ifndef URET
 #define URET(R) do { \
-    disp_box _r = R; \
+    disp_val _r = R; \
     return _r; \
 } while(0);
 #endif
@@ -36,11 +36,11 @@
 } while(0);
 #endif
 
-#ifdef NN 
-# error "NN has been defined before " #__LINE__ "@" #__FILE__
+#ifdef DEBUG_NN 
+# error "DEBUG_NN has been defined before " #__LINE__ "@" #__FILE__
 #else 
-#define NN(a) do { \
-    if (!a || a == NIL) { \
+#define DEBUG_NN(a) do { \
+    if (!a || N(a) || E(a, NIL)) { \
         DEBUG_INFO(ASSERT, stderr, #a " must not be null or nil"); \
         exit(1); \
     } \

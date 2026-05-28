@@ -33,45 +33,45 @@ GC_UNION_TI(disp_data,
     GC_OFF(disp_data, builtin.desc)
 );
 
-disp_builtin_t disp_get_builtin(disp_box v) {
+disp_builtin_t disp_get_builtin(disp_val v) {
     if (T(v) == FLAG_BUILTIN) {
-        return v->data->builtin.func;
+        return D(v)->builtin.func;
     }
     ERET(NULL, "disp_get_builtin failed: %s\n", disp_str(v));
 }
 
-char* disp_get_builtin_desc(disp_box v) {
+char* disp_get_builtin_desc(disp_val v) {
     if (T(v) == FLAG_BUILTIN) {
-        return v->data->builtin.desc;
+        return D(v)->builtin.desc;
     }
     ERET(NULL, "disp_get_builtin_desc failed: %s\n", strerror (errno));
 }
 
-disp_syscall_t disp_get_syscall(disp_box v) {
+disp_syscall_t disp_get_syscall(disp_val v) {
     if (T(v) == FLAG_SYSCALL) {
-        return v->data->syscall.func;
+        return D(v)->syscall.func;
     }
     ERET(NULL, "disp_get_syscall failed: %s\n", strerror (errno));
 }
 
-char* disp_get_syscall_desc(disp_box v) {
+char* disp_get_syscall_desc(disp_val v) {
     if (T(v) == FLAG_SYSCALL) {
-        return v->data->syscall.desc;
+        return D(v)->syscall.desc;
     }
     ERET(NULL, "disp_get_syscall_desc failed: %s\n", strerror (errno));
 }
 
-disp_box disp_make_builtin(disp_builtin_t f, char *d) {
-    disp_box v = ALLOC_TI(FLAG_BUILTIN);
-    v->data->builtin.func = f;
-    v->data->builtin.desc = d;
+disp_val disp_make_builtin(disp_builtin_t f, char *d) {
+    disp_val v = ALLOC_TI(FLAG_BUILTIN, 0);
+    D(v)->builtin.func = f;
+    D(v)->builtin.desc = d;
     return v;
 }
 
-disp_box disp_make_syscall(disp_syscall_t f, char *d) {
-    disp_box v = ALLOC_TI(FLAG_SYSCALL);
-    v->data->syscall.func = f;
-    v->data->syscall.desc = d;
+disp_val disp_make_syscall(disp_syscall_t f, char *d) {
+    disp_val v = ALLOC_TI(FLAG_SYSCALL, 0);
+    D(v)->syscall.func = f;
+    D(v)->syscall.desc = d;
     return v;
 }
 

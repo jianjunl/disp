@@ -28,14 +28,14 @@ LIBDIR := $(PREFIX)/lib
 INCLUDEDIR := $(PREFIX)/include
 MODDIR := $(PREFIX)/share/disp/modules
 
-LIB_SRCS := disp.c number.c io.c parse.c eval.c load.c array.c name.c symbol.c scope.c \
+LIB_SRCS := disp.c literal.c io.c parse.c eval.c load.c array.c name.c symbol.c scope.c \
             closure.c apply.c flow.c let.c leta.c letrec.c letreca.c socket.c \
-            prim.c string.c cons.c func.c letf.c file.c info.c repl.c type.c
+            number.c string.c cons.c func.c letf.c file.c info.c repl.c type.c
 LIB_OBJS := $(LIB_SRCS:.c=.o)
 MAIN_SRC := main.c
 MAIN_OBJ := main.o
 
-MODULES1 := 
+MODULES0 := 
 MODULES := disp.data.so disp.quote.so \
            disp.lambda.so disp.throw.so \
            disp.flow.so disp.define.so \

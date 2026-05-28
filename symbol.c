@@ -14,31 +14,10 @@
 #endif
 #include "disp.h"
 
-#if NAN_BOXING
-
-disp_box disp_alloc(int flag, disp_data *data) {
-    return (flag <<< 48) & data;
-}
-
-#else // NAN_BOXING == 0
-
-GC_STRUCT_TI(disp_val,
-    GC_OFF(disp_val, data)
-);
-
-disp_box disp_alloc(int flag, disp_data *data) {
-    disp_box v = gc_typed_calloc(1, sizeof(struct disp_val), &struct_disp_val_ti);
-    v->data = data;
-    T(v) = flag;
-    return v;
-}
-
-#endif // NAN_BOXING
-
 union disp_data {
     struct {
-        uint64_t id;            // 改为 ID，不再存储字符串指针
-        disp_box value;
+        uint64_t id;
+        disp_val value;
     } symbol;
 };
 
@@ -49,47 +28,46 @@ GC_UNION_TI(disp_data,
 /* ======================== 符号表 ======================== */
 #define SYM_TABLE_SIZE 1024
 
-void disp_set_symbol_value(disp_box sym, disp_box value) {
-    if (!sym || T(sym) != FLAG_SYMBOL) {
+void disp_set_symbol_value(disp_val sym, disp_val value) {
+    if (N(sym) || T(sym) != FLAG_SYMBOL) {
         ERRO("disp_set_symbol_value: not a symbol");
         return;
     }
-    GC_ASSIGN_PTR(sym->data->symbol.value, value);
+    GC_ASSIGN_PTR(sym.data->symbol.value, value);
 }
-
-disp_box disp_make_symbol(const char *name) {
-    disp_box v = ALLOC_TI(FLAG_SYMBOL);
-    if (!v) return NULL;
+disp_val disp_make_symbol(const char *name) {
+    disp_val v = ALLOC_TI(FLAG_SYMBOL, 0);
+    if (N(v)) return DNULL;
     
     uint64_t id = disp_get_id(name);   // 获取或创建 ID
-    v->data->symbol.id = id;
-    GC_ASSIGN_PTR(v->data->symbol.value, NIL);
+    D(v)->symbol.id = id;
+    D(v)->symbol.value = NIL;
     
     return v;
 }
 
-char* disp_get_symbol_name(disp_box v) {
-    if (!v || T(v) != FLAG_SYMBOL) {
+char* disp_get_symbol_name(disp_val v) {
+    if (N(v) || T(v) != FLAG_SYMBOL) {
         ERRO("disp_get_symbol_name failed");
         return NULL;
     }
-    uint64_t id = v->data->symbol.id;
+    uint64_t id = D(v)->symbol.id;
     return (char*)disp_get_name(id);   // 通过 ID 反查字符串
 }
 
-disp_box disp_get_symbol_value(disp_box v) {
-    if (!v || T(v) != FLAG_SYMBOL) {
+disp_val disp_get_symbol_value(disp_val v) {
+    if (N(v) || T(v) != FLAG_SYMBOL) {
         ERRO("disp_get_symbol_value failed");
     }
-    return v->data->symbol.value;
+    return D(v)->symbol.value;
 }
 
 /* ======================== GC 初始化和全局常量 ======================== */
 
 void disp_init_symbol() {
-    NIL  = ALLOC_TI(FLAG_VOID);
-    TRUE = ALLOC_TI(FLAG_VOID);
-    QUIT = ALLOC_TI(FLAG_VOID);
+    NIL  = ALLOC(FLAG_VOID, 0);
+    TRUE = ALLOC(FLAG_VOID, 0);
+    QUIT = ALLOC(FLAG_VOID, 0);
     DEF("nil",   NIL,  1);
     DEF("false", NIL,  1);
     DEF("true",  TRUE, 1);

@@ -14,9 +14,9 @@
 #include "../disp.h"
 
 // 辅助函数：将 disp_val 转换为整数（用于 %d, %x, %o 等）
-static intmax_t val_to_int(disp_box v) {
-    if (v == NIL) return 0;
-    if (v == TRUE) return 1;
+static intmax_t val_to_int(disp_val v) {
+    if (E(v, NIL)) return 0;
+    if (E(v, TRUE)) return 1;
     switch (T(v)) {
         case FLAG_BYTE:   return disp_get_byte(v);
         case FLAG_SHORT:  return disp_get_short(v);
@@ -29,15 +29,15 @@ static intmax_t val_to_int(disp_box v) {
 }
 
 // 辅助函数：将 disp_val 转换为字符串（用于 %s）
-static const char* val_to_str(disp_box v) {
-    if (v == NIL) return "nil";
-    if (v == TRUE) return "true";
+static const char* val_to_str(disp_val v) {
+    if (E(v, NIL)) return "nil";
+    if (E(v, TRUE)) return "true";
     if (T(v) == FLAG_STRING) return disp_get_str(v);
     return disp_str(v);
 }
 
 // 辅助函数：将 disp_val 转换为双精度浮点数（用于 %f, %g, %e）
-static double val_to_double(disp_box v) {
+static double val_to_double(disp_val v) {
     switch (T(v)) {
         case FLAG_BYTE:   return disp_get_byte(v);
         case FLAG_SHORT:  return disp_get_short(v);
@@ -45,12 +45,12 @@ static double val_to_double(disp_box v) {
         case FLAG_LONG:   return disp_get_long(v);
         case FLAG_FLOAT:  return disp_get_float(v);
         case FLAG_DOUBLE: return disp_get_double(v);
-        default:          if(v == NIL) return 0.0; else ERET(0.0, "NaN:%s", val_to_str(v));
+        default:          if(E(v, NIL)) return 0.0; else ERET(0.0, "NaN:%s", val_to_str(v));
     }
 }
 
 // 修正后的 disp_vprintf
-static int disp_vprintf(FILE *out, const char *fmt, disp_box *args, int arg_count) {
+static int disp_vprintf(FILE *out, const char *fmt, disp_val *args, int arg_count) {
     int printed = 0;
     int arg_idx = 0;
     const char *p = fmt;
@@ -106,7 +106,7 @@ static int disp_vprintf(FILE *out, const char *fmt, disp_box *args, int arg_coun
             fprintf(stderr, "disp_vprintf: missing argument for format specifier\n");
             return -1;
         }
-        disp_box arg = args[arg_idx++];
+        disp_val arg = args[arg_idx++];
 
         // 构建完整格式字符串，例如 "%+10.2f"
         char fmt_buf[64];
@@ -144,7 +144,7 @@ static int disp_vprintf(FILE *out, const char *fmt, disp_box *args, int arg_coun
                 break;
             }
             case 'p': {
-                printed += fprintf(out, fmt_buf, (void*)arg);
+                printed += fprintf(out, fmt_buf, (void*)D(arg));
                 break;
             }
             default:
@@ -160,7 +160,7 @@ static int disp_vprintf(FILE *out, const char *fmt, disp_box *args, int arg_coun
     return printed;
 }
 
-static disp_box printf_syscall(disp_box *args, int count) {
+static disp_val printf_syscall(disp_val *args, int count) {
     if (count < 1 || T(args[0]) != FLAG_STRING) {
         ERET(NIL, "printf: format string required");
     }
@@ -170,7 +170,7 @@ static disp_box printf_syscall(disp_box *args, int count) {
     return TRUE;   // 返回 true 而不是打印数字
 }
 
-static disp_box fprintf_syscall(disp_box *args, int count) {
+static disp_val fprintf_syscall(disp_val *args, int count) {
     if (count < 2 || T(args[0]) != TAG_FILE || T(args[1]) != FLAG_STRING) {
         ERET(NIL, "fprintf: (file format-string ...) required");
     }
@@ -182,7 +182,7 @@ static disp_box fprintf_syscall(disp_box *args, int count) {
 }
 
 // --- write --- (prints the evaluated argument, returns it)
-static disp_box write_syscall(disp_box *args, int count) {
+static disp_val write_syscall(disp_val *args, int count) {
     if (count < 1) {
         ERET(NIL, "writeln: expected at least one argument");
     }
@@ -194,7 +194,7 @@ static disp_box write_syscall(disp_box *args, int count) {
 }
 
 // --- writeln --- (print followed by newline)
-static disp_box writeln_syscall(disp_box *args, int count) {
+static disp_val writeln_syscall(disp_val *args, int count) {
     if (count < 1) {
         ERET(NIL, "writeln: expected at least one argument");
     }
@@ -207,7 +207,7 @@ static disp_box writeln_syscall(disp_box *args, int count) {
 }
 
 // --- print --- (prints the evaluated argument, returns it)
-static disp_box print_syscall(disp_box *args, int count) {
+static disp_val print_syscall(disp_val *args, int count) {
     if (count < 1) {
         ERET(NIL, "print: expected at least one argument");
     }
@@ -219,7 +219,7 @@ static disp_box print_syscall(disp_box *args, int count) {
 }
 
 // --- println --- (print followed by newline)
-static disp_box println_syscall(disp_box *args, int count) {
+static disp_val println_syscall(disp_val *args, int count) {
     if (count < 1) {
         ERET(NIL, "println: expected at least one argument");
     }
@@ -232,7 +232,7 @@ static disp_box println_syscall(disp_box *args, int count) {
 }
 
 // --- system --- (execute shell command)
-static disp_box system_syscall(disp_box *args, int count) {
+static disp_val system_syscall(disp_val *args, int count) {
     if (count != 1 || T(args[0]) != FLAG_STRING) {
         ERET(NIL, "system: expected a string argument");
     }
@@ -240,7 +240,7 @@ static disp_box system_syscall(disp_box *args, int count) {
     return disp_make_int(ret);
 }
 
-static disp_box sleep_syscall(disp_box *args, int count) {
+static disp_val sleep_syscall(disp_val *args, int count) {
     if (count != 1) {
         ERET(NIL, "sleep: expected one argument (seconds)");
     }
@@ -255,9 +255,9 @@ static disp_box sleep_syscall(disp_box *args, int count) {
 }
 
 // --- time ---
-static disp_box time_builtin(disp_scope_t *scope, disp_box expr) {
-    disp_box rest = disp_cdr(expr);
-    if (rest == NIL) {
+static disp_val time_builtin(disp_scope_t *scope, disp_val expr) {
+    disp_val rest = disp_cdr(expr);
+    if (E(rest, NIL)) {
         // (time) -> 返回当前时间字符串
         time_t t = time(NULL);
         struct tm *tm = localtime(&t);
@@ -266,13 +266,13 @@ static disp_box time_builtin(disp_scope_t *scope, disp_box expr) {
         return disp_make_string(buf);
     } else {
         // (time expr) -> 执行并计时
-        if (disp_cdr(rest) != NIL) {
+        if (NE(disp_cdr(rest), NIL)) {
             ERRO("time: warning - extra arguments ignored");
         }
-        disp_box form = disp_car(rest);
+        disp_val form = disp_car(rest);
         struct timespec start, end;
         clock_gettime(CLOCK_MONOTONIC, &start);
-        disp_box result = disp_eval(scope, form);
+        disp_val result = disp_eval(scope, form);
         clock_gettime(CLOCK_MONOTONIC, &end);
         long long diff_ns = (end.tv_sec - start.tv_sec) * 1000000000LL + (end.tv_nsec - start.tv_nsec);
         double diff_ms = diff_ns / 1000000.0;
@@ -285,7 +285,7 @@ static disp_box time_builtin(disp_scope_t *scope, disp_box expr) {
 static gc_mutex_t io_mutex = GC_PTHREAD_MUTEX_INITIALIZER;
 
 /* (safe-fprintf file format-string args...) -> result */
-static disp_box safe_fprintf_syscall(disp_box *args, int count) {
+static disp_val safe_fprintf_syscall(disp_val *args, int count) {
     if (count < 2 || T(args[0]) != TAG_FILE || T(args[1]) != FLAG_STRING) {
         ERET(NIL, "safe-fprintf: (file format-string ...) required");
     }
@@ -307,17 +307,17 @@ static void pretty_print_indent(int indent) {
     for (int i = 0; i < indent; i++) fputc(' ', stdout);
 }
 
-static void pretty_print_obj(disp_box v, int indent, int newline) {
-    if (!v) {
+static void pretty_print_obj(disp_val v, int indent, int newline) {
+    if (N(v)) {
         printf("nil");
         return;
     }
     switch (T(v)) {
         case FLAG_CONS: {
             printf("(");
-            disp_box p = v;
+            disp_val p = v;
             int first = 1;
-            while (p != NIL && T(p) == FLAG_CONS) {
+            while (NE(p, NIL) && T(p) == FLAG_CONS) {
                 if (!first) {
                     if (newline) {
                         printf("\n");
@@ -330,7 +330,7 @@ static void pretty_print_obj(disp_box v, int indent, int newline) {
                 first = 0;
                 p = disp_cdr(p);
             }
-            if (p != NIL) {
+            if (NE(p, NIL)) {
                 printf(" . ");
                 pretty_print_obj(p, indent + 2, newline);
             }
@@ -356,7 +356,7 @@ static void pretty_print_obj(disp_box v, int indent, int newline) {
             printf("%g", disp_get_double(v));
             break; 
         case FLAG_VOID:
-            v == TRUE ? printf("true") : printf("nil");
+            E(v, TRUE) ? printf("true") : printf("nil");
             break;
         case FLAG_NAN:
             printf("NaN");
@@ -367,7 +367,7 @@ static void pretty_print_obj(disp_box v, int indent, int newline) {
     }
 }
 
-static disp_box pretty_print_syscall(disp_box *args, int count) {
+static disp_val pretty_print_syscall(disp_val *args, int count) {
     if (count < 1) ERET(NIL, "pretty-print: expected at least one argument");
     for (int i = 0; i < count; i++) {
         pretty_print_obj(args[i], 0, 1);

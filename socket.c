@@ -25,13 +25,13 @@ union disp_data {
     } socket_val;
 };
 
-disp_box disp_make_socket(int fd) {
-    disp_box v = ALLOC(TAG_SOCKET);
-    v->data->socket_val.fd = fd;
+disp_val disp_make_socket(int fd) {
+    disp_val v = ALLOC(FLAG_EXTRA, TAG_SOCKET);
+    D(v)->socket_val.fd = fd;
     return v;
 }
 
-int disp_get_socket_fd(disp_box v) {
+int disp_get_socket_fd(disp_val v) {
     if (T(v) != TAG_SOCKET) return -1;
-    return v->data->socket_val.fd;
+    return D(v)->socket_val.fd;
 }
