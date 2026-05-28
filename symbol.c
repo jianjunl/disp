@@ -65,9 +65,9 @@ disp_val disp_get_symbol_value(disp_val v) {
 /* ======================== GC 初始化和全局常量 ======================== */
 
 void disp_init_symbol() {
-    NIL  = ALLOC(FLAG_VOID, 0);
-    TRUE = ALLOC(FLAG_VOID, 0);
-    QUIT = ALLOC(FLAG_VOID, 0);
+    NIL  = V(FLAG_VOID, 0, calloc(1, sizeof(disp_data)));
+    TRUE = V(FLAG_VOID, 0, calloc(1, sizeof(disp_data)));
+    QUIT = V(FLAG_VOID, 0, calloc(1, sizeof(disp_data)));
     DEF("nil",   NIL,  1);
     DEF("false", NIL,  1);
     DEF("true",  TRUE, 1);
