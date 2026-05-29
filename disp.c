@@ -86,7 +86,7 @@ static void* disp_gc_validate(void *ptr) {
     // 情形1: 高16位为0 => 真实指针（来自精确根或已解码地址），直接返回
     // 情形2: 高16位在 0x7FF8 ~ 0x7FFF 之间 => 装箱指针，返回低48位
     // 情形3: 其他 => 数值或无效，返回 NULL
-    if (tag == 0 || ((tag & 0xFFF8) == 0x7FF8)) {
+    if (tag == 0 || ((tag & 0xFFF8) == 0x7FF8 || tag == FLAG_DOUBLE || tag == FLAG_LONG)) {
         // 注意：情形2 需保证指针 tag 区域为 0x7FF8~0x7FFF，掩码 0xFFF8 恰好筛选出这些值
         return (void*)(val & 0x0000FFFFFFFFFFFFULL);
     }

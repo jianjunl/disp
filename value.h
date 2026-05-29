@@ -12,15 +12,15 @@
 
 typedef uint16_t disp_flag_t;
 
-// Flags of Primitives (0xFFF8 - 0xFFFF)
-#define FLAG_VOID       0xFFF8
-#define FLAG_NAN        0xFFF9
-#define FLAG_BYTE       0xFFFA
-#define FLAG_SHORT      0xFFFB
-#define FLAG_INT        0xFFFC
-#define FLAG_LONG       0xFFFD
-#define FLAG_FLOAT      0xFFFE
-#define FLAG_DOUBLE     0xFFFF
+// Flags of Primitives (0x7FF0 - 0x7FF7)
+#define FLAG_DOUBLE     0x7FF0
+#define FLAG_VOID       0x7FF1
+#define FLAG_NAN        0x7FF2
+#define FLAG_BYTE       0x7FF3
+#define FLAG_SHORT      0x7FF4
+#define FLAG_INT        0x7FF5
+#define FLAG_FLOAT      0x7FF6
+#define FLAG_LONG       0x7FF7
 
 // Flags of Pointers (0x7FF8 - 0x7FFF)
 #define FLAG_SYMBOL     0x7FF8
@@ -32,7 +32,7 @@ typedef uint16_t disp_flag_t;
 #define FLAG_SYSCALL    0x7FFE
 #define FLAG_EXTRA      0x7FFF
 
-// Tags of DATA (FLAG_EXTRA of Pointers)
+// Tags of DATA (Pointers with FLAG_EXTRA)
 #define TAG_TYPE        1
 #define TAG_FILE        2
 #define TAG_CORO        3
@@ -42,8 +42,6 @@ typedef uint16_t disp_flag_t;
 #define TAG_MUTEX       7
 #define TAG_COND        8
 
-#define NAN_MASK        0xFFF8000000000000ULL
-
 #define DISP_NAN_BOXING 1
 
 #if DISP_NAN_BOXING
@@ -52,19 +50,28 @@ typedef uint64_t disp_val;
 
 typedef struct disp_data disp_data;
 
+typedef union disp_double {
+    double d;
+    long l;
+} disp_double;
+
+typedef struct disp_long {
+    long l;
+} disp_long;
+
 typedef struct disp_extra {
     disp_flag_t tag;
 } disp_extra;
 
 // Flags (High 16 bits)
-#define TAG_SHIFT       48
-#define TAG_MASK        0x0000FFFFFFFFFFFFULL
+#define NAN_SHIFT       48
+#define NAN_MASK        0x0000FFFFFFFFFFFFULL
 
-#define NAN_FLAG(v) ((disp_flag_t)(v >> TAG_SHIFT))
+#define NAN_FLAG(v) ((disp_flag_t)(v >> NAN_SHIFT))
 
-#define NAN_UNBOX(v) (v & TAG_MASK)
+#define NAN_UNBOX(v) (v & NAN_MASK)
 
-#define NAN_BOX(t, v) ((((disp_val)t) << TAG_SHIFT) | (((disp_val)v) & TAG_MASK))
+#define NAN_BOX(t, v) ((((disp_val)t) << NAN_SHIFT) | (((disp_val)v) & NAN_MASK))
 
 #define D(v) ((disp_data *)NAN_UNBOX(v))
 

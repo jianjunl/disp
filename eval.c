@@ -56,6 +56,7 @@ disp_val disp_eval(disp_scope_t *scope, disp_val expr) {
     if (N(expr)) return NIL;
     if (!scope) scope = disp_global_scope;
     switch (T(expr)) {
+        case FLAG_NAN:
         case FLAG_BYTE:
         case FLAG_SHORT:
         case FLAG_INT:
@@ -64,7 +65,6 @@ disp_val disp_eval(disp_scope_t *scope, disp_val expr) {
         case FLAG_DOUBLE:
         case FLAG_STRING:
         case FLAG_VOID:
-        case FLAG_NAN:
             return expr;
         case FLAG_SYMBOL: {
             if (E(SV(expr), QUIT)) {
