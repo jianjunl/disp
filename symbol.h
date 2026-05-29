@@ -10,7 +10,16 @@
 
 /* --- Allocation --- */
 
+#if DISP_NAN_BOXING
+
+#define ALLOC_TI(f, t) V(f, t, gc_typed_calloc(1, sizeof(disp_data), &struct_disp_data_ti))
+
+#else // DISP_NAN_BOXING = 0
+
 #define ALLOC_TI(f, t) V(f, t, gc_typed_calloc(1, sizeof(disp_data), &union_disp_data_ti))
+
+#endif // DISP_NAN_BOXING
+
 #define ALLOC(f, t) V(f, t, gc_calloc(1, sizeof(disp_data)))
 
 /* --- Symbol table --- */

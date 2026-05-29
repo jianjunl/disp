@@ -44,7 +44,7 @@ typedef uint16_t disp_flag_t;
 
 #define NAN_MASK        0xFFF8000000000000ULL
 
-#define DISP_NAN_BOXING      0
+#define DISP_NAN_BOXING 0
 
 #if DISP_NAN_BOXING
 
@@ -72,9 +72,9 @@ typedef struct disp_data disp_data;
 
 #define V(f, t, d) NAN_BOX(f, d)
 
-#define DNULL V(FLAG_VOID, 0, NULL)
+#define DNULL V(FLAG_EXTRA, 0, NULL)
 
-#define N(v) (T(v) == FLAG_VOID && D(v) == NULL)
+#define N(v) ((T(v) & 0x8000) == 0 && D(v) == NULL)
 
 #define NN(v) !N(v)
 
@@ -106,9 +106,9 @@ typedef struct disp_val {
 
 #define V(f, t, d) ((struct disp_val){.flag = (f == FLAG_EXTRA ? t : f), .data = d})
 
-#define DNULL V(FLAG_VOID, 0, NULL)
+#define DNULL V(FLAG_EXTRA, 0, NULL)
 
-#define N(v) (T(v) == FLAG_VOID && D(v) == NULL)
+#define N(v) ((T(v) & 0x8000) == 0 && D(v) == NULL)
 
 #define NN(v) !N(v)
 
