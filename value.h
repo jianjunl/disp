@@ -44,13 +44,17 @@ typedef uint16_t disp_flag_t;
 
 #define NAN_MASK        0xFFF8000000000000ULL
 
-#define DISP_NAN_BOXING 0
+#define DISP_NAN_BOXING 1
 
 #if DISP_NAN_BOXING
 
 typedef uint64_t disp_val;
 
 typedef struct disp_data disp_data;
+
+typedef struct disp_extra {
+    disp_flag_t tag;
+} disp_extra;
 
 // Flags (High 16 bits)
 #define TAG_SHIFT       48
@@ -64,17 +68,20 @@ typedef struct disp_data disp_data;
 
 #define D(v) ((disp_data *)NAN_UNBOX(v))
 
-#define T(v) (NAN_FLAG(v) == FLAG_EXTRA ? D(v)->tag : NAN_FLAG(v))
+#define T(v) (NAN_FLAG(v) == FLAG_EXTRA ? ((disp_extra *)D(v))->tag : NAN_FLAG(v))
 
 #define E(v, u)  (v == u)
 
 #define NE(v, u) !E(v, u) 
 
-#define V(f, t, d) NAN_BOX(f, d)
+static inline disp_val V(disp_flag_t f, disp_flag_t t, void *d) {
+    if (f == FLAG_EXTRA) ((disp_extra *)d)->tag = t;
+    return NAN_BOX(f, d);
+}
 
-#define DNULL V(FLAG_EXTRA, 0, NULL)
+#define DNULL NAN_BOX(FLAG_VOID, NULL)
 
-#define N(v) ((T(v) & 0x8000) == 0 && D(v) == NULL)
+#define N(v) (T(v) == FLAG_VOID && !D(v))
 
 #define NN(v) !N(v)
 
@@ -106,9 +113,9 @@ typedef struct disp_val {
 
 #define V(f, t, d) ((struct disp_val){.flag = (f == FLAG_EXTRA ? t : f), .data = d})
 
-#define DNULL V(FLAG_EXTRA, 0, NULL)
+#define DNULL V(FLAG_VOID, 0, NULL)
 
-#define N(v) ((T(v) & 0x8000) == 0 && D(v) == NULL)
+#define N(v) (T(v) == FLAG_VOID && !D(v))
 
 #define NN(v) !N(v)
 

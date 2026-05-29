@@ -1,1 +1,1 @@
-(import "./test-trace2.disp")
+(import "test/test-trace2.disp")

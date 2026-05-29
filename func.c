@@ -18,7 +18,6 @@
 
 #if DISP_NAN_BOXING
 struct disp_data {
-    disp_flag_t tag;
     union {
 #else
 union disp_data {
@@ -37,10 +36,17 @@ union disp_data {
 #endif
 };
 
+#if DISP_NAN_BOXING
+GC_STRUCT_TI(disp_data,
+    GC_OFF(disp_data, builtin.func),
+    GC_OFF(disp_data, builtin.desc)
+);
+#else // DISP_NAN_BOXING
 GC_UNION_TI(disp_data,
     GC_OFF(disp_data, builtin.func),
     GC_OFF(disp_data, builtin.desc)
 );
+#endif // DISP_NAN_BOXING
 
 disp_builtin_t disp_get_builtin(disp_val v) {
     if (T(v) == FLAG_BUILTIN) {

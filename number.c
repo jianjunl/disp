@@ -36,8 +36,10 @@ inline int disp_get_int(disp_val v) {
 }
 
 inline long disp_get_long(disp_val v) {
-    if (v & NAN_MASK) ERRO("disp_get_long failed");
-    return (long)(double)v;
+    if (T(v) != FLAG_LONG) ERRO("disp_get_long failed");
+    //if (v & NAN_MASK) ERRO("disp_get_long failed");
+    //return (long)(double)v;
+    return (long)(int32_t)NAN_UNBOX(v);
 }
 
 inline float disp_get_float(disp_val v) {
@@ -46,8 +48,10 @@ inline float disp_get_float(disp_val v) {
 }
 
 inline double disp_get_double(disp_val v) {
-    if (v & NAN_MASK) ERRO("disp_get_double failed");
-    return (double)v;
+    if (T(v) != FLAG_DOUBLE) ERRO("disp_get_double failed");
+    //if (v & NAN_MASK) ERRO("disp_get_double failed");
+    //return (double)v;
+    return (double)((float)NAN_UNBOX(v));
 }
 
 inline disp_val disp_make_byte(char c) {
@@ -63,7 +67,8 @@ inline disp_val disp_make_int(int i) {
 }
 
 inline disp_val disp_make_long(long l) {
-    return disp_make_double((double)l);
+    return NAN_BOX(FLAG_LONG, (disp_val)(uint32_t)l);
+    //return disp_make_double((double)l);
 }
 
 inline disp_val disp_make_float(float f) {
@@ -72,7 +77,8 @@ inline disp_val disp_make_float(float f) {
 
 inline disp_val disp_make_double(double d) {
     if (d != d) ERRO("can not box NaN");
-    return (disp_val)d;
+    return NAN_BOX(FLAG_DOUBLE, (disp_val)(float)d);
+    //return (disp_val)d;
 }
 
 #else // DISP_NAN_BOXING

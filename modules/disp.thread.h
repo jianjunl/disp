@@ -21,40 +21,30 @@ typedef struct disp_thread_t {
 
 #if DISP_NAN_BOXING
 struct disp_data {
-union {
     disp_flag_t tag;
-    /* 线程 */
-    struct disp_thread_t *thread;
-    /* 互斥锁 */
-    gc_mutex_t *mutex;
-    /* 条件变量 */
-    gc_cond_t *cond;
-};
-};
-
-GC_STRUCT_TI(disp_data,
-    GC_OFF(disp_data, thread),
-    GC_OFF(disp_data, mutex),
-    GC_OFF(disp_data, cond)
-);
-
+union {
 #else // DISP_NAN_BOXING
-
 union disp_data {
+#endif // DISP_NAN_BOXING
     /* 线程 */
     struct disp_thread_t *thread;
     /* 互斥锁 */
     gc_mutex_t *mutex;
     /* 条件变量 */
     gc_cond_t *cond;
+#if DISP_NAN_BOXING
+};
+#endif // DISP_NAN_BOXING
 };
 
+#if DISP_NAN_BOXING
+GC_STRUCT_TI(disp_data,
+#else // DISP_NAN_BOXING
 GC_UNION_TI(disp_data,
+#endif // DISP_NAN_BOXING
     GC_OFF(disp_data, thread),
     GC_OFF(disp_data, mutex),
     GC_OFF(disp_data, cond)
 );
-
-#endif // DISP_NAN_BOXING
 
 #endif /* __MODULE_THREAD_H */

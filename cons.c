@@ -20,33 +20,23 @@
 
 #if DISP_NAN_BOXING
 struct disp_data {
-    disp_flag_t tag;
-    struct {
-        disp_val car;
-        disp_val cdr;
-    } cons;
-};
-
-GC_STRUCT_TI(disp_data,
-    GC_OFF(disp_data, cons.car),
-    GC_OFF(disp_data, cons.cdr)
-);
-
 #else // DISP_NAN_BOXING
-
 union disp_data {
+#endif // DISP_NAN_BOXING
     struct {
         disp_val car;
         disp_val cdr;
     } cons;
 };
 
+#if DISP_NAN_BOXING
+GC_STRUCT_TI(disp_data,
+#else // DISP_NAN_BOXING
 GC_UNION_TI(disp_data,
+#endif // DISP_NAN_BOXING
     GC_OFF(disp_data, cons.car),
     GC_OFF(disp_data, cons.cdr)
 );
-
-#endif // DISP_NAN_BOXING
 
 disp_val disp_make_cons(disp_val car, disp_val cdr) {
     disp_val v = ALLOC_TI(FLAG_CONS, 0);

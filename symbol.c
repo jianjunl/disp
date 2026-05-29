@@ -16,30 +16,23 @@
 
 #if DISP_NAN_BOXING
 struct disp_data {
-    disp_flag_t tag;
+#else // DISP_NAN_BOXING
+union disp_data {
+#endif // DISP_NAN_BOXING
     struct {
         uint64_t id;
         disp_val value;
     } symbol;
 };
 
+#if DISP_NAN_BOXING
 GC_STRUCT_TI(disp_data,
     GC_OFF(disp_data, symbol.value)
 );
-
 #else // DISP_NAN_BOXING
-
-union disp_data {
-    struct {
-        uint64_t id;
-        disp_val value;
-    } symbol;
-};
-
 GC_UNION_TI(disp_data,
     GC_OFF(disp_data, symbol.value)
 );
-
 #endif
 
 /* ======================== 符号表 ======================== */

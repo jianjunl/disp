@@ -8,6 +8,7 @@
 "nil",
 "false",
 "true",
+"quit",
 "q",
 ":q",
 "load",

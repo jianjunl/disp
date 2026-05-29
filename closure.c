@@ -18,25 +18,9 @@
 
 #if DISP_NAN_BOXING
 struct disp_data {
-    disp_flag_t tag;
-    /* 闭包 / 宏 */
-    struct {
-        disp_val params;
-        disp_val body;
-        disp_scope_t *env;
-        int reuse_scope;    /* 1: 可复用调用时的作用域（优化尾递归） */
-    } closure;
-};
-
-GC_STRUCT_TI(disp_data,
-    GC_OFF(disp_data, closure.params),
-    GC_OFF(disp_data, closure.body),
-    GC_OFF(disp_data, closure.env)
-);
-
 #else // DISP_NAN_BOXING
-
 union disp_data {
+#endif // DISP_NAN_BOXING
     /* 闭包 / 宏 */
     struct {
         disp_val params;
@@ -46,13 +30,15 @@ union disp_data {
     } closure;
 };
 
+#if DISP_NAN_BOXING
+GC_STRUCT_TI(disp_data,
+#else // DISP_NAN_BOXING
 GC_UNION_TI(disp_data,
+#endif // DISP_NAN_BOXING
     GC_OFF(disp_data, closure.params),
     GC_OFF(disp_data, closure.body),
     GC_OFF(disp_data, closure.env)
 );
-
-#endif
 
 static void intern_params(disp_scope_t *env, disp_val params) {
     for (disp_val p = params; NN(p) && T(p) == FLAG_CONS; p = disp_cdr(p)) {
