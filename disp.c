@@ -100,7 +100,6 @@ static void* disp_gc_validate(void *ptr) {
     uint8_t tag = (uint8_t)(val >> 56);
 
     if (tag == 0 || !(tag & 0x80)) {
-        // 注意：情形2 需保证指针 tag 区域为 0x7FF8~0x7FFF，掩码 0xFFF8 恰好筛选出这些值
         return (void*)(val & 0x00FFFFFFFFFFFFFFULL);
     }
     return NULL;
