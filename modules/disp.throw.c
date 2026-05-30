@@ -26,16 +26,16 @@ typedef struct frame {
     disp_val tag;          // catch 的标签 / block 的名字 (符号)
     disp_val result;       // 传递给 throw / return-from 的值
     disp_val cleanup;      // unwind-protect 的清理表达式列表
-    struct frame *prev;
+    struct frame volatile *prev;
 } frame_t;
 
 /* 所有帧都挂在这个线程局部链表上 */
-_Thread_local frame_t *current_frame = NULL;
+_Thread_local frame_t volatile *current_frame = NULL;
 
 /* -------------------------------------------------------------------------
  * 用于从 throw / return-from 定位目标帧的线程局部变量
  * ------------------------------------------------------------------------- */
-_Thread_local frame_t * volatile target_frame = NULL;   // 目标帧地址
+_Thread_local frame_t volatile *target_frame = NULL;   // 目标帧地址
 _Thread_local int throw_code;                            // 配合 THROW 的返回值
 
 /* -------------------------------------------------------------------------
@@ -52,7 +52,7 @@ static disp_val throw_syscall(disp_val *args, int count) {
     disp_val value = (count >= 2) ? args[1] : NIL;
 
     /* 查找匹配的 catch 帧 */
-    for (frame_t *f = current_frame; f; f = f->prev) {
+    for (frame_t volatile *f = current_frame; f; f = f->prev) {
         if (f->type == FRAME_CATCH && E(f->tag, tag)) {
             f->result = value;
             target_frame = f;
@@ -186,11 +186,12 @@ static disp_val block_builtin(disp_scope_t *scope, disp_val expr) {
 static disp_val unwind_protect_builtin(disp_scope_t *scope, disp_val expr) {
     disp_val rest = disp_cdr(expr);
     if (N(rest) || T(rest) != FLAG_CONS) ERET(NIL, "unwind-protect: missing protected form");
-    disp_val protected_form = disp_car(rest);
+    disp_val volatile protected_form = NIL;
+    protected_form = disp_car(rest);
     disp_val cleanup_forms = disp_cdr(rest);
     if (N(cleanup_forms)) ERET(NIL, "unwind-protect: missing cleanup forms");
 
-    frame_t frame;
+    frame_t volatile frame;
     frame.type = FRAME_UNWIND;
     frame.tag = NIL;
     frame.result = NIL;
@@ -237,8 +238,8 @@ static disp_val return_from_builtin(disp_scope_t *scope, disp_val expr) {
                       ? disp_eval(scope, disp_car(value_rest))
                       : NIL;
 
-    frame_t *target = NULL;
-    for (frame_t *f = current_frame; f; f = f->prev) {
+    frame_t volatile *target = NULL;
+    for (frame_t volatile *f = current_frame; f; f = f->prev) {
         if (f->type == FRAME_BLOCK && E(f->tag, name)) {
             target = f;
             break;
@@ -259,8 +260,8 @@ static disp_val return_builtin(disp_scope_t *scope, disp_val expr) {
                       ? disp_eval(scope, disp_car(rest))
                       : NIL;
 
-    frame_t *target = NULL;
-    for (frame_t *f = current_frame; f; f = f->prev) {
+    frame_t volatile *target = NULL;
+    for (frame_t volatile *f = current_frame; f; f = f->prev) {
         if (f->type == FRAME_BLOCK && E(f->tag, NIL)) {
             target = f;
             break;

@@ -29,7 +29,7 @@ static disp_val dolist_builtin(disp_scope_t *scope, disp_val expr) {
     disp_val list_expr = disp_car(disp_cdr(binding));
     if (N(list_expr))
         ERET(NIL, "dolist: missing list");
-    disp_val result_expr = NIL;
+    disp_val volatile result_expr = NIL;
     disp_val rest_binding = disp_cdr(disp_cdr(binding));
     if (NN(rest_binding) && T(rest_binding) == FLAG_CONS)
         result_expr = disp_car(rest_binding);
@@ -39,7 +39,8 @@ static disp_val dolist_builtin(disp_scope_t *scope, disp_val expr) {
     gc_add_root(&rest);
 
     // 求值列表表达式（在当前作用域中）
-    disp_val lst = disp_eval(scope, list_expr);
+    disp_val volatile lst = NIL;
+    lst = disp_eval(scope, list_expr);
     if (N(lst)) {
         gc_remove_root(&rest);
         ERET(NIL, "dolist: list expression evaluation failed");
@@ -52,7 +53,7 @@ static disp_val dolist_builtin(disp_scope_t *scope, disp_val expr) {
     // 先绑定变量为 NIL（占位）
     disp_define_symbol(loop_scope, var_name, NIL, 0);
 
-    disp_val  volatile last_result = NIL;
+    disp_val volatile last_result = NIL;
     volatile int normal_exit = 0;
     TRY {
         // 遍历列表

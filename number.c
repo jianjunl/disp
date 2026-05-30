@@ -18,76 +18,101 @@
 #endif
 #include "disp.h"
 
-#if DISP_NAN_BOXING
+#if DISP_BOXING
 
 inline char disp_get_byte(disp_val v) {
     if (T(v) != FLAG_BYTE) ERRO("disp_get_byte failed");
-    return (char)(int8_t)(NAN_UNBOX(v) & 0xFF);
+    return (char)(int8_t)(BOX_UNBOX(v) & 0xFF);
 }
 
 inline short disp_get_short(disp_val v) {
     if (T(v) != FLAG_SHORT) ERRO("disp_get_short failed");
-    return (short)(int16_t)(NAN_UNBOX(v) & 0xFFFF);
+    return (short)(int16_t)(BOX_UNBOX(v) & 0xFFFF);
 }
 
 inline int disp_get_int(disp_val v) {
     if (T(v) != FLAG_INT) ERRO("disp_get_int failed");
-    return (int)(int32_t)NAN_UNBOX(v);
+    return (int)(int32_t)BOX_UNBOX(v);
 }
 
 inline long disp_get_long(disp_val v) {
-    if (T(v) != FLAG_LONG) ERRO("disp_get_double failed");
-    disp_double *p = (disp_double*)NAN_UNBOX(v);
+    if (T(v) != FLAG_LONG) ERRO("disp_get_long failed");
+    disp_long *p = (disp_long*)BOX_UNBOX(v);
     return p->l;
 }
 
 inline float disp_get_float(disp_val v) {
     if (T(v) != FLAG_FLOAT) ERRO("disp_get_float failed");
-    uint32_t bits = (uint32_t)NAN_UNBOX(v);
+    uint32_t bits = (uint32_t)BOX_UNBOX(v);
     float f;
     memcpy(&f, &bits, sizeof(f));
     return f;
 }
 
+#if DISP_NAN_BOXING
+
 inline double disp_get_double(disp_val v) {
     if (T(v) != FLAG_DOUBLE) ERRO("disp_get_double failed");
-    disp_double *p = (disp_double*)NAN_UNBOX(v);
-    return p->d;
-}
-
-inline disp_val disp_make_byte(char c) {
-    return NAN_BOX(FLAG_BYTE, (disp_val)(uint8_t)c);
-}
-
-inline disp_val disp_make_short(short s) {
-    return NAN_BOX(FLAG_SHORT, (disp_val)(uint16_t)s);
-}
-
-inline disp_val disp_make_int(int i) {
-    return NAN_BOX(FLAG_INT, (disp_val)(uint32_t)i);
-}
-
-inline disp_val disp_make_long(long l) {
-    disp_double *p = (disp_double*)gc_malloc(sizeof(disp_double));
-    p->l = l;
-    return NAN_BOX(FLAG_LONG, (disp_val)p);
-}
-
-inline disp_val disp_make_float(float f) {
-    if (f != f) return NAN_BOX(FLAG_NAN, 0);
-    uint32_t bits;
-    memcpy(&bits, &f, sizeof(bits));
-    return NAN_BOX(FLAG_FLOAT, (disp_val)bits);
-}
-
-inline disp_val disp_make_double(double d) {
-    if (d != d) return NAN_BOX(FLAG_NAN, 0);
-    disp_double *p = (disp_double*)gc_malloc(sizeof(disp_double));
-    p->d = d;
-    return NAN_BOX(FLAG_DOUBLE, (disp_val)p);
+    double d;
+    memcpy(&d, &v, sizeof(d));
+    return d;
 }
 
 #else // DISP_NAN_BOXING
+
+inline double disp_get_double(disp_val v) {
+    if (T(v) != FLAG_DOUBLE) ERRO("disp_get_double failed");
+    disp_long *p = (disp_long*)BOX_UNBOX(v);
+    return p->d;
+}
+
+#endif // DISP_NAN_BOXING
+
+inline disp_val disp_make_byte(char c) {
+    return BOX_BOX(FLAG_BYTE, (disp_val)(uint8_t)c);
+}
+
+inline disp_val disp_make_short(short s) {
+    return BOX_BOX(FLAG_SHORT, (disp_val)(uint16_t)s);
+}
+
+inline disp_val disp_make_int(int i) {
+    return BOX_BOX(FLAG_INT, (disp_val)(uint32_t)i);
+}
+
+inline disp_val disp_make_long(long l) {
+    disp_long *p = (disp_long *)gc_malloc(sizeof(disp_long));
+    p->l = l;
+    return BOX_BOX(FLAG_LONG, (disp_val)p);
+}
+
+inline disp_val disp_make_float(float f) {
+    if (f != f) return BOX_BOX(FLAG_NAN, 0);
+    uint32_t bits;
+    memcpy(&bits, &f, sizeof(bits));
+    return BOX_BOX(FLAG_FLOAT, (disp_val)bits);
+}
+
+#if DISP_NAN_BOXING
+
+inline disp_val disp_make_double(double d) {
+    if (d != d) return BOX_BOX(FLAG_NAN, 0);
+    disp_val v;
+    memcpy(&v, &d, sizeof(v));
+    return v;
+}
+
+#else // DISP_NAN_BOXING
+
+inline disp_val disp_make_double(double d) {
+    disp_long *p = (disp_long *)gc_malloc(sizeof(disp_long));
+    p->d = d;
+    return BOX_BOX(FLAG_DOUBLE, (disp_val)p);
+}
+
+#endif // DISP_NAN_BOXING
+
+#else // DISP_BOXING
 
 inline char disp_get_byte(disp_val v) {
     if (T(v) != FLAG_BYTE) ERRO("disp_get_byte failed");
@@ -143,4 +168,4 @@ inline disp_val disp_make_double(double d) {
     return (disp_val){.flag = FLAG_DOUBLE, .double_val = d};
 }
 
-#endif // ~DISP_NAN_BOXING
+#endif // DISP_BOXING

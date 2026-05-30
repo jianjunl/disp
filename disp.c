@@ -86,9 +86,22 @@ static void* disp_gc_validate(void *ptr) {
     // 情形1: 高16位为0 => 真实指针（来自精确根或已解码地址），直接返回
     // 情形2: 高16位在 0x7FF8 ~ 0x7FFF 之间 => 装箱指针，返回低48位
     // 情形3: 其他 => 数值或无效，返回 NULL
-    if (tag == 0 || ((tag & 0xFFF8) == 0x7FF8 || tag == FLAG_DOUBLE || tag == FLAG_LONG)) {
+    //if ((tag & 0xF) < 10) {
+    //if (tag == 0 || ((tag & 0xFFF8) == 0x7FF8) || tag == FLAG_LONG || tag == FLAG_DOUBLE) {
+    if (tag == 0 || ((tag & 0xFFF8) == 0x7FF8) || tag == FLAG_LONG) {
         // 注意：情形2 需保证指针 tag 区域为 0x7FF8~0x7FFF，掩码 0xFFF8 恰好筛选出这些值
         return (void*)(val & 0x0000FFFFFFFFFFFFULL);
+    }
+    return NULL;
+}
+#elif DISP_BOXING
+static void* disp_gc_validate(void *ptr) {
+    uint64_t val = (uint64_t)ptr;
+    uint8_t tag = (uint8_t)(val >> 56);
+
+    if (tag == 0 || !(tag & 0x80)) {
+        // 注意：情形2 需保证指针 tag 区域为 0x7FF8~0x7FFF，掩码 0xFFF8 恰好筛选出这些值
+        return (void*)(val & 0x00FFFFFFFFFFFFFFULL);
     }
     return NULL;
 }
@@ -97,7 +110,7 @@ static void* disp_gc_validate(void *ptr) {
 /* ======================== Initialisation ======================== */
 void disp_init_globals() {
     gc_init();
-#if DISP_NAN_BOXING
+#if DISP_BOXING
     gc_set_validate_hook(disp_gc_validate);
 #endif
     disp_init_info();

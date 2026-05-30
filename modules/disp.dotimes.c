@@ -25,11 +25,11 @@ static disp_val dotimes_builtin(disp_scope_t *scope, disp_val expr) {
     disp_val var = disp_car(binding);
     if (T(var) != FLAG_SYMBOL)
         ERET(NIL, "dotimes: variable must be a symbol");
-    const char *var_name = disp_get_symbol_name(var);
+    const char * volatile var_name = disp_get_symbol_name(var);
     disp_val count_expr = disp_car(disp_cdr(binding));
     if (N(count_expr))
         ERET(NIL, "dotimes: missing count");
-    disp_val result_expr = NIL;
+    disp_val volatile result_expr = NIL;
     disp_val rest_binding = disp_cdr(disp_cdr(binding));
     if (NN(rest_binding) && T(rest_binding) == FLAG_CONS)
         result_expr = disp_car(rest_binding);
@@ -40,7 +40,7 @@ static disp_val dotimes_builtin(disp_scope_t *scope, disp_val expr) {
 
     // 求值 count（在当前作用域中）
     disp_val count_val = disp_eval(scope, count_expr);
-    long limit;
+    long volatile limit;
     int ct = T(count_val);
     if (ct == FLAG_INT) {
         limit = disp_get_int(count_val);
@@ -58,7 +58,7 @@ static disp_val dotimes_builtin(disp_scope_t *scope, disp_val expr) {
     // 先绑定变量为 NIL（占位）
     disp_define_symbol(loop_scope, var_name, NIL, 0);
 
-    disp_val  volatile last_result = NIL;
+    disp_val volatile last_result = NIL;
     volatile int normal_exit = 0;
     TRY {
         if (limit <= 0) {

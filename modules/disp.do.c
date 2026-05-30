@@ -24,13 +24,13 @@ static disp_val do_builtin(disp_scope_t *scope, disp_val expr) {
     rest = disp_cdr(rest);
     if (N(rest) || T(rest) != FLAG_CONS)
         ERET(NIL, "do: missing termination clause");
-    disp_val term_clause = disp_car(rest); // (test result ...)
+    disp_val volatile term_clause = disp_car(rest); // (test result ...)
     disp_val body = disp_cdr(rest);        // body forms
 
     // 保护整个尾部（包含 var_specs, term_clause, body）
     gc_add_root(&rest);
 
-    int var_count = 0;
+    int volatile var_count = 0;
     for (disp_val s = var_specs; NN(s) && T(s) == FLAG_CONS; s = disp_cdr(s))
         var_count++;
 
