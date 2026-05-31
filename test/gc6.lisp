@@ -41,7 +41,7 @@
         (set! *gc-thread*
               (make-thread
                (lambda ()
-                 (fprintf stderr ";; GC thread started, interval = %d %s\n" *gc-interval* "seconds")
+                 (safe-fprintf stderr ";; GC thread started, interval = %d %s\n" *gc-interval* "seconds")
                  ;; 使用 while 循环而非递归，避免栈溢出或求值问题
                  ;(while (begin (lock *gc-mutex*) *gc-running* (unlock *gc-mutex*))
                  (while *gc-running*

@@ -40,7 +40,7 @@ extern "C" {
 #endif
 
 #ifndef GC_OPT_FREELIST
-#define GC_OPT_FREELIST    1
+#define GC_OPT_FREELIST    0
 #endif
 
 #define GC_MASK(x, n) ((x) << (n))

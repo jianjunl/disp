@@ -50,15 +50,15 @@ disp_val disp_letf(disp_env_t *env, disp_val expr) {
     // 1. 先绑定所有变量初值（此时闭包尚未创建）
     for (int i = 0; i < var_count; i++) {
         disp_val init_val = disp_eval(env, init_exprs[i]);
-        const char *vname = disp_get_symbol_name(var_syms[i]);
-        disp_define_symbol(loop_env, vname, init_val, 0);
+        uint64_t vid = disp_get_symbol_id(var_syms[i]);
+        disp_define_symbol_by_id(loop_env, vid, init_val, 0);
     }
     
     // 2. 提取当前变量的值作为调用闭包的初始参数（此时所有变量都是初值）
     GC_ROOT(disp_val, args) = gc_typed_malloc(var_count * sizeof(disp_val), &GC_TYPE_PTR_ARRAY);
     for (int i = 0; i < var_count; i++) {
-        const char *vname = disp_get_symbol_name(var_syms[i]);
-        disp_val sym = disp_find_symbol(loop_env, vname);
+        uint64_t vid = disp_get_symbol_id(var_syms[i]);
+        disp_val sym = disp_find_symbol_by_id(loop_env, vid);
         args[i] = disp_get_symbol_value(sym);
     }
     
@@ -69,7 +69,7 @@ disp_val disp_letf(disp_env_t *env, disp_val expr) {
     disp_val closure = disp_make_closure(loop_env, params, body, 1);
     
     // 4. 将闭包绑定到 loop_env 中的同名符号
-    disp_define_symbol(loop_env, SN(name), closure, 1);
+    disp_define_symbol_by_id(loop_env, disp_get_symbol_id(name), closure, 1);
     
     // 5. 调用闭包（传入初始参数，这些参数不会覆盖闭包自身的绑定）
     disp_val result = disp_apply_closure(closure, args, var_count);

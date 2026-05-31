@@ -33,13 +33,9 @@ static disp_val define_builtin(disp_env_t *env, disp_val expr) {
             if (NN(body_rest) && T(body_rest) == FLAG_CONS) {
                 // 构造 (lambda (params) body1 body2 ...)
                 disp_val params = second;              // 允许 NIL
-                // 原来构造 lambda_expr 再求值，改为直接创建闭包
-                //disp_val lambda_expr = disp_make_cons(LAMBDA, disp_make_cons(params, body_rest));
-                //disp_val closure = disp_eval(env, lambda_expr);
-                //disp_define_symbol(env, SN(first_arg), closure, 0);
                 // 直接创建可尾递归优化的闭包
                 disp_val closure = disp_make_closure(env, params, body_rest, 1);
-                disp_define_symbol(env, SN(first_arg), closure, 0);
+                disp_define_symbol_by_id(env, disp_get_symbol_id(first_arg), closure, 0);
                 return first_arg;
             }
         }
@@ -48,7 +44,7 @@ static disp_val define_builtin(disp_env_t *env, disp_val expr) {
         if (N(rest) || T(rest) != FLAG_CONS) 
             ERET(NIL, "define: missing expression");
         disp_val value = disp_eval(env, disp_car(rest));
-        disp_define_symbol(env, SN(first_arg), value, 0);
+        disp_define_symbol_by_id(env, disp_get_symbol_id(first_arg), value, 0);
         return first_arg;
     } else if (T(first_arg) == FLAG_CONS) {
         // 原有 (define (name params) body ...) 语法
@@ -58,13 +54,9 @@ static disp_val define_builtin(disp_env_t *env, disp_val expr) {
         disp_val params = disp_cdr(first_arg);
         disp_val rest = disp_cdr(cadr);
         if (N(rest)) ERET(NIL, "define: missing body");
-        // 原来构造 lambda_expr 再求值，改为直接创建闭包
-        //disp_val lambda_expr = disp_make_cons(LAMBDA, disp_make_cons(params, rest));
-        //disp_val closure = disp_eval(env, lambda_expr);
-        //disp_define_symbol(env, SN(name_sym), closure, 0);
         // 直接创建可尾递归优化的闭包
         disp_val closure = disp_make_closure(env, params, rest, 1);
-        disp_define_symbol(env, SN(name_sym), closure, 0);
+        disp_define_symbol_by_id(env, disp_get_symbol_id(name_sym), closure, 0);
         return name_sym;
         
     } else {
@@ -77,15 +69,15 @@ static disp_val setq_builtin(disp_env_t *env, disp_val expr) {
     if (N(cadr) || T(cadr) != FLAG_CONS) ERET(NIL, "set!: missing symbol");
     disp_val sym = disp_car(cadr);
     if (T(sym) != FLAG_SYMBOL) ERET(NIL, "set!: first argument must be a symbol");
-    const char *name = disp_get_symbol_name(sym);
+    uint64_t id = disp_get_symbol_id(sym);
     
     disp_val rest = disp_cdr(cadr);
     if (N(rest) || T(rest) != FLAG_CONS) ERET(NIL, "set!: missing expression");
     disp_val new_value = disp_eval(env, disp_car(rest));
     
-    disp_val found_sym = disp_find_symbol(env, name);
+    disp_val found_sym = disp_find_symbol_by_id(env, id);
     if (N(found_sym)) {
-        ERET(NIL, "set!: undefined variable '%s'", name);
+        ERET(NIL, "set!: undefined variable '%s'", disp_get_name(id));
     }
     disp_set_symbol_value(found_sym, new_value);
     return new_value;

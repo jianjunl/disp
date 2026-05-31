@@ -155,8 +155,13 @@ void disp_init() {
     DEF("trace" , MKF(trace_syscall  , "<trace>" ), 1);
 
     // make else evaluate to true (so cond's default clause works)
-    DEF("else", TRUE, 1);
-    ELSE              = disp_find_symbol(NULL, "else");
+    DEF("else"   , TRUE, 1); ELSE              = disp_find_symbol(NULL, "else");
+    DEF("default", NIL , 0); DEFAULT           = disp_find_symbol(NULL, "default");
+    DEF("it"     , NIL , 0); IT                = disp_find_symbol(NULL, "it");
+    DEF("recv"   , NIL , 0); RECV              = disp_find_symbol(NULL, "recv");
+    DEF("send"   , NIL , 0); SEND              = disp_find_symbol(NULL, "send");
+    DEF("after"  , NIL , 0); AFTER             = disp_find_symbol(NULL, "after");
+///*
 ///*
     disp_import("disp.data.so");
     CONS              = disp_find_symbol(NULL, "cons");

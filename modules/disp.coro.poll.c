@@ -161,9 +161,9 @@ static disp_val try_recv(disp_val ch, disp_val body, int *executed) {
     if (!ok) return DNULL;
 
     // 绑定 'it' 并执行 body
-    disp_val it_sym = disp_find_symbol(NULL, "it");
-    disp_val old_it = NN(it_sym) ? disp_get_symbol_value(it_sym) : NIL;
-    disp_define_symbol(NULL, "it", value, 0);
+    uint64_t it_sym = disp_get_symbol_id(IT);
+    disp_val old_it = NN(IT) ? disp_get_symbol_value(IT) : NIL;
+    disp_define_symbol_by_id(NULL, it_sym, value, 0);
 
     disp_val result = NIL;
     disp_val body_it = body;
@@ -172,10 +172,10 @@ static disp_val try_recv(disp_val ch, disp_val body, int *executed) {
         body_it = disp_cdr(body_it);
     }
 
-    if (NN(it_sym))
-        disp_define_symbol(NULL, "it", old_it, 0);
+    if (NN(IT))
+        disp_define_symbol_by_id(NULL, it_sym, old_it, 0);
     else
-        disp_define_symbol(NULL, "it", NIL, 0);
+        disp_define_symbol_by_id(NULL, it_sym, NIL, 0);
 
     *executed = 1;
     return result;
@@ -304,9 +304,9 @@ static disp_val handle_ready_cases(case_info_t *infos, int count, disp_val curre
             if (ok) {
                 gc_pthread_mutex_unlock(LOCK(c));
                 // 绑定 'it' 并执行 body
-                disp_val it_sym = disp_find_symbol(NULL, "it");
-                disp_val old_it = NN(it_sym) ? disp_get_symbol_value(it_sym) : NIL;
-                disp_define_symbol(NULL, "it", value, 0);
+                uint64_t it_sym = disp_get_symbol_id(IT);
+                disp_val old_it = NN(IT) ? disp_get_symbol_value(IT) : NIL;
+                disp_define_symbol_by_id(NULL, it_sym, value, 0);
 
                 disp_val body_it = info->body;
                 result = NIL;
@@ -315,10 +315,10 @@ static disp_val handle_ready_cases(case_info_t *infos, int count, disp_val curre
                     body_it = disp_cdr(body_it);
                 }
 
-                if (NN(it_sym))
-                    disp_define_symbol(NULL, "it", old_it, 0);
+                if (NN(IT))
+                    disp_define_symbol_by_id(NULL, it_sym, old_it, 0);
                 else
-                    disp_define_symbol(NULL, "it", NIL, 0);
+                    disp_define_symbol_by_id(NULL, it_sym, NIL, 0);
                 executed = 1;
             } else {
                 // 未就绪，从等待队列中移除自己（可能是被其他 case 唤醒）
@@ -422,7 +422,7 @@ static disp_val select_builtin(disp_env_t *env, disp_val expr) {
         }
         const char *op_str = disp_get_symbol_name(op_name);
 
-        if (strcmp(op_str, "recv") == 0) {
+        if (op_name == RECV) {
             disp_val rest = disp_cdr(op);
             if (N(rest) || T(rest) != FLAG_CONS) {
                 gc_free(infos);
@@ -437,7 +437,7 @@ static disp_val select_builtin(disp_env_t *env, disp_val expr) {
             infos[i].type = CASE_RECV;
             infos[i].channel = ch_arg;
             infos[i].body = body;
-        } else if (strcmp(op_str, "send") == 0) {
+        } else if (op_name == SEND) {
             disp_val rest = disp_cdr(op);
             if (N(rest) || T(rest) != FLAG_CONS) {
                 gc_free(infos);
@@ -455,7 +455,7 @@ static disp_val select_builtin(disp_env_t *env, disp_val expr) {
             infos[i].channel = ch_arg;
             infos[i].value = val_arg;
             infos[i].body = body;
-        } else if (strcmp(op_str, "after") == 0) {
+        } else if (op_name == AFTER) {
             disp_val rest = disp_cdr(op);
             if (N(rest) || T(rest) != FLAG_CONS) {
                 gc_free(infos);

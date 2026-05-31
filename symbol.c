@@ -45,13 +45,20 @@ disp_val disp_make_symbol(const char *name) {
     return v;
 }
 
+uint64_t disp_get_symbol_id(disp_val v) {
+    if (N(v) || T(v) != FLAG_SYMBOL) {
+        ERRO("disp_get_symbol_id failed");
+        return 0;
+    }
+    return D(v)->id;
+}
+
 char* disp_get_symbol_name(disp_val v) {
     if (N(v) || T(v) != FLAG_SYMBOL) {
         ERRO("disp_get_symbol_name failed");
         return NULL;
     }
-    uint64_t id = D(v)->id;
-    return (char*)disp_get_name(id);   // 通过 ID 反查字符串
+    return (char*)disp_get_name(disp_get_symbol_id(v));   // 通过 ID 反查字符串
 }
 
 disp_val disp_get_symbol_value(disp_val v) {

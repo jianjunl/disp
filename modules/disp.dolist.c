@@ -25,7 +25,7 @@ static disp_val dolist_builtin(disp_env_t *env, disp_val expr) {
     disp_val var = disp_car(binding);
     if (T(var) != FLAG_SYMBOL)
         ERET(NIL, "dolist: variable must be a symbol");
-    const char *var_name = disp_get_symbol_name(var);
+    uint64_t var_name = disp_get_symbol_id(var);
     disp_val list_expr = disp_car(disp_cdr(binding));
     if (N(list_expr))
         ERET(NIL, "dolist: missing list");
@@ -51,7 +51,7 @@ static disp_val dolist_builtin(disp_env_t *env, disp_val expr) {
     gc_add_root(&loop_env);
 
     // 先绑定变量为 NIL（占位）
-    disp_define_symbol(loop_env, var_name, NIL, 0);
+    disp_define_symbol_by_id(loop_env, var_name, NIL, 0);
 
     disp_val volatile last_result = NIL;
     volatile int normal_exit = 0;
@@ -60,7 +60,7 @@ static disp_val dolist_builtin(disp_env_t *env, disp_val expr) {
         for (disp_val volatile p = lst; NN(p) && T(p) == FLAG_CONS; p = disp_cdr(p)) {
             disp_val elem = disp_car(p);
             // 更新循环作用域中的变量绑定
-            disp_define_symbol(loop_env, var_name, elem, 0);
+            disp_define_symbol_by_id(loop_env, var_name, elem, 0);
             // 执行 body（在 loop_env 中）
             disp_val b = body;
             while (NN(b) && T(b) == FLAG_CONS) {

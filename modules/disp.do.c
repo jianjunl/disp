@@ -70,7 +70,7 @@ static disp_val do_builtin(disp_env_t *env, disp_val expr) {
     }
 
     // 收集变量信息：符号、初值表达式、步进表达式
-    char **var_names = gc_typed_malloc(var_count * sizeof(char*), &GC_TYPE_PTR_ARRAY);
+    uint64_t *var_names = gc_malloc(var_count * sizeof(uint64_t));
     disp_val *init_exprs = gc_typed_malloc(var_count * sizeof(disp_val), &GC_TYPE_PTR_ARRAY);
     disp_val *step_exprs = gc_typed_malloc(var_count * sizeof(disp_val), &GC_TYPE_PTR_ARRAY);
     gc_add_root(&var_names);
@@ -97,7 +97,7 @@ static disp_val do_builtin(disp_env_t *env, disp_val expr) {
             gc_free(var_names); gc_free(init_exprs); gc_free(step_exprs);
             ERET(NIL, "do: variable name must be a symbol");
         }
-        var_names[i] = gc_strdup(disp_get_symbol_name(var));
+        var_names[i] = disp_get_symbol_id(var);
         disp_val init_part = disp_cdr(spec);
         if (N(init_part) || T(init_part) != FLAG_CONS) {
             gc_remove_root(&step_exprs);
@@ -124,13 +124,12 @@ static disp_val do_builtin(disp_env_t *env, disp_val expr) {
     gc_add_root(&init_vals);
     for (int j = 0; j < var_count; j++) {
         init_vals[j] = disp_eval(env, init_exprs[j]);
-        gc_add_root(&init_vals[j]);
     }
 
     // 将初值一次性绑定到 loop_env（构造参数列表）
     disp_val params = NIL;
     for (int j = var_count - 1; j >= 0; j--)
-        params = disp_make_cons(disp_intern_symbol(loop_env, var_names[j]), params);
+        params = disp_make_cons(disp_intern_symbol_by_id(loop_env, var_names[j]), params);
     bind_arguments_to_env(loop_env, params, init_vals, var_count);
 
     // 主循环（在 loop_env 中进行）
@@ -164,13 +163,13 @@ static disp_val do_builtin(disp_env_t *env, disp_val expr) {
                     new_vals[j] = disp_eval(loop_env, step_exprs[j]);
                 } else {
                     // 无步进，保持当前值（从作用域中取出）
-                    disp_val sym = disp_find_symbol(loop_env, var_names[j]);
+                    disp_val sym = disp_find_symbol_by_id(loop_env, var_names[j]);
                     new_vals[j] = NN(sym) ? disp_get_symbol_value(sym) : NIL;
                 }
                 gc_add_root(&new_vals[j]);
             }
             for (int j = 0; j < var_count; j++) {
-                disp_define_symbol(loop_env, var_names[j], new_vals[j], 0);
+                disp_define_symbol_by_id(loop_env, var_names[j], new_vals[j], 0);
                 gc_remove_root(&new_vals[j]);
             }
             gc_remove_root(&new_vals);
@@ -189,7 +188,6 @@ static disp_val do_builtin(disp_env_t *env, disp_val expr) {
         gc_free(step_exprs);
         gc_free(init_exprs);
         gc_free(var_names);
-        for (int j = 0; j < var_count; j++) gc_free(var_names[j]);
         THROW_THROWN();
     }
     END_TRY;
@@ -198,7 +196,6 @@ static disp_val do_builtin(disp_env_t *env, disp_val expr) {
         // 释放资源
         for (int j = 0; j < var_count; j++) {
             gc_remove_root(&init_vals[j]);
-            gc_free(var_names[j]);
         }
         gc_remove_root(&init_vals);
         gc_remove_root(&loop_env);

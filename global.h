@@ -12,7 +12,7 @@ enum disp_builtin_root_idx {
     IDX_LAMBDA, IDX_LET, IDX_LETA, IDX_LETREC, IDX_LETRECA,
     IDX_CONS, IDX_LIST, IDX_QUOTE, IDX_QUASIQUOTE, IDX_UNQUOTE, IDX_UNQUOTE_SPLICING, IDX_APPEND,
     IDX_ELSE, IDX_IF, IDX_BEGIN, IDX_PROGN, IDX_COND, IDX_AND, IDX_OR, IDX_SET, IDX_SETQ, IDX_DEFINE,
-    IDX_MODPATH, IDX_ARGS
+    IDX_MODPATH, IDX_ARGS, IDX_IT, IDX_DEFAULT, IDX_RECV, IDX_SEND, IDX_AFTER
 };
 
 #define NIL              disp_builtin_roots[IDX_NIL]
@@ -50,5 +50,10 @@ enum disp_builtin_root_idx {
 #define DEFINE           disp_builtin_roots[IDX_DEFINE]
 #define MODPATH          disp_builtin_roots[IDX_MODPATH]
 #define ARGS             disp_builtin_roots[IDX_ARGS]
+#define IT               disp_builtin_roots[IDX_IT]
+#define DEFAULT          disp_builtin_roots[IDX_DEFAULT]
+#define RECV             disp_builtin_roots[IDX_RECV]
+#define SEND             disp_builtin_roots[IDX_SEND]
+#define AFTER            disp_builtin_roots[IDX_AFTER]
 
 #endif /* _GLOBAL_H */

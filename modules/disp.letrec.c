@@ -60,8 +60,8 @@ static disp_val letrec_builtin(disp_env_t *env, disp_val expr) {
 
     /* 先在新作用域中绑定占位符 NIL */
     for (int i = 0; i < var_count; i++) {
-        const char *name = disp_get_symbol_name(var_syms[i]);
-        disp_define_symbol(new_env, name, NIL, 0);
+        uint64_t id = disp_get_symbol_id(var_syms[i]);
+        disp_define_symbol_by_id(new_env, id, NIL, 0);
     }
 
     /* 计算所有初值（在新作用域中，此时变量已存在但值为 NIL） */
@@ -70,16 +70,16 @@ static disp_val letrec_builtin(disp_env_t *env, disp_val expr) {
         for (int i = 0; i < var_count; i++) {
             values[i] = disp_eval(new_env, init_exprs[i]);
             /* 立即更新绑定 */
-            const char *name = disp_get_symbol_name(var_syms[i]);
-            disp_define_symbol(new_env, name, values[i], 0);
+            uint64_t id = disp_get_symbol_id(var_syms[i]);
+            disp_define_symbol_by_id(new_env, id, values[i], 0);
         }
     } else {                           /* letrec : 并行初始化 */
         for (int i = 0; i < var_count; i++) {
             values[i] = disp_eval(new_env, init_exprs[i]);
         }
         for (int i = 0; i < var_count; i++) {
-            const char *name = disp_get_symbol_name(var_syms[i]);
-            disp_define_symbol(new_env, name, values[i], 0);
+            uint64_t id = disp_get_symbol_id(var_syms[i]);
+            disp_define_symbol_by_id(new_env, id, values[i], 0);
         }
     }
 
