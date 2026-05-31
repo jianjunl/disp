@@ -98,6 +98,7 @@ install: all
 	    $(INSTALL) -m755 $$mod $(DESTDIR)$(MODDIR)/$$mod; \
 	done
 	$(INSTALL) -m644 init.disp $(DESTDIR)$(MODDIR)/init.disp
+	$(INSTALL) -m644 repl.disp $(DESTDIR)$(MODDIR)/repl.disp
 
 uninstall:
 	$(MAKE) -C $(GC_DIR) -f gc.mk uninstall
@@ -111,6 +112,7 @@ uninstall:
 	    $(RM) $(DESTDIR)$(MODDIR)/$$mod; \
 	done
 	$(RM) $(DESTDIR)$(MODDIR)/init.disp
+	$(RM) $(DESTDIR)$(MODDIR)/repl.disp
 
 clean:
 	$(MAKE) -C $(GC_DIR) -f gc.mk clean

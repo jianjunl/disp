@@ -43,6 +43,13 @@ static disp_val load_builtin(disp_scope_t *env, disp_val expr) {
     return disp_load(env, disp_get_str(arg0));
 }
 
+static disp_val repl_syscall(disp_val *args, int count) {
+    (void)args;
+    if (count != 0)
+        ERET(NIL, "repl expects no arguments");
+    disp_repl();
+    return TRUE;
+}
 
 static disp_val gc_syscall(disp_val *args, int count) {
     (void)args;
@@ -141,10 +148,11 @@ void disp_init_globals() {
     DEF("stderr" , disp_make_file(stderr,"w"), 1);
 
     DEF("import", MKF(import_syscall , "<import>"), 1);
-    DEF("load"  , MKB(load_builtin   , "<#load>"), 1);
-    DEF("gc"    , MKF(gc_syscall     , "<gc>"   ), 1);
-    DEF("info"  , MKF(info_syscall , "<info>" ), 1);
-    DEF("trace" , MKF(trace_syscall, "<trace>"), 1);
+    DEF("load"  , MKB(load_builtin   , "<#load>" ), 1);
+    DEF("repl"  , MKF(repl_syscall   , "<repl>"  ), 1);
+    DEF("gc"    , MKF(gc_syscall     , "<gc>"    ), 1);
+    DEF("info"  , MKF(info_syscall   , "<info>"  ), 1);
+    DEF("trace" , MKF(trace_syscall  , "<trace>" ), 1);
 
     // make else evaluate to true (so cond's default clause works)
     DEF("else", TRUE, 1);
