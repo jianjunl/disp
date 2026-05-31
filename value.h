@@ -13,6 +13,8 @@
 #define DISP_BOXING     2  // 2 = NaN Boxing, 1 = Addr Boxing, 0 = none
 #define DISP_NAN_BOXING (DISP_BOXING >> 1)
 
+typedef struct disp_data disp_data;
+
 #if DISP_NAN_BOXING
 
 typedef uint16_t disp_flag_t;
@@ -51,8 +53,6 @@ typedef uint16_t disp_flag_t;
 #define FLAG_EXTRA      0x7FF8
 
 typedef uint64_t disp_val;
-
-typedef struct disp_data disp_data;
 
 typedef union disp_long {
     long l;
@@ -142,8 +142,6 @@ typedef uint8_t disp_flag_t;
 #define FLAG_SYSCALL    UINT8_C(0x79)
 
 #define FLAG_EXTRA      UINT8_C(0x78)
-
-typedef union disp_data disp_data;
 
 #if DISP_BOXING
 

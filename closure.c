@@ -16,28 +16,18 @@
 
 /* ======================== Funcs ======================== */
 
-#if DISP_NAN_BOXING
 struct disp_data {
-#else // DISP_NAN_BOXING
-union disp_data {
-#endif // DISP_NAN_BOXING
     /* 闭包 / 宏 */
-    struct {
-        disp_val params;
-        disp_val body;
-        disp_env_t *env;
-        int reuse_env;    /* 1: 可复用调用时的作用域（优化尾递归） */
-    } closure;
+    disp_val params;
+    disp_val body;
+    disp_env_t *env;
+    int reuse_env;    /* 1: 可复用调用时的作用域（优化尾递归） */
 };
 
-#if DISP_NAN_BOXING
 GC_STRUCT_TI(disp_data,
-#else // DISP_NAN_BOXING
-GC_UNION_TI(disp_data,
-#endif // DISP_NAN_BOXING
-    GC_OFF(disp_data, closure.params),
-    GC_OFF(disp_data, closure.body),
-    GC_OFF(disp_data, closure.env)
+    GC_OFF(disp_data, params),
+    GC_OFF(disp_data, body),
+    GC_OFF(disp_data, env)
 );
 
 static void intern_params(disp_env_t *env, disp_val params) {
@@ -55,20 +45,20 @@ static void intern_params(disp_env_t *env, disp_val params) {
 disp_val disp_make_closure(disp_env_t *env, disp_val params, disp_val body, int reuse_env) {
     intern_params(env, params);
     disp_val v = ALLOC_TI(FLAG_CLOSURE, 0);
-    D(v)->closure.params = params;
-    D(v)->closure.body   = body;
-    D(v)->closure.env    = env;
-    D(v)->closure.reuse_env = reuse_env;
+    D(v)->params = params;
+    D(v)->body   = body;
+    D(v)->env    = env;
+    D(v)->reuse_env = reuse_env;
     return v;
 }
 
 disp_val disp_make_macro(disp_env_t *env, disp_val params, disp_val body, int reuse_env) {
     intern_params(env, params);
     disp_val v = ALLOC_TI(FLAG_MACRO, 0);
-    D(v)->closure.params = params;
-    D(v)->closure.body   = body;
-    D(v)->closure.env    = env;
-    D(v)->closure.reuse_env = reuse_env;
+    D(v)->params = params;
+    D(v)->body   = body;
+    D(v)->env    = env;
+    D(v)->reuse_env = reuse_env;
     return v;
 }
 
@@ -77,7 +67,7 @@ disp_val disp_get_closure_params(disp_val closure) {
         ERRO("disp_get_closure_params: not a closure/macro\n");
         return NIL;
     }
-    return D(closure)->closure.params;
+    return D(closure)->params;
 }
 
 disp_val disp_get_closure_body(disp_val closure) {
@@ -85,7 +75,7 @@ disp_val disp_get_closure_body(disp_val closure) {
         ERRO("disp_get_closure_body: not a closure/macro\n");
         return NIL;
     }
-    return D(closure)->closure.body;
+    return D(closure)->body;
 }
 
 disp_env_t* disp_get_closure_env(disp_val closure) {
@@ -93,7 +83,7 @@ disp_env_t* disp_get_closure_env(disp_val closure) {
         ERRO("disp_get_closure_env: not a closure/macro\n");
         return NULL;
     }
-    return D(closure)->closure.env;
+    return D(closure)->env;
 }
 
 void bind_arguments_to_env(disp_env_t *env, disp_val params, disp_val *args, int arg_count) {
@@ -148,16 +138,16 @@ void bind_arguments_to_env(disp_env_t *env, disp_val params, disp_val *args, int
 #include "tail.h"
 
 disp_val disp_apply_closure(disp_val closure, disp_val *args, int arg_count) {
-    if (!D(closure)->closure.reuse_env) {
-        GC_ROOT(disp_env_t, new_env) = disp_new_env(D(closure)->closure.env);
-        bind_arguments_to_env(new_env, D(closure)->closure.params, args, arg_count);
-        disp_val ret = disp_eval_body(new_env, D(closure)->closure.body);
+    if (!D(closure)->reuse_env) {
+        GC_ROOT(disp_env_t, new_env) = disp_new_env(D(closure)->env);
+        bind_arguments_to_env(new_env, D(closure)->params, args, arg_count);
+        disp_val ret = disp_eval_body(new_env, D(closure)->body);
         return ret;
     }
 
-    disp_env_t *env = D(closure)->closure.env;
-    disp_val params = D(closure)->closure.params;
-    disp_val body = D(closure)->closure.body;
+    disp_env_t *env = D(closure)->env;
+    disp_val params = D(closure)->params;
+    disp_val body = D(closure)->body;
     disp_val *current_args = args;
     int current_argc = arg_count;
     eval_result_t res;
@@ -203,9 +193,9 @@ disp_val disp_apply_closure(disp_val closure, disp_val *args, int arg_count) {
 
                 // 更新循环所需的新闭包内部数据
                 if (T(closure) == FLAG_CLOSURE) {
-                    env = D(closure)->closure.env;
-                    params = D(closure)->closure.params;
-                    body = D(closure)->closure.body;
+                    env = D(closure)->env;
+                    params = D(closure)->params;
+                    body = D(closure)->body;
                     goto restart;
                 } 
                 else if (T(closure) == FLAG_BUILTIN) {

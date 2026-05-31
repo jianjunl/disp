@@ -14,26 +14,14 @@
 #endif
 #include "disp.h"
 
-#if DISP_NAN_BOXING
 struct disp_data {
-#else // DISP_NAN_BOXING
-union disp_data {
-#endif // DISP_NAN_BOXING
-    struct {
-        uint64_t id;
-        disp_val value;
-    } symbol;
+    uint64_t id;
+    disp_val value;
 };
 
-#if DISP_NAN_BOXING
 GC_STRUCT_TI(disp_data,
-    GC_OFF(disp_data, symbol.value)
+    GC_OFF(disp_data, value)
 );
-#else // DISP_NAN_BOXING
-GC_UNION_TI(disp_data,
-    GC_OFF(disp_data, symbol.value)
-);
-#endif
 
 /* ======================== 符号表 ======================== */
 #define SYM_TABLE_SIZE 1024
@@ -43,7 +31,7 @@ void disp_set_symbol_value(disp_val sym, disp_val value) {
         ERRO("disp_set_symbol_value: not a symbol");
         return;
     }
-    D(sym)->symbol.value = value;
+    D(sym)->value = value;
 }
 
 disp_val disp_make_symbol(const char *name) {
@@ -51,8 +39,8 @@ disp_val disp_make_symbol(const char *name) {
     if (N(v)) return DNULL;
     
     uint64_t id = disp_get_id(name);   // 获取或创建 ID
-    D(v)->symbol.id = id;
-    D(v)->symbol.value = NIL;
+    D(v)->id = id;
+    D(v)->value = NIL;
     
     return v;
 }
@@ -62,7 +50,7 @@ char* disp_get_symbol_name(disp_val v) {
         ERRO("disp_get_symbol_name failed");
         return NULL;
     }
-    uint64_t id = D(v)->symbol.id;
+    uint64_t id = D(v)->id;
     return (char*)disp_get_name(id);   // 通过 ID 反查字符串
 }
 
@@ -70,7 +58,7 @@ disp_val disp_get_symbol_value(disp_val v) {
     if (N(v) || T(v) != FLAG_SYMBOL) {
         ERRO("disp_get_symbol_value failed");
     }
-    return D(v)->symbol.value;
+    return D(v)->value;
 }
 
 /* ======================== GC 初始化和全局常量 ======================== */

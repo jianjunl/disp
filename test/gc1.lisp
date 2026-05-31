@@ -6,7 +6,7 @@
 ;;       (stop-gc-thread)
 
 (define null? (lambda (x) (eq? x nil)))
-(define fprintln (lambda (f s) (fprintf f "%s\n" s)))
+(define fprintln (lambda (f s) (safe-fprintf f "%s\n" s)))
 
 ;; 全局控制
 (define *gc-chan* nil)       ; 用于向 GC 线程发送“继续/停止”信号的通道

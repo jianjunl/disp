@@ -28,11 +28,8 @@ int main(int argc, char **argv) {
     // 为 REPL 压入伪源文件
     disp_push_source("<stdin>");
 
-    //disp_import("repl.disp");
-    //disp_import(argc > 1 ? argv[1] : "repl.disp");
-    if (argc > 1) disp_import(argv[1]);
-
-    disp_repl();
+    disp_import("repl.lisp");
+    //disp_repl();
 
     return 0;
 

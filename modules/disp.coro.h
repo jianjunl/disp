@@ -53,28 +53,19 @@ typedef struct disp_channel_t {
     disp_val direct_value;   // 用于无缓冲通道的临时值传递
 } disp_channel_t;
 
-#if DISP_NAN_BOXING
 struct disp_data {
+#if DISP_NAN_BOXING
     disp_flag_t tag;
-union {
-#else // DISP_NAN_BOXING
-union disp_data {
 #endif // DISP_NAN_BOXING
-    /* 协程 */
-    disp_coro_t *coro;
-
-    /* 通道 */
-    disp_channel_t *chan;
-#if DISP_NAN_BOXING
-};
-#endif // DISP_NAN_BOXING
+    union {
+        /* 协程 */
+        disp_coro_t *coro;
+        /* 通道 */
+        disp_channel_t *chan;
+    };
 };
 
-#if DISP_NAN_BOXING
 GC_STRUCT_TI(disp_data,
-#else // DISP_NAN_BOXING
-GC_UNION_TI(disp_data,
-#endif // DISP_NAN_BOXING
     GC_OFF(disp_data, coro),
     GC_OFF(disp_data, chan)
 );

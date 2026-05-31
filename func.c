@@ -16,77 +16,61 @@
 
 /* ======================== Funcs ======================== */
 
-#if DISP_NAN_BOXING
 struct disp_data {
     union {
-#else
-union disp_data {
-#endif
-    /* 内置函数 / 系统调用 */
-    struct {
-        disp_builtin_t func;
-        char *desc;
-    } builtin; // for special_form/syntax
-    struct {
-        disp_syscall_t func;
-        char *desc;
-    } syscall; // for function/primitive
-#if DISP_NAN_BOXING
+        /* 内置函数 / 系统调用 */
+        // for special_form/syntax
+        disp_builtin_t builtin;
+        // for function/primitive
+        disp_syscall_t syscall;
     };
-#endif
+    char *desc;
 };
 
-#if DISP_NAN_BOXING
 GC_STRUCT_TI(disp_data,
-    GC_OFF(disp_data, builtin.func),
-    GC_OFF(disp_data, builtin.desc)
+    GC_OFF(disp_data, builtin),
+    GC_OFF(disp_data, desc)
 );
-#else // DISP_NAN_BOXING
-GC_UNION_TI(disp_data,
-    GC_OFF(disp_data, builtin.func),
-    GC_OFF(disp_data, builtin.desc)
-);
-#endif // DISP_NAN_BOXING
 
 disp_builtin_t disp_get_builtin(disp_val v) {
     if (T(v) == FLAG_BUILTIN) {
-        return D(v)->builtin.func;
+        return D(v)->builtin;
     }
     ERET(NULL, "disp_get_builtin failed: %s\n", disp_str(v));
 }
 
 char* disp_get_builtin_desc(disp_val v) {
     if (T(v) == FLAG_BUILTIN) {
-        return D(v)->builtin.desc;
+        return D(v)->desc;
     }
     ERET(NULL, "disp_get_builtin_desc failed: %s\n", strerror (errno));
 }
 
 disp_syscall_t disp_get_syscall(disp_val v) {
     if (T(v) == FLAG_SYSCALL) {
-        return D(v)->syscall.func;
+        return D(v)->syscall;
     }
     ERET(NULL, "disp_get_syscall failed: %s\n", strerror (errno));
 }
 
 char* disp_get_syscall_desc(disp_val v) {
     if (T(v) == FLAG_SYSCALL) {
-        return D(v)->syscall.desc;
+        return D(v)->desc;
     }
     ERET(NULL, "disp_get_syscall_desc failed: %s\n", strerror (errno));
 }
 
 disp_val disp_make_builtin(disp_builtin_t f, char *d) {
     disp_val v = ALLOC_TI(FLAG_BUILTIN, 0);
-    D(v)->builtin.func = f;
-    D(v)->builtin.desc = d;
+    D(v)->builtin = f;
+    D(v)->desc = d;
     return v;
 }
 
 disp_val disp_make_syscall(disp_syscall_t f, char *d) {
     disp_val v = ALLOC_TI(FLAG_SYSCALL, 0);
-    D(v)->syscall.func = f;
-    D(v)->syscall.desc = d;
+    D(v)->syscall = f;
+    D(v)->desc = d;
     return v;
 }
 

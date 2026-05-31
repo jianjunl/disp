@@ -97,8 +97,8 @@ install: all
 	for mod in $(MODULES); do \
 	    $(INSTALL) -m755 $$mod $(DESTDIR)$(MODDIR)/$$mod; \
 	done
-	$(INSTALL) -m644 init.disp $(DESTDIR)$(MODDIR)/init.disp
-	$(INSTALL) -m644 repl.disp $(DESTDIR)$(MODDIR)/repl.disp
+	$(INSTALL) -m644 init.lisp $(DESTDIR)$(MODDIR)/init.lisp
+	$(INSTALL) -m644 repl.lisp $(DESTDIR)$(MODDIR)/repl.lisp
 
 uninstall:
 	$(MAKE) -C $(GC_DIR) -f gc.mk uninstall
@@ -111,8 +111,8 @@ uninstall:
 	for mod in $(MODULES); do \
 	    $(RM) $(DESTDIR)$(MODDIR)/$$mod; \
 	done
-	$(RM) $(DESTDIR)$(MODDIR)/init.disp
-	$(RM) $(DESTDIR)$(MODDIR)/repl.disp
+	$(RM) $(DESTDIR)$(MODDIR)/init.lisp
+	$(RM) $(DESTDIR)$(MODDIR)/repl.lisp
 
 clean:
 	$(MAKE) -C $(GC_DIR) -f gc.mk clean

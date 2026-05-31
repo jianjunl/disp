@@ -18,25 +18,21 @@
 #endif
 #include "disp.h"
 
-#if DISP_NAN_BOXING
 struct disp_data {
-    disp_flag_t tag;
-#else // DISP_NAN_BOXING
-union disp_data {
-#endif // DISP_NAN_BOXING
     /* 套接字 */
-    struct {
-        int fd;
-    } socket_val;
+#if DISP_NAN_BOXING
+    disp_flag_t tag;
+#endif // DISP_NAN_BOXING
+    int fd;
 };
 
 disp_val disp_make_socket(int fd) {
     disp_val v = ALLOC(FLAG_EXTRA, TAG_SOCKET);
-    D(v)->socket_val.fd = fd;
+    D(v)->fd = fd;
     return v;
 }
 
 int disp_get_socket_fd(disp_val v) {
     if (T(v) != TAG_SOCKET) return -1;
-    return D(v)->socket_val.fd;
+    return D(v)->fd;
 }

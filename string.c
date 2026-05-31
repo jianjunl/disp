@@ -18,26 +18,16 @@
 #endif
 #include "disp.h"
 
-#if DISP_NAN_BOXING
 struct disp_data {
-#else // DISP_NAN_BOXING
-union disp_data {
-#endif // DISP_NAN_BOXING
     struct {
         char *str;
         size_t len;
     } string_val;
 };
 
-#if DISP_NAN_BOXING
 GC_STRUCT_TI(disp_data,
     GC_OFF(disp_data, string_val.str)
 );
-#else // DISP_NAN_BOXING
-GC_UNION_TI(disp_data,
-    GC_OFF(disp_data, string_val.str)
-);
-#endif // DISP_NAN_BOXING
 
 char* disp_get_str(disp_val v) {
     if (T(v) != FLAG_STRING) {
