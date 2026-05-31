@@ -25,7 +25,7 @@
 #include "name.h"
 #include "func.h"
 #include "closure.h"
-#include "number.h"
+#include "num.h"
 #include "cons.h"
 #include "literal.h"
 #include "symbol.h"
