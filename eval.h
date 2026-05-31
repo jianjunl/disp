@@ -9,8 +9,8 @@
 #include <ctype.h>
 
 /* --- Evaluation --- */
-disp_val disp_eval(disp_scope_t *scope, disp_val expr);
-disp_val disp_eval_body(disp_scope_t *scope, disp_val body);
-disp_scope_t* disp_get_closure_env(disp_val closure);
+disp_val disp_eval(disp_env_t *env, disp_val expr);
+disp_val disp_eval_body(disp_env_t *env, disp_val body);
+disp_env_t* disp_get_closure_env(disp_val closure);
  
 #endif // EVAL_H

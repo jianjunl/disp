@@ -27,7 +27,7 @@ static disp_val import_syscall(disp_val *args, int argc) {
     return disp_import(disp_get_str(args[0]));
 }
 
-static disp_val load_builtin(disp_scope_t *env, disp_val expr) {
+static disp_val load_builtin(disp_env_t *env, disp_val expr) {
    disp_val rest = disp_cdr(expr);
     if (E(rest, NIL)) {
         ERET(NIL, "load expects a string filename\n");
@@ -114,14 +114,14 @@ static void* disp_gc_validate(void *ptr) {
 #endif
 
 /* ======================== Initialisation ======================== */
-void disp_init_globals() {
+void disp_init() {
     gc_init();
 #if DISP_BOXING
     gc_set_validate_hook(disp_gc_validate);
 #endif
     disp_init_info();
     disp_init_name_table();
-    disp_init_scope();
+    disp_init_env();
     disp_init_symbol();
       
     char p[PATH_MAX] = "\0";

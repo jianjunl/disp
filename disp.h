@@ -20,7 +20,8 @@
 #include "array.h"
 
 #include "value.h"
-#include "scope.h"
+#include "args.h"
+#include "env.h"
 #include "name.h"
 #include "func.h"
 #include "closure.h"
@@ -37,7 +38,7 @@
 #include "coro.h"
 
 /* --- disp.c (repl) --- */
-void disp_init_globals(void);
+void disp_init(void);
 void disp_repl(void);
 
 #include "global.h"

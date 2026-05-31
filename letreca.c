@@ -16,7 +16,7 @@
 
 #include "tail.h"
 
-eval_result_t disp_eval_tail_letreca(disp_scope_t *env, disp_val expr, int is_tail, disp_val current_closure) {
+eval_result_t disp_eval_tail_letreca(disp_env_t *env, disp_val expr, int is_tail, disp_val current_closure) {
     disp_val op = disp_car(expr);
     disp_val args = disp_cdr(expr);
 
@@ -50,7 +50,7 @@ eval_result_t disp_eval_tail_letreca(disp_scope_t *env, disp_val expr, int is_ta
             }
 
             // 创建新作用域
-            GC_ROOT(disp_scope_t, new_scope) = disp_new_scope(env);
+            GC_ROOT(disp_env_t, new_env) = disp_new_env(env);
 
             // 顺序处理每个绑定
             disp_val b = bindings;
@@ -64,11 +64,11 @@ eval_result_t disp_eval_tail_letreca(disp_scope_t *env, disp_val expr, int is_ta
                 const char *name = disp_get_symbol_name(sym);
                 disp_val init_expr = disp_car(disp_cdr(pair));
                 // 先绑定占位符 NIL（使变量在作用域内可用）
-                disp_define_symbol(new_scope, name, NIL, 0);
+                disp_define_symbol(new_env, name, NIL, 0);
                 // 求值初值（此时变量已存在，值为 NIL，但表达式可引用自身或其他已绑定的变量）
-                disp_val val = disp_eval(new_scope, init_expr);
+                disp_val val = disp_eval(new_env, init_expr);
                 // 更新绑定为实际值
-                disp_define_symbol(new_scope, name, val, 1);
+                disp_define_symbol(new_env, name, val, 1);
                 b = disp_cdr(b);
             }
 
@@ -77,9 +77,9 @@ eval_result_t disp_eval_tail_letreca(disp_scope_t *env, disp_val expr, int is_ta
                 disp_val cur = disp_car(body_exprs);
                 disp_val next = disp_cdr(body_exprs);
                 if (E(next, NIL)) {
-                    return disp_eval_tail(new_scope, cur, is_tail, current_closure);
+                    return disp_eval_tail(new_env, cur, is_tail, current_closure);
                 } else {
-                    disp_eval(new_scope, cur);
+                    disp_eval(new_env, cur);
                     body_exprs = next;
                 }
             }

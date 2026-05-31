@@ -16,7 +16,7 @@
 
 #include "tail.h"
 
-eval_result_t disp_eval_tail_letrec(disp_scope_t *env, disp_val expr, int is_tail, disp_val current_closure) {
+eval_result_t disp_eval_tail_letrec(disp_env_t *env, disp_val expr, int is_tail, disp_val current_closure) {
     disp_val op = disp_car(expr);
     disp_val args = disp_cdr(expr);
 
@@ -88,24 +88,24 @@ eval_result_t disp_eval_tail_letrec(disp_scope_t *env, disp_val expr, int is_tai
             }
 
             // 创建新作用域
-            GC_ROOT(disp_scope_t, new_scope) = disp_new_scope(env);
+            GC_ROOT(disp_env_t, new_env) = disp_new_env(env);
 
             // 先绑定所有变量为 NIL（占位符）
             for (int i = 0; i < var_count; i++) {
                 const char *name = disp_get_symbol_name(var_syms[i]);
-                disp_define_symbol(new_scope, name, NIL, 0);
+                disp_define_symbol(new_env, name, NIL, 0);
             }
 
             // 并行求值所有初值
             GC_ROOT(disp_val, init_vals) = gc_typed_malloc(var_count * sizeof(disp_val), &GC_TYPE_PTR_ARRAY);
             for (int i = 0; i < var_count; i++) {
-                init_vals[i] = disp_eval(new_scope, init_exprs[i]);
+                init_vals[i] = disp_eval(new_env, init_exprs[i]);
             }
 
             // 更新绑定为实际值
             for (int i = 0; i < var_count; i++) {
                 const char *name = disp_get_symbol_name(var_syms[i]);
-                disp_define_symbol(new_scope, name, init_vals[i], 1);
+                disp_define_symbol(new_env, name, init_vals[i], 1);
             }
 
             // 清理临时数组（先移除根再释放）
@@ -118,9 +118,9 @@ eval_result_t disp_eval_tail_letrec(disp_scope_t *env, disp_val expr, int is_tai
                 disp_val cur = disp_car(body_exprs);
                 disp_val next = disp_cdr(body_exprs);
                 if (E(next, NIL)) {
-                    return disp_eval_tail(new_scope, cur, is_tail, current_closure);
+                    return disp_eval_tail(new_env, cur, is_tail, current_closure);
                 } else {
-                    disp_eval(new_scope, cur);
+                    disp_eval(new_env, cur);
                     body_exprs = next;
                 }
             }

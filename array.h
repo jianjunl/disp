@@ -14,8 +14,6 @@ disp_array_t* disp_array_create(size_t block_size);
 // 创建由 GC 管理的数组（根块用 &GC_TYPE_PTR_ARRAY，数据块用传入的 elem_type_info）
 disp_array_t* disp_array_create_gc(size_t block_size, const gc_type_info_t *elem_type_info);
 
-disp_array_t* disp_array_create_cons(size_t block_size, const gc_type_info_t *elem_type_info);
-
 // 销毁数组
 void disp_array_destroy(disp_array_t *arr);
 

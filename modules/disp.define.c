@@ -13,7 +13,7 @@
 #include "../disp.h"
 
 // --- define ---
-static disp_val define_builtin(disp_scope_t *scope, disp_val expr) {
+static disp_val define_builtin(disp_env_t *env, disp_val expr) {
     disp_val cadr = disp_cdr(expr);
     if (N(cadr) || T(cadr) != FLAG_CONS) 
         ERET(NIL, "define: missing first argument");
@@ -35,11 +35,11 @@ static disp_val define_builtin(disp_scope_t *scope, disp_val expr) {
                 disp_val params = second;              // 允许 NIL
                 // 原来构造 lambda_expr 再求值，改为直接创建闭包
                 //disp_val lambda_expr = disp_make_cons(LAMBDA, disp_make_cons(params, body_rest));
-                //disp_val closure = disp_eval(scope, lambda_expr);
-                //disp_define_symbol(scope, SN(first_arg), closure, 0);
+                //disp_val closure = disp_eval(env, lambda_expr);
+                //disp_define_symbol(env, SN(first_arg), closure, 0);
                 // 直接创建可尾递归优化的闭包
-                disp_val closure = disp_make_closure(scope, params, body_rest, 1);
-                disp_define_symbol(scope, SN(first_arg), closure, 0);
+                disp_val closure = disp_make_closure(env, params, body_rest, 1);
+                disp_define_symbol(env, SN(first_arg), closure, 0);
                 return first_arg;
             }
         }
@@ -47,8 +47,8 @@ static disp_val define_builtin(disp_scope_t *scope, disp_val expr) {
         // 普通 (define symbol expr)
         if (N(rest) || T(rest) != FLAG_CONS) 
             ERET(NIL, "define: missing expression");
-        disp_val value = disp_eval(scope, disp_car(rest));
-        disp_define_symbol(scope, SN(first_arg), value, 0);
+        disp_val value = disp_eval(env, disp_car(rest));
+        disp_define_symbol(env, SN(first_arg), value, 0);
         return first_arg;
     } else if (T(first_arg) == FLAG_CONS) {
         // 原有 (define (name params) body ...) 语法
@@ -60,11 +60,11 @@ static disp_val define_builtin(disp_scope_t *scope, disp_val expr) {
         if (N(rest)) ERET(NIL, "define: missing body");
         // 原来构造 lambda_expr 再求值，改为直接创建闭包
         //disp_val lambda_expr = disp_make_cons(LAMBDA, disp_make_cons(params, rest));
-        //disp_val closure = disp_eval(scope, lambda_expr);
-        //disp_define_symbol(scope, SN(name_sym), closure, 0);
+        //disp_val closure = disp_eval(env, lambda_expr);
+        //disp_define_symbol(env, SN(name_sym), closure, 0);
         // 直接创建可尾递归优化的闭包
-        disp_val closure = disp_make_closure(scope, params, rest, 1);
-        disp_define_symbol(scope, SN(name_sym), closure, 0);
+        disp_val closure = disp_make_closure(env, params, rest, 1);
+        disp_define_symbol(env, SN(name_sym), closure, 0);
         return name_sym;
         
     } else {
@@ -72,7 +72,7 @@ static disp_val define_builtin(disp_scope_t *scope, disp_val expr) {
     }
 }
 
-static disp_val setq_builtin(disp_scope_t *scope, disp_val expr) {
+static disp_val setq_builtin(disp_env_t *env, disp_val expr) {
     disp_val cadr = disp_cdr(expr);
     if (N(cadr) || T(cadr) != FLAG_CONS) ERET(NIL, "set!: missing symbol");
     disp_val sym = disp_car(cadr);
@@ -81,9 +81,9 @@ static disp_val setq_builtin(disp_scope_t *scope, disp_val expr) {
     
     disp_val rest = disp_cdr(cadr);
     if (N(rest) || T(rest) != FLAG_CONS) ERET(NIL, "set!: missing expression");
-    disp_val new_value = disp_eval(scope, disp_car(rest));
+    disp_val new_value = disp_eval(env, disp_car(rest));
     
-    disp_val found_sym = disp_find_symbol(scope, name);
+    disp_val found_sym = disp_find_symbol(env, name);
     if (N(found_sym)) {
         ERET(NIL, "set!: undefined variable '%s'", name);
     }

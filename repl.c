@@ -40,7 +40,7 @@ void disp_repl2() {
 
         disp_val expr = disp_read(stdin);
         if (N(expr)) break;
-        disp_val result = disp_eval(disp_global_scope, expr);
+        disp_val result = disp_eval(disp_global_env, expr);
         disp_print(result);
         printf("\n");
         static int gc_counter = 0;
@@ -51,9 +51,14 @@ void disp_repl2() {
     }
 }
 
+static int repl_started = 0;
 extern int parse_current_line;
 
 void disp_repl() {
+    if (repl_started) {
+        ERRO("disp REPL has been started");
+        return;
+    }
     printf("disp Lisp (type :quit to exit)\n");
 
     #include "keywords.h"
@@ -62,6 +67,12 @@ void disp_repl() {
     bestlineSetHighlightKeywords(keywords, sizeof(keywords)/sizeof(keywords[0]));
 
     int repl_line = 1;
+    disp_val args = disp_eval(disp_global_env, ARGS);
+    int argc = disp_get_argc(args);
+    char **argv =  disp_get_argv(args);
+    for (int i = 1; i < argc; i++) {
+        disp_import(argv[i]);
+    }
     for (;;) {
         char prompt[256];
         disp_info_t *info = disp_get_current_info();
@@ -78,6 +89,7 @@ void disp_repl() {
         FILE *mem = fmemopen(line, strlen(line), "r");
         if (!mem) { free(line); continue; }
 
+        repl_started = 1;
         disp_val expr = disp_read(mem);
 
         if (NN(expr) && T(expr) == FLAG_SYMBOL && strcmp(SN(expr), ":clh") == 0) {
@@ -95,7 +107,7 @@ void disp_repl() {
             continue;
         }
 
-        disp_val result = disp_eval(disp_global_scope, expr);
+        disp_val result = disp_eval(disp_global_env, expr);
         disp_print(result);
         printf("\n");
 

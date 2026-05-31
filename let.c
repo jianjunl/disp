@@ -16,7 +16,7 @@
 
 #include "tail.h"
 
-eval_result_t disp_eval_tail_let(disp_scope_t *env, disp_val expr, int is_tail, disp_val current_closure) {
+eval_result_t disp_eval_tail_let(disp_env_t *env, disp_val expr, int is_tail, disp_val current_closure) {
     disp_val op = disp_car(expr);
     disp_val args = disp_cdr(expr);
 
@@ -90,12 +90,12 @@ eval_result_t disp_eval_tail_let(disp_scope_t *env, disp_val expr, int is_tail, 
             }
 
             // 创建新作用域，父作用域为当前 env
-            GC_ROOT(disp_scope_t, new_scope) = disp_new_scope(env);
+            GC_ROOT(disp_env_t, new_env) = disp_new_env(env);
 
             // 将所有变量绑定到新作用域（并行，一次性）
             for (int i = 0; i < var_count; i++) {
                 const char *name = disp_get_symbol_name(var_syms[i]);
-                disp_define_symbol(new_scope, name, init_vals[i], 0);
+                disp_define_symbol(new_env, name, init_vals[i], 0);
             }
 
             gc_free(init_vals);
@@ -107,9 +107,9 @@ eval_result_t disp_eval_tail_let(disp_scope_t *env, disp_val expr, int is_tail, 
                 disp_val next = disp_cdr(body_exprs);
                 if (E(next, NIL)) {
                     // 最后一个表达式，保持 is_tail 和 current_closure
-                    return disp_eval_tail(new_scope, cur, is_tail, current_closure);
+                    return disp_eval_tail(new_env, cur, is_tail, current_closure);
                 } else {
-                    disp_eval(new_scope, cur);
+                    disp_eval(new_env, cur);
                     body_exprs = next;
                 }
             }

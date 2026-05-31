@@ -25,7 +25,7 @@ static int is_self_evaluating(disp_val expr) {
 }
 
 // 辅助：求值参数列表（用于自调用）
-static disp_val * eval_args_for_tail(disp_scope_t *env, disp_val arg_list, int *arg_count) {
+static disp_val * eval_args_for_tail(disp_env_t *env, disp_val arg_list, int *arg_count) {
     *arg_count = 0;
     for (disp_val a = arg_list; NN(a) && T(a) == FLAG_CONS; a = disp_cdr(a))
         (*arg_count)++;
@@ -39,7 +39,7 @@ static disp_val * eval_args_for_tail(disp_scope_t *env, disp_val arg_list, int *
 }
 
 // 核心尾位置求值函数
-eval_result_t disp_eval_tail(disp_scope_t *env, disp_val expr, int is_tail, disp_val current_closure) {
+eval_result_t disp_eval_tail(disp_env_t *env, disp_val expr, int is_tail, disp_val current_closure) {
     if (E(expr, NIL)) return RESULT_NORMAL(NIL);
 
     // 自求值原子
@@ -139,7 +139,7 @@ eval_result_t disp_eval_tail(disp_scope_t *env, disp_val expr, int is_tail, disp
     }
 }
 
-disp_val disp_apply_builtin_from_array(disp_val builtin, disp_scope_t *env, disp_val *args, int arg_count) {
+disp_val disp_apply_builtin_from_array(disp_val builtin, disp_env_t *env, disp_val *args, int arg_count) {
     // 1. 构建参数列表 (arg1 arg2 ... argN)
     disp_val arg_list = NIL;
     for (int i = arg_count - 1; i >= 0; i--) {

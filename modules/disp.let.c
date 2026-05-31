@@ -13,7 +13,7 @@
 #endif
 #include "../disp.h"
 
-static disp_val let_builtin(disp_scope_t *scope, disp_val expr) {
+static disp_val let_builtin(disp_env_t *env, disp_val expr) {
     disp_val rest = disp_cdr(expr);
     if (N(rest) || T(rest) != FLAG_CONS)
         ERET(NIL, "let: missing binding list");
@@ -22,7 +22,7 @@ static disp_val let_builtin(disp_scope_t *scope, disp_val expr) {
     if (T(first) == FLAG_SYMBOL) {
         disp_val second_rest = disp_cdr(rest);
         if (NN(second_rest) && T(second_rest) == FLAG_CONS)
-            return disp_letf(scope, expr);
+            return disp_letf(env, expr);
     }
 
     disp_val bindings = disp_car(rest);
@@ -35,7 +35,7 @@ static disp_val let_builtin(disp_scope_t *scope, disp_val expr) {
         var_count++;
 
     if (var_count == 0)
-        return disp_eval_body(scope, body);
+        return disp_eval_body(env, body);
 
     /* 提取变量符号和初值表达式 */
     GC_ROOT(disp_val, var_syms) = gc_typed_malloc(var_count * sizeof(disp_val), &GC_TYPE_PTR_ARRAY);
@@ -56,33 +56,33 @@ static disp_val let_builtin(disp_scope_t *scope, disp_val expr) {
         b = disp_cdr(b);
     }
 
-    /* 创建新作用域，父作用域为当前 scope */
-    GC_ROOT(disp_scope_t, new_scope) = disp_new_scope(scope);
+    /* 创建新作用域，父作用域为当前 env */
+    GC_ROOT(disp_env_t, new_env) = disp_new_env(env);
 
     disp_val result = NIL;
 
     if (E(disp_car(expr), LETA)) {   /* let* : 顺序绑定 */
         for (int i = 0; i < var_count; i++) {
-            disp_val val = disp_eval(new_scope, init_exprs[i]);
+            disp_val val = disp_eval(new_env, init_exprs[i]);
             /* 立即绑定到新作用域 */
             const char *name = disp_get_symbol_name(var_syms[i]);
-            disp_define_symbol(new_scope, name, val, 0);
+            disp_define_symbol(new_env, name, val, 0);
         }
-        result = disp_eval_body(new_scope, body);
+        result = disp_eval_body(new_env, body);
     } else {                         /* let : 并行绑定 */
         /* 在当前作用域中计算所有初值 */
         GC_ROOT(disp_val, values) = gc_typed_malloc(var_count * sizeof(disp_val), &GC_TYPE_PTR_ARRAY);
         for (int i = 0; i < var_count; i++) {
-            values[i] = disp_eval(new_scope, init_exprs[i]);
+            values[i] = disp_eval(new_env, init_exprs[i]);
         }
         /* 构造参数列表（符号列表） */
         disp_val params = NIL;
         for (int i = var_count - 1; i >= 0; i--)
             params = disp_make_cons(var_syms[i], params);
         /* 一次性绑定到新作用域 */
-        bind_arguments_to_scope(new_scope, params, values, var_count);
+        bind_arguments_to_env(new_env, params, values, var_count);
         /* 执行 body */
-        result = disp_eval_body(new_scope, body);
+        result = disp_eval_body(new_env, body);
         /* 清理 values 的保护 */
         gc_free(values);
     }

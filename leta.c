@@ -16,7 +16,7 @@
 
 #include "tail.h"
 
-eval_result_t disp_eval_tail_leta(disp_scope_t *env, disp_val expr, int is_tail, disp_val current_closure) {
+eval_result_t disp_eval_tail_leta(disp_env_t *env, disp_val expr, int is_tail, disp_val current_closure) {
     disp_val op = disp_car(expr);
     disp_val args = disp_cdr(expr);
 
@@ -49,7 +49,7 @@ eval_result_t disp_eval_tail_leta(disp_scope_t *env, disp_val expr, int is_tail,
             }
 
             // 创建新作用域，父作用域为当前 env
-            GC_ROOT(disp_scope_t, new_scope) = disp_new_scope(env);
+            GC_ROOT(disp_env_t, new_env) = disp_new_env(env);
 
             // 顺序处理每个绑定
             disp_val b = bindings;
@@ -63,8 +63,8 @@ eval_result_t disp_eval_tail_leta(disp_scope_t *env, disp_val expr, int is_tail,
                 const char *name = disp_get_symbol_name(sym);
                 disp_val init_expr = disp_car(disp_cdr(pair));
                 // 在新作用域中求值初值（可以引用之前绑定的变量）
-                disp_val val = disp_eval(new_scope, init_expr);
-                disp_define_symbol(new_scope, name, val, 0);
+                disp_val val = disp_eval(new_env, init_expr);
+                disp_define_symbol(new_env, name, val, 0);
                 b = disp_cdr(b);
             }
 
@@ -73,9 +73,9 @@ eval_result_t disp_eval_tail_leta(disp_scope_t *env, disp_val expr, int is_tail,
                 disp_val cur = disp_car(body_exprs);
                 disp_val next = disp_cdr(body_exprs);
                 if (E(next, NIL)) {
-                    return disp_eval_tail(new_scope, cur, is_tail, current_closure);
+                    return disp_eval_tail(new_env, cur, is_tail, current_closure);
                 } else {
-                    disp_eval(new_scope, cur);
+                    disp_eval(new_env, cur);
                     body_exprs = next;
                 }
             }

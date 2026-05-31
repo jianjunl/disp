@@ -374,7 +374,7 @@ static disp_val handle_ready_cases(case_info_t *infos, int count, disp_val curre
 }
 
 /* ======================== select 主函数 ======================== */
-static disp_val select_builtin(disp_scope_t *scope, disp_val expr) {
+static disp_val select_builtin(disp_env_t *env, disp_val expr) {
     disp_val clauses = disp_cdr(expr);
     if (N(clauses) || T(clauses) != FLAG_CONS)
         ERET(NIL, "select: missing clauses");
@@ -519,7 +519,7 @@ static disp_val select_builtin(disp_scope_t *scope, disp_val expr) {
         if (reg == -1) {
             // 有 case 在注册过程中变得就绪，释放 info 并重试整个 select
             gc_free(infos);
-            return select_builtin(scope, expr);
+            return select_builtin(env, expr);
         }
         if (reg == -2) {
             gc_free(infos);

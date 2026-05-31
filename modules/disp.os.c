@@ -255,7 +255,7 @@ static disp_val sleep_syscall(disp_val *args, int count) {
 }
 
 // --- time ---
-static disp_val time_builtin(disp_scope_t *scope, disp_val expr) {
+static disp_val time_builtin(disp_env_t *env, disp_val expr) {
     disp_val rest = disp_cdr(expr);
     if (E(rest, NIL)) {
         // (time) -> 返回当前时间字符串
@@ -272,7 +272,7 @@ static disp_val time_builtin(disp_scope_t *scope, disp_val expr) {
         disp_val form = disp_car(rest);
         struct timespec start, end;
         clock_gettime(CLOCK_MONOTONIC, &start);
-        disp_val result = disp_eval(scope, form);
+        disp_val result = disp_eval(env, form);
         clock_gettime(CLOCK_MONOTONIC, &end);
         long long diff_ns = (end.tv_sec - start.tv_sec) * 1000000000LL + (end.tv_nsec - start.tv_nsec);
         double diff_ms = diff_ns / 1000000.0;

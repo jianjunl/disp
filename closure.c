@@ -25,8 +25,8 @@ union disp_data {
     struct {
         disp_val params;
         disp_val body;
-        disp_scope_t *env;
-        int reuse_scope;    /* 1: 可复用调用时的作用域（优化尾递归） */
+        disp_env_t *env;
+        int reuse_env;    /* 1: 可复用调用时的作用域（优化尾递归） */
     } closure;
 };
 
@@ -40,7 +40,7 @@ GC_UNION_TI(disp_data,
     GC_OFF(disp_data, closure.env)
 );
 
-static void intern_params(disp_scope_t *env, disp_val params) {
+static void intern_params(disp_env_t *env, disp_val params) {
     for (disp_val p = params; NN(p) && T(p) == FLAG_CONS; p = disp_cdr(p)) {
         disp_val sym = disp_car(p);
         if (T(sym) == FLAG_SYMBOL) {
@@ -52,23 +52,23 @@ static void intern_params(disp_scope_t *env, disp_val params) {
     }
 }
 
-disp_val disp_make_closure(disp_scope_t *env, disp_val params, disp_val body, int reuse_scope) {
+disp_val disp_make_closure(disp_env_t *env, disp_val params, disp_val body, int reuse_env) {
     intern_params(env, params);
     disp_val v = ALLOC_TI(FLAG_CLOSURE, 0);
     D(v)->closure.params = params;
     D(v)->closure.body   = body;
     D(v)->closure.env    = env;
-    D(v)->closure.reuse_scope = reuse_scope;
+    D(v)->closure.reuse_env = reuse_env;
     return v;
 }
 
-disp_val disp_make_macro(disp_scope_t *env, disp_val params, disp_val body, int reuse_scope) {
+disp_val disp_make_macro(disp_env_t *env, disp_val params, disp_val body, int reuse_env) {
     intern_params(env, params);
     disp_val v = ALLOC_TI(FLAG_MACRO, 0);
     D(v)->closure.params = params;
     D(v)->closure.body   = body;
     D(v)->closure.env    = env;
-    D(v)->closure.reuse_scope = reuse_scope;
+    D(v)->closure.reuse_env = reuse_env;
     return v;
 }
 
@@ -88,7 +88,7 @@ disp_val disp_get_closure_body(disp_val closure) {
     return D(closure)->closure.body;
 }
 
-disp_scope_t* disp_get_closure_env(disp_val closure) {
+disp_env_t* disp_get_closure_env(disp_val closure) {
     if (T(closure) != FLAG_CLOSURE && T(closure) != FLAG_MACRO) {
         ERRO("disp_get_closure_env: not a closure/macro\n");
         return NULL;
@@ -96,7 +96,7 @@ disp_scope_t* disp_get_closure_env(disp_val closure) {
     return D(closure)->closure.env;
 }
 
-void bind_arguments_to_scope(disp_scope_t *scope, disp_val params, disp_val *args, int arg_count) {
+void bind_arguments_to_env(disp_env_t *env, disp_val params, disp_val *args, int arg_count) {
     int fixed = 0;
     disp_val rest_sym = NIL;
 
@@ -111,7 +111,7 @@ void bind_arguments_to_scope(disp_scope_t *scope, disp_val params, disp_val *arg
             rest_sym = p;
         } else {
             // 非法 rest 参数：打印详细信息以便调试
-            ERRO("bind_arguments_to_scope: rest parameter is not a symbol, got type %d", T(p));
+            ERRO("bind_arguments_to_env: rest parameter is not a symbol, got type %d", T(p));
             // 可以在这里打印 params 的表示（若有 disp_to_string 函数）
             // 然后直接返回，不执行绑定，避免后续段错误
             return;
@@ -124,12 +124,12 @@ void bind_arguments_to_scope(disp_scope_t *scope, disp_val params, disp_val *arg
     while (NN(p) && T(p) == FLAG_CONS && idx < fixed) {
         disp_val sym = disp_car(p);
         if (T(sym) != FLAG_SYMBOL) {
-            ERRO("bind_arguments_to_scope: parameter is not a symbol");
+            ERRO("bind_arguments_to_env: parameter is not a symbol");
             return;
         }
         const char *name = disp_get_symbol_name(sym);
         disp_val val = (idx < arg_count) ? args[idx] : NIL;
-        disp_define_symbol(scope, name, val, 0);
+        disp_define_symbol(env, name, val, 0);
         idx++;
         p = disp_cdr(p);
     }
@@ -141,21 +141,21 @@ void bind_arguments_to_scope(disp_scope_t *scope, disp_val params, disp_val *arg
         for (int j = arg_count - 1; j >= fixed; j--) {
             rest_list = disp_make_cons(args[j], rest_list);
         }
-        disp_define_symbol(scope, rest_name, rest_list, 0);
+        disp_define_symbol(env, rest_name, rest_list, 0);
     }
 }
 
 #include "tail.h"
 
 disp_val disp_apply_closure(disp_val closure, disp_val *args, int arg_count) {
-    if (!D(closure)->closure.reuse_scope) {
-        GC_ROOT(disp_scope_t, new_scope) = disp_new_scope(D(closure)->closure.env);
-        bind_arguments_to_scope(new_scope, D(closure)->closure.params, args, arg_count);
-        disp_val ret = disp_eval_body(new_scope, D(closure)->closure.body);
+    if (!D(closure)->closure.reuse_env) {
+        GC_ROOT(disp_env_t, new_env) = disp_new_env(D(closure)->closure.env);
+        bind_arguments_to_env(new_env, D(closure)->closure.params, args, arg_count);
+        disp_val ret = disp_eval_body(new_env, D(closure)->closure.body);
         return ret;
     }
 
-    disp_scope_t *env = D(closure)->closure.env;
+    disp_env_t *env = D(closure)->closure.env;
     disp_val params = D(closure)->closure.params;
     disp_val body = D(closure)->closure.body;
     disp_val *current_args = args;
@@ -172,7 +172,7 @@ disp_val disp_apply_closure(disp_val closure, disp_val *args, int arg_count) {
     }
 
     while (1) {
-        bind_arguments_to_scope(env, params, current_args, current_argc);
+        bind_arguments_to_env(env, params, current_args, current_argc);
 
         disp_val exprs = body;
         while (NN(exprs) && T(exprs) == FLAG_CONS) {

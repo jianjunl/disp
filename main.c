@@ -21,15 +21,18 @@ extern void disp_pop_source(void);
 
 int main(int argc, char **argv) {
 
-    disp_init_globals();
+    disp_init();
+    DEF(":args", disp_make_args(argc, argv), 1);
+    ARGS = disp_find_symbol(NULL, ":args");
 
     // 为 REPL 压入伪源文件
     disp_push_source("<stdin>");
 
-    disp_import(argc > 1 ? argv[1] : "repl.disp");
-    //if (argc > 1) disp_import(argv[1]);
+    //disp_import("repl.disp");
+    //disp_import(argc > 1 ? argv[1] : "repl.disp");
+    if (argc > 1) disp_import(argv[1]);
 
-    //disp_repl();
+    disp_repl();
 
     return 0;
 

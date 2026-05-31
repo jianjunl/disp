@@ -10,7 +10,7 @@
 
 /* Function pointer type for built‑in functions */
 typedef disp_val (*disp_syscall_t)(disp_val * args, int arg_count);
-typedef disp_val (*disp_builtin_t)(disp_scope_t *scope, disp_val arg);
+typedef disp_val (*disp_builtin_t)(disp_env_t *env, disp_val arg);
 
 disp_builtin_t disp_get_builtin(disp_val v);
 char* disp_get_builtin_desc(disp_val v);

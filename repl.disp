@@ -1,2 +1,2 @@
-(load "init.disp")
+:(load "init.disp")
 (repl)
