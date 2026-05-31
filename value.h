@@ -10,7 +10,7 @@
 #include <errno.h>
 #include <stdbool.h>
 
-#define DISP_BOXING     2  // 2 = NaN Boxing, 1 = Addr Boxing, 0 = none
+#define DISP_BOXING     2  // 2 = NaN-Addr-Boxing, 1 = Addr-Boxing, 0 = none
 #define DISP_NAN_BOXING (DISP_BOXING >> 1)
 
 typedef struct disp_data disp_data;

@@ -30,7 +30,7 @@ MODDIR := $(PREFIX)/share/disp/modules
 
 LIB_SRCS := disp.c literal.c io.c read.c parse.c eval.c load.c array.c name.c symbol.c env.c \
             args.c closure.c apply.c flow.c let.c leta.c letrec.c letreca.c socket.c \
-            num.c string.c cons.c func.c letf.c file.c info.c repl.c type.c
+            number.c string.c cons.c func.c letf.c file.c info.c repl.c type.c
 LIB_OBJS := $(LIB_SRCS:.c=.o)
 MAIN_SRC := main.c
 MAIN_OBJ := main.o
