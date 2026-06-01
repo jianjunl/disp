@@ -61,14 +61,14 @@ eval_result_t disp_eval_tail_letreca(disp_env_t *env, disp_val expr, int is_tail
                     return RESULT_NORMAL(NIL);
                 }
                 disp_val sym = disp_car(pair);
-                uint64_t id = disp_get_symbol_id(sym);
+                uint64_t id = SI(sym);
                 disp_val init_expr = disp_car(disp_cdr(pair));
                 // 先绑定占位符 NIL（使变量在作用域内可用）
-                disp_define_symbol_by_id(new_env, id, NIL, 0);
+                disp_define_symbol(new_env, id, NIL, 0);
                 // 求值初值（此时变量已存在，值为 NIL，但表达式可引用自身或其他已绑定的变量）
                 disp_val val = disp_eval(new_env, init_expr);
                 // 更新绑定为实际值
-                disp_define_symbol_by_id(new_env, id, val, 1);
+                disp_define_symbol(new_env, id, val, 1);
                 b = disp_cdr(b);
             }
 

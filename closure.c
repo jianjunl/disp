@@ -34,9 +34,9 @@ static void intern_params(disp_env_t *env, disp_val params) {
     for (disp_val p = params; NN(p) && T(p) == FLAG_CONS; p = disp_cdr(p)) {
         disp_val sym = disp_car(p);
         if (T(sym) == FLAG_SYMBOL) {
-            uint64_t id = disp_get_symbol_id(sym);
-            if (NN(disp_find_symbol_by_id(env, id))) {
-                disp_define_symbol_by_id(env, id, NIL, 0);
+            uint64_t id = SI(sym);
+            if (NN(disp_find_symbol(env, id))) {
+                disp_define_symbol(env, id, NIL, 0);
             }
         }
     }
@@ -117,21 +117,21 @@ void bind_arguments_to_env(disp_env_t *env, disp_val params, disp_val *args, int
             ERRO("bind_arguments_to_env: parameter is not a symbol");
             return;
         }
-        uint64_t id = disp_get_symbol_id(sym);
+        uint64_t id = SI(sym);
         disp_val val = (idx < arg_count) ? args[idx] : NIL;
-        disp_define_symbol_by_id(env, id, val, 0);
+        disp_define_symbol(env, id, val, 0);
         idx++;
         p = disp_cdr(p);
     }
 
     // 绑定 rest 参数（如果有）
     if (NE(rest_sym, NIL)) {
-        uint64_t rest_id = disp_get_symbol_id(rest_sym);
+        uint64_t rest_id = SI(rest_sym);
         disp_val rest_list = NIL;
         for (int j = arg_count - 1; j >= fixed; j--) {
             rest_list = disp_make_cons(args[j], rest_list);
         }
-        disp_define_symbol_by_id(env, rest_id, rest_list, 0);
+        disp_define_symbol(env, rest_id, rest_list, 0);
     }
 }
 

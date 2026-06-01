@@ -97,7 +97,7 @@ static disp_val do_builtin(disp_env_t *env, disp_val expr) {
             gc_free(var_names); gc_free(init_exprs); gc_free(step_exprs);
             ERET(NIL, "do: variable name must be a symbol");
         }
-        var_names[i] = disp_get_symbol_id(var);
+        var_names[i] = SI(var);
         disp_val init_part = disp_cdr(spec);
         if (N(init_part) || T(init_part) != FLAG_CONS) {
             gc_remove_root(&step_exprs);
@@ -129,7 +129,7 @@ static disp_val do_builtin(disp_env_t *env, disp_val expr) {
     // 将初值一次性绑定到 loop_env（构造参数列表）
     disp_val params = NIL;
     for (int j = var_count - 1; j >= 0; j--)
-        params = disp_make_cons(disp_intern_symbol_by_id(loop_env, var_names[j]), params);
+        params = disp_make_cons(disp_intern_symbol(loop_env, var_names[j]), params);
     bind_arguments_to_env(loop_env, params, init_vals, var_count);
 
     // 主循环（在 loop_env 中进行）
@@ -163,13 +163,13 @@ static disp_val do_builtin(disp_env_t *env, disp_val expr) {
                     new_vals[j] = disp_eval(loop_env, step_exprs[j]);
                 } else {
                     // 无步进，保持当前值（从作用域中取出）
-                    disp_val sym = disp_find_symbol_by_id(loop_env, var_names[j]);
-                    new_vals[j] = NN(sym) ? disp_get_symbol_value(sym) : NIL;
+                    disp_val sym = disp_find_symbol(loop_env, var_names[j]);
+                    new_vals[j] = NN(sym) ? SV(sym) : NIL;
                 }
                 gc_add_root(&new_vals[j]);
             }
             for (int j = 0; j < var_count; j++) {
-                disp_define_symbol_by_id(loop_env, var_names[j], new_vals[j], 0);
+                disp_define_symbol(loop_env, var_names[j], new_vals[j], 0);
                 gc_remove_root(&new_vals[j]);
             }
             gc_remove_root(&new_vals);

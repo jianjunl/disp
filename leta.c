@@ -60,11 +60,11 @@ eval_result_t disp_eval_tail_leta(disp_env_t *env, disp_val expr, int is_tail, d
                     return RESULT_NORMAL(NIL);
                 }
                 disp_val sym = disp_car(pair);
-                uint64_t id = disp_get_symbol_id(sym);
+                uint64_t id = SI(sym);
                 disp_val init_expr = disp_car(disp_cdr(pair));
                 // 在新作用域中求值初值（可以引用之前绑定的变量）
                 disp_val val = disp_eval(new_env, init_expr);
-                disp_define_symbol_by_id(new_env, id, val, 0);
+                disp_define_symbol(new_env, id, val, 0);
                 b = disp_cdr(b);
             }
 

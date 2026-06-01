@@ -48,5 +48,5 @@ disp_val disp_define_type(char *name, disp_val decl) {
     disp_val v = ALLOC_TI(FLAG_EXTRA, TAG_TYPE);
     D(v)->name = name;
     D(v)->decl = decl;
-    return disp_define_symbol(NULL, name, v, 1);
+    return disp_define_symbol_by_name(NULL, name, v, 1);
 }

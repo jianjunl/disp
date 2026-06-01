@@ -70,7 +70,7 @@ static disp_val error_syscall(disp_val *args, int count) {
     if (count < 1) ERET(NIL, "error: expects at least one argument");
 
     disp_val throw_args[2];
-    throw_args[0] = disp_intern_symbol(NULL, "error");
+    throw_args[0] = disp_intern_symbol_by_name(NULL, "error");
 
     if (count == 1) {
         throw_args[1] = args[0];
@@ -139,7 +139,7 @@ static disp_val block_builtin(disp_env_t *env, disp_val expr) {
     if (N(rest) || T(rest) != FLAG_CONS) ERET(NIL, "block: missing name");
     disp_val name = disp_car(rest);
     /* 把符号 "nil" 转换为常量 NIL */
-    if (T(name) == FLAG_SYMBOL && strcmp(disp_get_symbol_name(name), "nil") == 0) {
+    if (T(name) == FLAG_SYMBOL && strcmp(SN(name), "nil") == 0) {
         name = NIL;
     }
     if (T(name) != FLAG_SYMBOL && NE(name, NIL))

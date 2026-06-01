@@ -65,8 +65,8 @@ static disp_val let_builtin(disp_env_t *env, disp_val expr) {
         for (int i = 0; i < var_count; i++) {
             disp_val val = disp_eval(new_env, init_exprs[i]);
             /* 立即绑定到新作用域 */
-            uint64_t id = disp_get_symbol_id(var_syms[i]);
-            disp_define_symbol_by_id(new_env, id, val, 0);
+            uint64_t id = SI(var_syms[i]);
+            disp_define_symbol(new_env, id, val, 0);
         }
         result = disp_eval_body(new_env, body);
     } else {                         /* let : 并行绑定 */

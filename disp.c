@@ -155,31 +155,31 @@ void disp_init() {
     DEF("trace" , MKF(trace_syscall  , "<trace>" ), 1);
 
     // make else evaluate to true (so cond's default clause works)
-    DEF("else"   , TRUE, 1); ELSE              = disp_find_symbol(NULL, "else");
-    DEF("default", NIL , 0); DEFAULT           = disp_find_symbol(NULL, "default");
-    DEF("it"     , NIL , 0); IT                = disp_find_symbol(NULL, "it");
-    DEF("recv"   , NIL , 0); RECV              = disp_find_symbol(NULL, "recv");
-    DEF("send"   , NIL , 0); SEND              = disp_find_symbol(NULL, "send");
-    DEF("after"  , NIL , 0); AFTER             = disp_find_symbol(NULL, "after");
+    DEF("else"   , TRUE, 1); ELSE              = disp_find_symbol_by_name(disp_global_env, "else");
+    DEF("default", NIL , 0); DEFAULT           = disp_find_symbol_by_name(disp_global_env, "default");
+    DEF("it"     , NIL , 0); IT                = disp_find_symbol_by_name(disp_global_env, "it");
+    DEF("recv"   , NIL , 0); RECV              = disp_find_symbol_by_name(disp_global_env, "recv");
+    DEF("send"   , NIL , 0); SEND              = disp_find_symbol_by_name(disp_global_env, "send");
+    DEF("after"  , NIL , 0); AFTER             = disp_find_symbol_by_name(disp_global_env, "after");
 ///*
 ///*
     disp_import("disp.data.so");
-    CONS              = disp_find_symbol(NULL, "cons");
-    LIST              = disp_find_symbol(NULL, "list");
+    CONS              = disp_find_symbol_by_name(disp_global_env, "cons");
+    LIST              = disp_find_symbol_by_name(disp_global_env, "list");
     disp_import("disp.quote.so");
-    APPEND            = disp_find_symbol(NULL, "append");
-    QUOTE             = disp_find_symbol(NULL, "quote");
-    QUASIQUOTE        = disp_find_symbol(NULL, "quasiquote");
-    UNQUOTE           = disp_find_symbol(NULL, "unquote");
-    UNQUOTE_SPLICING  = disp_find_symbol(NULL, "unquote-splicing");
+    APPEND            = disp_find_symbol_by_name(disp_global_env, "append");
+    QUOTE             = disp_find_symbol_by_name(disp_global_env, "quote");
+    QUASIQUOTE        = disp_find_symbol_by_name(disp_global_env, "quasiquote");
+    UNQUOTE           = disp_find_symbol_by_name(disp_global_env, "unquote");
+    UNQUOTE_SPLICING  = disp_find_symbol_by_name(disp_global_env, "unquote-splicing");
     disp_import("disp.lambda.so");
-    LAMBDA  = disp_find_symbol(NULL, "lambda");
+    LAMBDA  = disp_find_symbol_by_name(disp_global_env, "lambda");
     disp_import("disp.let.so");
-    LET     = disp_find_symbol(NULL, "let");
-    LETA    = disp_find_symbol(NULL, "let*");
+    LET     = disp_find_symbol_by_name(disp_global_env, "let");
+    LETA    = disp_find_symbol_by_name(disp_global_env, "let*");
     disp_import("disp.letrec.so");
-    LETREC  = disp_find_symbol(NULL, "letrec");
-    LETRECA = disp_find_symbol(NULL, "letrec*");
+    LETREC  = disp_find_symbol_by_name(disp_global_env, "letrec");
+    LETRECA = disp_find_symbol_by_name(disp_global_env, "letrec*");
 
     disp_import("disp.define.so");
     disp_import("disp.flow.so");
@@ -194,14 +194,14 @@ void disp_init() {
     disp_import("disp.os.so");
     disp_import("disp.coro.so");
     disp_import("disp.thread.so");
-    IF     = disp_find_symbol(NULL, "if");
-    BEGIN  = disp_find_symbol(NULL, "begin");
-    PROGN  = disp_find_symbol(NULL, "progn");
-    COND   = disp_find_symbol(NULL, "cond");
-    AND    = disp_find_symbol(NULL, "and");
-    OR     = disp_find_symbol(NULL, "or");
-    SET    = disp_find_symbol(NULL, "set!");
-    SETQ   = disp_find_symbol(NULL, "setq");
-    DEFINE = disp_find_symbol(NULL, "define");
+    IF     = disp_find_symbol_by_name(disp_global_env, "if");
+    BEGIN  = disp_find_symbol_by_name(disp_global_env, "begin");
+    PROGN  = disp_find_symbol_by_name(disp_global_env, "progn");
+    COND   = disp_find_symbol_by_name(disp_global_env, "cond");
+    AND    = disp_find_symbol_by_name(disp_global_env, "and");
+    OR     = disp_find_symbol_by_name(disp_global_env, "or");
+    SET    = disp_find_symbol_by_name(disp_global_env, "set!");
+    SETQ   = disp_find_symbol_by_name(disp_global_env, "setq");
+    DEFINE = disp_find_symbol_by_name(disp_global_env, "define");
 //*/
 }

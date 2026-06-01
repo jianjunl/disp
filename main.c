@@ -24,17 +24,7 @@ int main(int argc, char **argv) {
 
     disp_init();
     DEF(":args", disp_make_args(argc, argv), 1);
-    ARGS = disp_find_symbol(NULL, ":args");
-
-// 48 位范围内：直接装箱
-disp_val v1 = disp_make_long(12345);
-assert(T(v1) == FLAG_LONG);
-assert(disp_get_long(v1) == 12345);
-
-// 超出范围：堆分配
-disp_val v2 = disp_make_long(1LL << 50);
-assert(T(v2) == TAG_LONG);
-assert(disp_get_long(v2) == (1LL << 50));
+    ARGS = disp_find_symbol_by_name(disp_global_env, ":args");
 
     // 为 REPL 压入伪源文件
     disp_push_source("<stdin>");

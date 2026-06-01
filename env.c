@@ -71,7 +71,7 @@ disp_env_t* disp_dup_env(disp_env_t *old) {
     return t;
 }
 
-disp_val disp_find_symbol_by_id(const disp_env_t *env, uint64_t id) {
+disp_val disp_find_symbol(const disp_env_t *env, uint64_t id) {
     if (!env) env = disp_global_env;
     while (env) {
         env_lock(env);
@@ -90,7 +90,7 @@ disp_val disp_find_symbol_by_id(const disp_env_t *env, uint64_t id) {
     return DNULL;
 }
 
-disp_val disp_define_symbol_by_id(const disp_env_t *env, uint64_t id, disp_val value, int final) {
+disp_val disp_define_symbol(const disp_env_t *env, uint64_t id, disp_val value, int final) {
     if (!env) env = disp_global_env;
     env_lock(env);
     unsigned int idx = id % SYM_TABLE_SIZE;
@@ -126,7 +126,7 @@ disp_val disp_define_symbol_by_id(const disp_env_t *env, uint64_t id, disp_val v
     return sym;
 }
 
-disp_val disp_intern_symbol_by_id(const disp_env_t *env, uint64_t id) {
+disp_val disp_intern_symbol(const disp_env_t *env, uint64_t id) {
     if (!env) env = disp_global_env;
     env_lock(env);
     unsigned int idx = id % SYM_TABLE_SIZE;
@@ -155,19 +155,19 @@ disp_val disp_intern_symbol_by_id(const disp_env_t *env, uint64_t id) {
     return sym;
 }
 
-disp_val disp_find_symbol(const disp_env_t *env, const char *name) {
+disp_val disp_find_symbol_by_name(const disp_env_t *env, const char *name) {
     uint64_t id = disp_get_id(name);
-    return disp_find_symbol_by_id(env, id);
+    return disp_find_symbol(env, id);
 }
 
-disp_val disp_define_symbol(const disp_env_t *env, const char *name, disp_val value, int final) {
+disp_val disp_define_symbol_by_name(const disp_env_t *env, const char *name, disp_val value, int final) {
     uint64_t id = disp_get_id(name);
-    return disp_define_symbol_by_id(env, id, value, final);
+    return disp_define_symbol(env, id, value, final);
 }
 
-disp_val disp_intern_symbol(const disp_env_t *env, const char *name) {
+disp_val disp_intern_symbol_by_name(const disp_env_t *env, const char *name) {
     uint64_t id = disp_get_id(name);
-    return disp_intern_symbol_by_id(env, id);
+    return disp_intern_symbol(env, id);
 }
 
 /* ======================== GC 初始化和全局常量 ======================== */

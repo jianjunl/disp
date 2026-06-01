@@ -343,7 +343,7 @@ static void pretty_print_obj(disp_val v, int indent, int newline) {
             printf("\"%s\"", disp_get_str(v));
             break;
         case FLAG_SYMBOL:
-            printf("%s", disp_get_symbol_name(v));
+            printf("%s", SN(v));
             break;
         case FLAG_INT:
             printf("%d", disp_get_int(v));

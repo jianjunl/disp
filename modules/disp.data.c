@@ -318,10 +318,10 @@ static disp_val equal_syscall(disp_val *args, int count) {
             return (strcmp(sa, sb) == 0) ? TRUE : NIL;
         }
         case FLAG_SYMBOL: {
-            const char *na = disp_get_symbol_name(a);
-            const char *nb = disp_get_symbol_name(b);
+            uint64_t na = SI(a);
+            uint64_t nb = SI(b);
             if (!na || !nb) return NIL;
-            return (strcmp(na, nb) == 0) ? TRUE : NIL;
+            return (na == nb) ? TRUE : NIL;
         }
         case FLAG_CONS: {
             depth++;
