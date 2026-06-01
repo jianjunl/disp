@@ -17,15 +17,15 @@
 
 // 在 closure.c 或单独的头文件中定义
 typedef struct eval_result {
-    int kind;   // 0 = normal, 1 = tail_recurse
     union {
         disp_val normal;
         struct {
+            disp_val target;      // 要调用的目标函数
             disp_val *new_args;
             int arg_count;
-            disp_val target;      // 要调用的目标函数
         } tail;
     };
+    int kind;   // 0 = normal, 1 = tail_recurse
 } eval_result_t;
 
 #define RESULT_NORMAL(v) (eval_result_t){.kind = 0, .normal = v}

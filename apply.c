@@ -100,8 +100,8 @@ disp_val disp_apply_closure(disp_val closure, disp_val *args, int arg_count) {
 
     // 保护初始参数数组（如果非空）
     if (current_args != NULL) {
-        gc_add_root(&protected_args);
-        protected_args = current_args;
+        //gc_add_root(&protected_args);
+        //protected_args = current_args;
     }
 
     while (1) {
@@ -130,8 +130,8 @@ disp_val disp_apply_closure(disp_val closure, disp_val *args, int arg_count) {
                 // 保护新数组
                 if (current_args != NULL) {
                     if (protected_args) gc_remove_root(&protected_args);
-                    protected_args = current_args;
-                    gc_add_root(&protected_args);
+                    //protected_args = current_args;
+                    //gc_add_root(&protected_args);
                 }
 
                 // 更新循环所需的新闭包内部数据

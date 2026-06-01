@@ -15,10 +15,10 @@
 #include "disp.h"
 
 struct sym_entry {
-    uint64_t id;
     disp_val symbol;
-    int final;
     struct sym_entry *next;
+    uint64_t id;
+    int final;
 };
 
 GC_STRUCT_TI(sym_entry,
