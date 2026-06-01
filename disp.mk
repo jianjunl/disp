@@ -25,7 +25,7 @@ DESTDIR ?=
 PREFIX ?= /usr/local
 BINDIR := $(PREFIX)/bin
 LIBDIR := $(PREFIX)/lib
-INCLUDEDIR := $(PREFIX)/include
+INCLUDEDIR := $(PREFIX)/include/disp
 MODDIR := $(PREFIX)/share/disp/modules
 
 LIB_SRCS := disp.c literal.c io.c read.c parse.c eval.c load.c array.c name.c symbol.c env.c \
@@ -93,7 +93,11 @@ install: all
 	$(INSTALL) -m755 disp.static $(DESTDIR)$(BINDIR)/disp.static
 	$(INSTALL) -m644 libdisp.a $(DESTDIR)$(LIBDIR)/libdisp.a
 	$(INSTALL) -m755 libdisp.so $(DESTDIR)$(LIBDIR)/libdisp.so
-	$(INSTALL) -m644 disp.h $(DESTDIR)$(INCLUDEDIR)/disp.h
+	$(INSTALL) -m644 *.h $(DESTDIR)$(INCLUDEDIR)
+	$(INSTALL) -d $(DESTDIR)$(INCLUDEDIR)/modules
+	$(INSTALL) -m644 modules/*.h $(DESTDIR)$(INCLUDEDIR)/modules
+	$(INSTALL) -d $(DESTDIR)$(INCLUDEDIR)/gc
+	$(INSTALL) -m644 gc/*.h $(DESTDIR)$(INCLUDEDIR)/gc
 	for mod in $(MODULES); do \
 	    $(INSTALL) -m755 $$mod $(DESTDIR)$(MODDIR)/$$mod; \
 	done
@@ -107,7 +111,7 @@ uninstall:
 	$(RM) $(DESTDIR)$(BINDIR)/disp.static
 	$(RM) $(DESTDIR)$(LIBDIR)/libdisp.a
 	$(RM) $(DESTDIR)$(LIBDIR)/libdisp.so
-	$(RM) $(DESTDIR)$(INCLUDEDIR)/disp.h
+	$(RM) -r $(DESTDIR)$(INCLUDEDIR)
 	for mod in $(MODULES); do \
 	    $(RM) $(DESTDIR)$(MODDIR)/$$mod; \
 	done

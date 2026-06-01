@@ -19,6 +19,8 @@
 #include "gc/gc.h"
 #include "array.h"
 
+void disp_init_env(void);
+
 #include "value.h"
 #include "args.h"
 #include "env.h"
