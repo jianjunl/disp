@@ -22,6 +22,7 @@ static intmax_t val_to_int(disp_val v) {
         case FLAG_SHORT:  return disp_get_short(v);
         case FLAG_INT:    return disp_get_int(v);
         case FLAG_LONG:   return disp_get_long(v);
+        case TAG_LONG:    return disp_get_long(v);
         case FLAG_FLOAT:  return (intmax_t)disp_get_float(v);
         case FLAG_DOUBLE: return (intmax_t)disp_get_double(v);
         default:          return 0;
@@ -43,6 +44,7 @@ static double val_to_double(disp_val v) {
         case FLAG_SHORT:  return disp_get_short(v);
         case FLAG_INT:    return disp_get_int(v);
         case FLAG_LONG:   return disp_get_long(v);
+        case TAG_LONG:    return disp_get_long(v);
         case FLAG_FLOAT:  return disp_get_float(v);
         case FLAG_DOUBLE: return disp_get_double(v);
         default:          if(E(v, NIL)) return 0.0; else ERET(0.0, "NaN:%s", val_to_str(v));
@@ -347,6 +349,7 @@ static void pretty_print_obj(disp_val v, int indent, int newline) {
             printf("%d", disp_get_int(v));
             break;
         case FLAG_LONG:
+        case TAG_LONG:
             printf("%ld", disp_get_long(v));
             break;
         case FLAG_FLOAT:

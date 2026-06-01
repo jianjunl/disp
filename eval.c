@@ -61,6 +61,7 @@ disp_val disp_eval(disp_env_t *env, disp_val expr) {
         case FLAG_SHORT:
         case FLAG_INT:
         case FLAG_LONG:
+        case TAG_LONG:
         case FLAG_FLOAT:
         case FLAG_DOUBLE:
         case FLAG_STRING:

@@ -24,13 +24,14 @@ typedef uint16_t disp_flag_t;
 // Tags of DATA (Pointers with FLAG_EXTRA)
 #define TAG_ARGS        1
 #define TAG_TYPE        2
-#define TAG_FILE        3
-#define TAG_CORO        4
-#define TAG_CHAN        5
-#define TAG_SOCKET      6
-#define TAG_THREAD      7
-#define TAG_MUTEX       8
-#define TAG_COND        9
+#define TAG_LONG        3
+#define TAG_FILE        4
+#define TAG_CORO        5
+#define TAG_CHAN        6
+#define TAG_SOCKET      7
+#define TAG_THREAD      8
+#define TAG_MUTEX       9
+#define TAG_COND        10
 
 // Flags of Primitives (0xFFFF - 0xFFF8)
 #define FLAG_VOID       0xFFFF
@@ -115,13 +116,14 @@ typedef uint8_t disp_flag_t;
 // Tags of DATA (Pointers with FLAG_EXTRA)
 #define TAG_ARGS        UINT8_C(1)
 #define TAG_TYPE        UINT8_C(2)
-#define TAG_FILE        UINT8_C(3)
-#define TAG_CORO        UINT8_C(4)
-#define TAG_CHAN        UINT8_C(5)
-#define TAG_SOCKET      UINT8_C(6)
-#define TAG_THREAD      UINT8_C(7)
-#define TAG_MUTEX       UINT8_C(8)
-#define TAG_COND        UINT8_C(9)
+#define TAG_LONG        UINT8_C(3)
+#define TAG_FILE        UINT8_C(4)
+#define TAG_CORO        UINT8_C(5)
+#define TAG_CHAN        UINT8_C(6)
+#define TAG_SOCKET      UINT8_C(7)
+#define TAG_THREAD      UINT8_C(8)
+#define TAG_MUTEX       UINT8_C(9)
+#define TAG_COND        UINT8_C(10)
 
 // Flags of Primitives (0x7FFF - 0x7FF8)
 #define FLAG_VOID       UINT8_C(0xFF)

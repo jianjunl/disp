@@ -56,6 +56,7 @@ void disp_fprint(FILE *out, disp_val v) {
         case FLAG_SHORT:  fprintf(out, "%d",         disp_get_short(v));         break;
         case FLAG_INT:    fprintf(out, "%d",         disp_get_int(v));           break;
         case FLAG_LONG:   fprintf(out, "%ld",        disp_get_long(v));          break;
+        case TAG_LONG:    fprintf(out, "%ld",        disp_get_long(v));          break;
         case FLAG_FLOAT:  fprintf(out, "%g",         (double)disp_get_float(v)); break;
         case FLAG_DOUBLE: fprintf(out, "%g",         disp_get_double(v));        break;
         case FLAG_STRING: fprintf(out, "\"%s\"",     disp_get_str(v));           break;
@@ -113,6 +114,7 @@ void disp_fwrite(FILE *out, disp_val v) {
         case FLAG_SHORT:  fprintf(out, "%d",         disp_get_short(v));         break;
         case FLAG_INT:    fprintf(out, "%d",         disp_get_int(v));           break;
         case FLAG_LONG:   fprintf(out, "%ld",        disp_get_long(v));          break;
+        case TAG_LONG:    fprintf(out, "%ld",        disp_get_long(v));          break;
         case FLAG_FLOAT:  fprintf(out, "%g",         (double)disp_get_float(v)); break;
         case FLAG_DOUBLE: fprintf(out, "%g",         disp_get_double(v));        break;
         case FLAG_STRING: fprintf(out, "%s",         disp_get_str(v));           break;

@@ -67,6 +67,7 @@ static disp_val lt_syscall(disp_val *args, int count) {
     switch (T(args[0])) {
         case FLAG_INT: a = disp_get_int(args[0]); break;
         case FLAG_LONG: a = disp_get_long(args[0]); break;
+        case TAG_LONG: a = disp_get_long(args[0]); break;
         case FLAG_FLOAT: a = disp_get_float(args[0]); break;
         case FLAG_DOUBLE: a = disp_get_double(args[0]); break;
         default: ERRO("<: left operand not numeric");
@@ -74,6 +75,7 @@ static disp_val lt_syscall(disp_val *args, int count) {
     switch (T(args[1])) {
         case FLAG_INT: b = disp_get_int(args[1]); break;
         case FLAG_LONG: b = disp_get_long(args[1]); break;
+        case TAG_LONG: b = disp_get_long(args[1]); break;
         case FLAG_FLOAT: b = disp_get_float(args[1]); break;
         case FLAG_DOUBLE: b = disp_get_double(args[1]); break;
         default: ERRO("<: right operand not numeric");
@@ -89,6 +91,7 @@ static disp_val gt_syscall(disp_val *args, int count) {
     switch (T(args[0])) {
         case FLAG_INT: a = disp_get_int(args[0]); break;
         case FLAG_LONG: a = disp_get_long(args[0]); break;
+        case TAG_LONG: a = disp_get_long(args[0]); break;
         case FLAG_FLOAT: a = disp_get_float(args[0]); break;
         case FLAG_DOUBLE: a = disp_get_double(args[0]); break;
         default: ERRO(">: left operand not numeric");
@@ -96,6 +99,7 @@ static disp_val gt_syscall(disp_val *args, int count) {
     switch (T(args[1])) {
         case FLAG_INT: b = disp_get_int(args[1]); break;
         case FLAG_LONG: b = disp_get_long(args[1]); break;
+        case TAG_LONG: b = disp_get_long(args[1]); break;
         case FLAG_FLOAT: b = disp_get_float(args[1]); break;
         case FLAG_DOUBLE: b = disp_get_double(args[1]); break;
         default: ERRO(">: right operand not numeric");
@@ -124,6 +128,7 @@ static disp_val eq_syscall(disp_val *args, int count) {
         case FLAG_SHORT: a = disp_get_int(v); break;
         case FLAG_INT: a = disp_get_int(v); break;
         case FLAG_LONG: a = disp_get_long(v); break;
+        case TAG_LONG: a = disp_get_long(v); break;
         case FLAG_FLOAT: a = disp_get_float(v); break;
         case FLAG_DOUBLE: a = disp_get_double(v); break;
         default: ERRO("=: left operand not numeric");
@@ -134,6 +139,7 @@ static disp_val eq_syscall(disp_val *args, int count) {
         case FLAG_SHORT: b = disp_get_int(v); break;
         case FLAG_INT: b = disp_get_int(v); break;
         case FLAG_LONG: b = disp_get_long(v); break;
+        case TAG_LONG: b = disp_get_long(v); break;
         case FLAG_FLOAT: b = disp_get_float(v); break;
         case FLAG_DOUBLE: b = disp_get_double(v); break;
         default: ERRO("=: right operand not numeric");
@@ -189,7 +195,7 @@ static disp_val intp_syscall(disp_val *args, int count) {
 /* ----- 类型谓词 ----- */
 static disp_val longp_syscall(disp_val *args, int count) {
     if (count != 1) ERET(NIL, "long?: expects one argument");
-    return (T(args[0]) == FLAG_LONG) ? TRUE : NIL;
+    return (T(args[0]) == FLAG_LONG) ||(T(args[0]) == TAG_LONG) ? TRUE : NIL;
 }
 
 /* ----- 类型谓词 ----- */
@@ -211,7 +217,8 @@ static disp_val integerp_syscall(disp_val *args, int count) {
         T(args[0]) == FLAG_BYTE   ||
         T(args[0]) == FLAG_SHORT  ||
         T(args[0]) == FLAG_INT    ||
-        T(args[0]) == FLAG_LONG
+        T(args[0]) == FLAG_LONG   ||
+        T(args[0]) == TAG_LONG
     ) return TRUE;
     return NIL;
 }
@@ -224,6 +231,7 @@ static disp_val decimalp_syscall(disp_val *args, int count) {
         T(args[0]) == FLAG_SHORT  ||
         T(args[0]) == FLAG_INT    ||
         T(args[0]) == FLAG_LONG   ||
+        T(args[0]) == TAG_LONG    ||
         T(args[0]) == FLAG_FLOAT  ||
         T(args[0]) == FLAG_DOUBLE
     ) return TRUE;
@@ -238,6 +246,7 @@ static disp_val numberp_syscall(disp_val *args, int count) {
         T(args[0]) == FLAG_SHORT  ||
         T(args[0]) == FLAG_INT    ||
         T(args[0]) == FLAG_LONG   ||
+        T(args[0]) == TAG_LONG    ||
         T(args[0]) == FLAG_FLOAT  ||
         T(args[0]) == FLAG_DOUBLE
     ) return TRUE;
@@ -299,6 +308,7 @@ static disp_val equal_syscall(disp_val *args, int count) {
         case FLAG_SHORT:  return (disp_get_short(a)  == disp_get_short(b))  ? TRUE : NIL;
         case FLAG_INT:    return (disp_get_int(a)    == disp_get_int(b))    ? TRUE : NIL;
         case FLAG_LONG:   return (disp_get_long(a)   == disp_get_long(b))   ? TRUE : NIL;
+        case TAG_LONG:    return (disp_get_long(a)   == disp_get_long(b))   ? TRUE : NIL;
         case FLAG_FLOAT:  return (disp_get_float(a)  == disp_get_float(b))  ? TRUE : NIL;
         case FLAG_DOUBLE: return (disp_get_double(a) == disp_get_double(b)) ? TRUE : NIL;
         case FLAG_STRING: {

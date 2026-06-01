@@ -95,6 +95,10 @@ static disp_val string_ref_syscall(disp_val *args, int count) {
         idx = disp_get_int(args[1]);
     else if (T(args[1]) == FLAG_LONG)
         idx = (int)disp_get_long(args[1]);
+    else if (T(args[1]) == TAG_LONG)
+        idx = (int)disp_get_long(args[1]);
+    else if (T(args[1]) == TAG_LONG)
+        idx = (int)disp_get_long(args[1]);
     else
         ERET(NIL, "string-ref: index must be integer");
     const char *str = disp_get_str(args[0]);
@@ -114,6 +118,8 @@ static disp_val string_set_syscall(disp_val *args, int count) {
     if (T(args[1]) == FLAG_INT)
         idx = disp_get_int(args[1]);
     else if (T(args[1]) == FLAG_LONG)
+        idx = (int)disp_get_long(args[1]);
+    else if (T(args[1]) == TAG_LONG)
         idx = (int)disp_get_long(args[1]);
     else
         ERET(NIL, "string-set!: index must be integer");
@@ -140,9 +146,11 @@ static disp_val substring_syscall(disp_val *args, int count) {
     int start = 0, end = 0;
     if (T(args[1]) == FLAG_INT) start = disp_get_int(args[1]);
     else if (T(args[1]) == FLAG_LONG) start = (int)disp_get_long(args[1]);
+    else if (T(args[1]) == TAG_LONG) start = (int)disp_get_long(args[1]);
     else ERET(NIL, "substring: start must be integer");
     if (T(args[2]) == FLAG_INT) end = disp_get_int(args[2]);
     else if (T(args[2]) == FLAG_LONG) end = (int)disp_get_long(args[2]);
+    else if (T(args[2]) == TAG_LONG) end = (int)disp_get_long(args[2]);
     else ERET(NIL, "substring: end must be integer");
     const char *str = disp_get_str(args[0]);
     size_t len = strlen(str);

@@ -421,8 +421,9 @@ static disp_val select_builtin(disp_env_t *env, disp_val expr) {
             ERET(NIL, "select: unknown operation");
         }
         const char *op_str = disp_get_symbol_name(op_name);
+        uint64_t op_id = disp_get_symbol_id(op_name);
 
-        if (op_name == RECV) {
+        if (op_id == disp_get_symbol_id(RECV)) {
             disp_val rest = disp_cdr(op);
             if (N(rest) || T(rest) != FLAG_CONS) {
                 gc_free(infos);
@@ -437,7 +438,7 @@ static disp_val select_builtin(disp_env_t *env, disp_val expr) {
             infos[i].type = CASE_RECV;
             infos[i].channel = ch_arg;
             infos[i].body = body;
-        } else if (op_name == SEND) {
+        } else if (op_id == disp_get_symbol_id(SEND)) {
             disp_val rest = disp_cdr(op);
             if (N(rest) || T(rest) != FLAG_CONS) {
                 gc_free(infos);
@@ -455,7 +456,7 @@ static disp_val select_builtin(disp_env_t *env, disp_val expr) {
             infos[i].channel = ch_arg;
             infos[i].value = val_arg;
             infos[i].body = body;
-        } else if (op_name == AFTER) {
+        } else if (op_id == disp_get_symbol_id(AFTER)) {
             disp_val rest = disp_cdr(op);
             if (N(rest) || T(rest) != FLAG_CONS) {
                 gc_free(infos);
@@ -467,6 +468,8 @@ static disp_val select_builtin(disp_env_t *env, disp_val expr) {
             if (T(ms_val) == FLAG_INT)
                 ms = disp_get_int(ms_val);
             else if (T(ms_val) == FLAG_LONG)
+                ms = disp_get_long(ms_val);
+            else if (T(ms_val) == TAG_LONG)
                 ms = disp_get_long(ms_val);
             else {
                 gc_free(infos);

@@ -19,7 +19,7 @@
 // 辅助：判断表达式是否为自求值原子
 static int is_self_evaluating(disp_val expr) {
     int t = T(expr);
-    return (t == FLAG_BYTE || t == FLAG_SHORT || t == FLAG_INT || t == FLAG_LONG
+    return (t == FLAG_BYTE || t == FLAG_SHORT || t == FLAG_INT || t == FLAG_LONG || t == TAG_LONG
             || t == FLAG_FLOAT || t == FLAG_DOUBLE || t == FLAG_STRING
             || E(expr, TRUE) || E(expr, NIL) || E(expr, QUIT));
 }

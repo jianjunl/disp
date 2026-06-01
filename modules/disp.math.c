@@ -29,6 +29,7 @@ static disp_val plus_syscall(disp_val *args, int count) {
             case FLAG_FLOAT: has_float = 1; max_type = FLAG_FLOAT; break;
             case FLAG_DOUBLE: has_double = 1; max_type = FLAG_DOUBLE; break;
             case FLAG_LONG: has_long = 1; if (max_type < FLAG_LONG) max_type = FLAG_LONG; break;
+            case TAG_LONG: has_long = 1; if (max_type < FLAG_LONG) max_type = FLAG_LONG; break;
             case FLAG_INT: if (max_type < FLAG_INT) max_type = FLAG_INT; break;
             default: break;
         }
@@ -41,6 +42,7 @@ static disp_val plus_syscall(disp_val *args, int count) {
             switch (T(v)) {
                 case FLAG_INT:    sum += disp_get_int(v); break;
                 case FLAG_LONG:   sum += disp_get_long(v); break;
+                case TAG_LONG:    sum += disp_get_long(v); break;
                 case FLAG_FLOAT:  sum += disp_get_float(v); break;
                 case FLAG_DOUBLE: sum += disp_get_double(v); break;
                 default: break;
@@ -57,10 +59,11 @@ static disp_val plus_syscall(disp_val *args, int count) {
             switch (T(v)) {
                 case FLAG_INT:  sum += disp_get_int(v); break;
                 case FLAG_LONG: sum += disp_get_long(v); break;
+                case TAG_LONG:  sum += disp_get_long(v); break;
                 default: break;
             }
         }
-        if (max_type == FLAG_LONG || sum > INT_MAX || sum < INT_MIN)
+        if (max_type == FLAG_LONG || max_type == TAG_LONG || sum > INT_MAX || sum < INT_MIN)
             return disp_make_long((long)sum);
         else
             return disp_make_int((int)sum);
@@ -76,6 +79,7 @@ static disp_val minus_syscall(disp_val *args, int count) {
         switch (t) {
             case FLAG_INT:    return disp_make_int(-disp_get_int(v));
             case FLAG_LONG:   return disp_make_long(-disp_get_long(v));
+            case TAG_LONG:   return disp_make_long(-disp_get_long(v));
             case FLAG_FLOAT:  return disp_make_float(-disp_get_float(v));
             case FLAG_DOUBLE: return disp_make_double(-disp_get_double(v));
             default:
@@ -98,6 +102,7 @@ static disp_val minus_syscall(disp_val *args, int count) {
             case FLAG_FLOAT: has_float = 1; max_type = FLAG_FLOAT; break;
             case FLAG_DOUBLE: has_double = 1; max_type = FLAG_DOUBLE; break;
             case FLAG_LONG: has_long = 1; if (max_type < FLAG_LONG) max_type = FLAG_LONG; break;
+            case TAG_LONG: has_long = 1; if (max_type < FLAG_LONG) max_type = FLAG_LONG; break;
             case FLAG_INT: if (max_type < FLAG_INT) max_type = FLAG_INT; break;
             default: break;
         }
@@ -109,6 +114,7 @@ static disp_val minus_syscall(disp_val *args, int count) {
         switch (T(args[0])) {
             case FLAG_INT:    result = disp_get_int(args[0]); break;
             case FLAG_LONG:   result = disp_get_long(args[0]); break;
+            case TAG_LONG:   result = disp_get_long(args[0]); break;
             case FLAG_FLOAT:  result = disp_get_float(args[0]); break;
             case FLAG_DOUBLE: result = disp_get_double(args[0]); break;
             default: result = 0.0L;
@@ -119,6 +125,7 @@ static disp_val minus_syscall(disp_val *args, int count) {
             switch (T(v)) {
                 case FLAG_INT:    result -= disp_get_int(v); break;
                 case FLAG_LONG:   result -= disp_get_long(v); break;
+                case TAG_LONG:   result -= disp_get_long(v); break;
                 case FLAG_FLOAT:  result -= disp_get_float(v); break;
                 case FLAG_DOUBLE: result -= disp_get_double(v); break;
                 default: break;
@@ -134,6 +141,7 @@ static disp_val minus_syscall(disp_val *args, int count) {
         switch (T(args[0])) {
             case FLAG_INT:  result = disp_get_int(args[0]); break;
             case FLAG_LONG: result = disp_get_long(args[0]); break;
+            case TAG_LONG:  result = disp_get_long(args[0]); break;
             default: result = 0;
         }
         // subtract the rest
@@ -142,10 +150,11 @@ static disp_val minus_syscall(disp_val *args, int count) {
             switch (T(v)) {
                 case FLAG_INT:  result -= disp_get_int(v); break;
                 case FLAG_LONG: result -= disp_get_long(v); break;
+                case TAG_LONG: result -= disp_get_long(v); break;
                 default: break;
             }
         }
-        if (max_type == FLAG_LONG || result > INT_MAX || result < INT_MIN)
+        if (max_type == FLAG_LONG || max_type == TAG_LONG || result > INT_MAX || result < INT_MIN)
             return disp_make_long((long)result);
         else
             return disp_make_int((int)result);
@@ -164,6 +173,7 @@ static disp_val times_syscall(disp_val *args, int count) {
             case FLAG_FLOAT: has_float = 1; max_type = FLAG_FLOAT; break;
             case FLAG_DOUBLE: has_double = 1; max_type = FLAG_DOUBLE; break;
             case FLAG_LONG: has_long = 1; if (max_type < FLAG_LONG) max_type = FLAG_LONG; break;
+            case TAG_LONG: has_long = 1; if (max_type < FLAG_LONG) max_type = FLAG_LONG; break;
             case FLAG_INT: if (max_type < FLAG_INT) max_type = FLAG_INT; break;
             default: break;
         }
@@ -176,6 +186,7 @@ static disp_val times_syscall(disp_val *args, int count) {
             switch (T(v)) {
                 case FLAG_INT:    prod *= disp_get_int(v); break;
                 case FLAG_LONG:   prod *= disp_get_long(v); break;
+                case TAG_LONG:   prod *= disp_get_long(v); break;
                 case FLAG_FLOAT:  prod *= disp_get_float(v); break;
                 case FLAG_DOUBLE: prod *= disp_get_double(v); break;
                 default: break;
@@ -192,10 +203,11 @@ static disp_val times_syscall(disp_val *args, int count) {
             switch (T(v)) {
                 case FLAG_INT:  prod *= disp_get_int(v); break;
                 case FLAG_LONG: prod *= disp_get_long(v); break;
+                case TAG_LONG: prod *= disp_get_long(v); break;
                 default: break;
             }
         }
-        if (max_type == FLAG_LONG || prod > INT_MAX || prod < INT_MIN)
+        if (max_type == FLAG_LONG || max_type == TAG_LONG || prod > INT_MAX || prod < INT_MIN)
             return disp_make_long((long)prod);
         else
             return disp_make_int((int)prod);
@@ -212,6 +224,7 @@ static disp_val divide_syscall(disp_val *args, int count) {
         switch (T(v)) {
             case FLAG_INT:    d /= disp_get_int(v); break;
             case FLAG_LONG:   d /= disp_get_long(v); break;
+            case TAG_LONG:    d /= disp_get_long(v); break;
             case FLAG_FLOAT:  d /= disp_get_float(v); break;
             case FLAG_DOUBLE: d /= disp_get_double(v); break;
             default: d = 0.0;
@@ -225,6 +238,7 @@ static disp_val divide_syscall(disp_val *args, int count) {
     switch (T(v0)) {
         case FLAG_INT:    result = disp_get_int(v0); break;
         case FLAG_LONG:   result = disp_get_long(v0); break;
+        case TAG_LONG:    result = disp_get_long(v0); break;
         case FLAG_FLOAT:  result = disp_get_float(v0); break;
         case FLAG_DOUBLE: result = disp_get_double(v0); break;
         default: result = 0.0;
@@ -234,6 +248,7 @@ static disp_val divide_syscall(disp_val *args, int count) {
         switch (T(v)) {
             case FLAG_INT:    result /= disp_get_int(v); break;
             case FLAG_LONG:   result /= disp_get_long(v); break;
+            case TAG_LONG:   result /= disp_get_long(v); break;
             case FLAG_FLOAT:  result /= disp_get_float(v); break;
             case FLAG_DOUBLE: result /= disp_get_double(v); break;
             default: break;

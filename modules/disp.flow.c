@@ -125,7 +125,7 @@ static disp_val repeat_builtin(disp_env_t *env, disp_val expr) {
         ERET(NIL, "repeat: missing count");
     disp_val count_val = disp_eval(env, disp_car(rest));
     long n = (T(count_val) == FLAG_INT) ? disp_get_int(count_val) 
-            : (T(count_val) == FLAG_LONG) ? disp_get_long(count_val) 
+            : (T(count_val) == FLAG_LONG || T(count_val) == TAG_LONG) ? disp_get_long(count_val) 
             : 0;
     if (n <= 0) return NIL;
     disp_val body = disp_cdr(rest);

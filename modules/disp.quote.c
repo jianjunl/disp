@@ -95,6 +95,7 @@ static int is_prim(disp_val expr) {
         T(expr) == FLAG_SHORT  ||
         T(expr) == FLAG_INT    ||
         T(expr) == FLAG_LONG   ||
+        T(expr) == TAG_LONG    ||
         T(expr) == FLAG_FLOAT  ||
         T(expr) == FLAG_DOUBLE ||
         T(expr) == FLAG_STRING;

@@ -116,6 +116,8 @@ static disp_val sleep_ms_syscall(disp_val *args, int count) {
         ms = disp_get_int(args[0]);
     else if (T(args[0]) == FLAG_LONG)
         ms = disp_get_long(args[0]);
+    else if (T(args[0]) == TAG_LONG)
+        ms = disp_get_long(args[0]);
     else
         ERET(NIL, "sleep-ms: argument must be integer");
     event_loop_add_timer(ms, disp_get_current_coro());

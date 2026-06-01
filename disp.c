@@ -95,7 +95,7 @@ static void* disp_gc_validate(void *ptr) {
     // 情形3: 其他 => 数值或无效，返回 NULL
     //if ((tag & 0xF) < 10) {
     //if (tag == 0 || ((tag & 0xFFF8) == 0x7FF8) || tag == FLAG_LONG || tag == FLAG_DOUBLE) {
-    if (tag == 0 || ((tag & 0xFFF8) == 0x7FF8) || tag == FLAG_LONG) {
+    if (tag == 0 || ((tag & 0xFFF8) == 0x7FF8) || T(val) == TAG_LONG) {
         // 注意：情形2 需保证指针 tag 区域为 0x7FF8~0x7FFF，掩码 0xFFF8 恰好筛选出这些值
         return (void*)(val & 0x0000FFFFFFFFFFFFULL);
     }

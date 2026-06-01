@@ -46,6 +46,8 @@ static disp_val dotimes_builtin(disp_env_t *env, disp_val expr) {
         limit = disp_get_int(count_val);
     } else if (ct == FLAG_LONG) {
         limit = disp_get_long(count_val);
+    } else if (ct == TAG_LONG) {
+        limit = disp_get_long(count_val);
     } else {
         gc_remove_root(&rest);
         ERET(NIL, "dotimes: count must be an integer");

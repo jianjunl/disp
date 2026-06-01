@@ -49,6 +49,7 @@ static disp_val bind_socket_syscall(disp_val *args, int count) {
     long port = 0;
     if (T(args[1]) == FLAG_INT) port = disp_get_int(args[1]);
     else if (T(args[1]) == FLAG_LONG) port = disp_get_long(args[1]);
+    else if (T(args[1]) == TAG_LONG) port = disp_get_long(args[1]);
     else ERET(NIL, "bind-socket: port must be integer");
 
     struct sockaddr_in addr;
@@ -74,6 +75,7 @@ static disp_val listen_socket_syscall(disp_val *args, int count) {
     int backlog = 5;
     if (T(args[1]) == FLAG_INT) backlog = disp_get_int(args[1]);
     else if (T(args[1]) == FLAG_LONG) backlog = (int)disp_get_long(args[1]);
+    else if (T(args[1]) == TAG_LONG) backlog = (int)disp_get_long(args[1]);
 
     if (listen(fd, backlog) == -1) {
         perror("listen");
@@ -126,6 +128,7 @@ static disp_val connect_socket_syscall(disp_val *args, int count) {
     long port = 0;
     if (T(args[2]) == FLAG_INT) port = disp_get_int(args[2]);
     else if (T(args[2]) == FLAG_LONG) port = disp_get_long(args[2]);
+    else if (T(args[2]) == TAG_LONG) port = disp_get_long(args[2]);
     else ERET(NIL, "connect-socket: port must be integer");
 
     char port_str[16];
@@ -178,6 +181,7 @@ static disp_val recv_socket_syscall(disp_val *args, int count) {
     int max_size = 4096;
     if (T(args[1]) == FLAG_INT) max_size = disp_get_int(args[1]);
     else if (T(args[1]) == FLAG_LONG) max_size = (int)disp_get_long(args[1]);
+    else if (T(args[1]) == TAG_LONG) max_size = (int)disp_get_long(args[1]);
 
     char *buf = gc_malloc(max_size + 1);
     if (!buf) return NIL;
