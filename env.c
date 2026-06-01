@@ -54,7 +54,6 @@ static void env_unlock(const disp_env_t *env) {
 }
 
 disp_env_t* disp_new_env(disp_env_t *parent) {
-    if (!parent) parent = disp_global_env;
     disp_env_t *t = gc_typed_malloc(sizeof(struct disp_env), &struct_disp_env_ti);
     gc_pthread_mutex_init(&t->lock, NULL);
     t->buckets = gc_typed_calloc(SYM_TABLE_SIZE, sizeof(void*), &GC_TYPE_PTR_ARRAY);;
@@ -72,7 +71,6 @@ disp_env_t* disp_dup_env(disp_env_t *old) {
 }
 
 disp_val disp_find_symbol(const disp_env_t *env, uint64_t id) {
-    if (!env) env = disp_global_env;
     while (env) {
         env_lock(env);
         unsigned int idx = id % SYM_TABLE_SIZE;   // 直接用 id 作为哈希
@@ -91,7 +89,6 @@ disp_val disp_find_symbol(const disp_env_t *env, uint64_t id) {
 }
 
 disp_val disp_define_symbol(const disp_env_t *env, uint64_t id, disp_val value, int final) {
-    if (!env) env = disp_global_env;
     env_lock(env);
     unsigned int idx = id % SYM_TABLE_SIZE;
     struct sym_entry *e = env->buckets[idx];
@@ -127,7 +124,6 @@ disp_val disp_define_symbol(const disp_env_t *env, uint64_t id, disp_val value, 
 }
 
 disp_val disp_intern_symbol(const disp_env_t *env, uint64_t id) {
-    if (!env) env = disp_global_env;
     env_lock(env);
     unsigned int idx = id % SYM_TABLE_SIZE;
     struct sym_entry *e = env->buckets[idx];

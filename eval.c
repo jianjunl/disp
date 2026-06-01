@@ -54,7 +54,6 @@ disp_val disp_eval_body(disp_env_t *env, disp_val body) {
 
 disp_val disp_eval(disp_env_t *env, disp_val expr) {
     if (N(expr)) return NIL;
-    if (!env) env = disp_global_env;
     switch (T(expr)) {
         case FLAG_NAN:
         case FLAG_BYTE:

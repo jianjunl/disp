@@ -18,7 +18,6 @@ extern void disp_push_source(const char *filename);
 extern void disp_pop_source(void);
 
 static disp_val load_lisp(disp_env_t *env, const char *filename) {
-    if (!env) env = disp_global_env;
     if (!strchr(filename, '/')) {
         char fn[PATH_MAX]; 
         strcpy(fn, disp_get_str(MODPATH));
