@@ -71,7 +71,7 @@ disp_val disp_eval(disp_env_t *env, disp_val expr) {
             if (E(SV(expr), QUIT)) {
                 exit(0);
             }
-            disp_val val = disp_find_symbol_by_name(env, SN(expr));
+            disp_val val = disp_find_symbol(env, SI(expr));
             if (N(val) || E(val, NIL)) {
                 ERET(NIL, "undefined symbol: %s", SN(expr));
             }

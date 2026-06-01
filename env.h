@@ -24,6 +24,7 @@ disp_val disp_find_symbol_by_name(const disp_env_t *env, const char *name);
 disp_val disp_define_symbol_by_name(const disp_env_t *env, const char *name, disp_val value, int final);
 disp_val disp_intern_symbol_by_name(const disp_env_t *env, const char *name);
 
+#define SYMBOL(e, n) disp_find_symbol_by_name(e, n)
 #define DEF(n, v, i) disp_define_symbol_by_name(disp_global_env, n, v, i)
  
 #endif //SCOPE_H

@@ -166,7 +166,7 @@ disp_val parse_sexpr(int first, FILE *f) {
         return parse_list(f, ')', 0);
     } else if (first == '{') {
         // 保持不变：逗号分隔的 begin 语法
-        disp_val sym = disp_find_symbol_by_name(disp_global_env, "begin");
+        disp_val sym = BEGIN;
         if(N(sym) || E(sym, NIL)) ERET(NIL, "'begin' not found");
         disp_val sub_lists = parse_list(f, '}', 1);
         disp_val result = disp_make_cons(sym, NIL);
@@ -179,7 +179,7 @@ disp_val parse_sexpr(int first, FILE *f) {
         }
         return result;
     } else if (first == '[') {
-        disp_val sym = disp_find_symbol_by_name(disp_global_env, "list");
+        disp_val sym = LIST;
         if(N(sym) || E(sym, NIL)) ERET(NIL, "'list' not found");
         return disp_make_cons(sym, parse_list(f, ']', 0));
     } else if (first == '"') {
@@ -190,7 +190,7 @@ disp_val parse_sexpr(int first, FILE *f) {
         if (next_c == EOF) ERET(NIL, "unexpected EOF after quote");
         disp_val quoted = parse_sexpr(next_c, f);
         if (N(quoted)) return NIL;
-        disp_val quote_sym = disp_find_symbol_by_name(disp_global_env, "quote");
+        disp_val quote_sym = QUOTE;
         return disp_make_cons(quote_sym, disp_make_cons(quoted, NIL));
     } else if (first == '`') {
         // 反引号 -> quasiquote
@@ -198,7 +198,7 @@ disp_val parse_sexpr(int first, FILE *f) {
         if (next_c == EOF) ERET(NIL, "unexpected EOF after quasiquote");
         disp_val quasiquoted = parse_sexpr(next_c, f);
         if (N(quasiquoted)) return NIL;
-        disp_val qq_sym = disp_find_symbol_by_name(disp_global_env, "quasiquote");
+        disp_val qq_sym = QUASIQUOTE;
         return disp_make_cons(qq_sym, disp_make_cons(quasiquoted, NIL));
     } else if (first == ',') {
         // 逗号 -> unquote 或 unquote-splicing
@@ -210,13 +210,13 @@ disp_val parse_sexpr(int first, FILE *f) {
             if (expr_c == EOF) ERET(NIL, "unexpected EOF after ,@");
             disp_val spliced = parse_sexpr(expr_c, f);
             if (N(spliced)) return NIL;
-            disp_val us_sym = disp_find_symbol_by_name(disp_global_env, "unquote-splicing");
+            disp_val us_sym = UNQUOTE_SPLICING;
             return disp_make_cons(us_sym, disp_make_cons(spliced, NIL));
         } else {
             // , -> unquote
             disp_val unquoted = parse_sexpr(next_c, f);
             if (N(unquoted)) return NIL;
-            disp_val uq_sym = disp_find_symbol_by_name(disp_global_env, "unquote");
+            disp_val uq_sym = UNQUOTE;
             return disp_make_cons(uq_sym, disp_make_cons(unquoted, NIL));
         }
     } else if (first == ')') {
