@@ -14,132 +14,59 @@
 #endif
 #include "disp.h"
 
+void bind_arguments_to_env(disp_env_t *env, disp_val params, disp_val *args, int arg_count) {
+    int fixed = 0;
+    disp_val rest_sym = NIL;
+
+    // 遍历参数列表，计算固定参数个数，并找到可能的 rest 参数
+    disp_val p = params;
+    while (NN(p) && T(p) == FLAG_CONS) {
+        fixed++;
+        p = disp_cdr(p);
+    }
+    if (NE(p, NIL)) {
+        if (T(p) == FLAG_SYMBOL) {
+            rest_sym = p;
+        } else {
+            // 非法 rest 参数：打印详细信息以便调试
+            ERRO("bind_arguments_to_env: rest parameter is not a symbol, got type %d", T(p));
+            // 可以在这里打印 params 的表示（若有 disp_to_string 函数）
+            // 然后直接返回，不执行绑定，避免后续段错误
+            return;
+        }
+    }
+
+    // 绑定固定参数
+    int idx = 0;
+    p = params;
+    while (NN(p) && T(p) == FLAG_CONS && idx < fixed) {
+        disp_val sym = disp_car(p);
+        if (T(sym) != FLAG_SYMBOL) {
+            ERRO("bind_arguments_to_env: parameter is not a symbol");
+            return;
+        }
+        uint64_t id = SI(sym);
+        disp_val val = (idx < arg_count) ? args[idx] : NIL;
+        disp_define_symbol(env, id, val, 0);
+        idx++;
+        p = disp_cdr(p);
+    }
+
+    // 绑定 rest 参数（如果有）
+    if (NE(rest_sym, NIL)) {
+        uint64_t rest_id = SI(rest_sym);
+        disp_val rest_list = NIL;
+        for (int j = arg_count - 1; j >= fixed; j--) {
+            rest_list = disp_make_cons(args[j], rest_list);
+        }
+        disp_define_symbol(env, rest_id, rest_list, 0);
+    }
+}
+
 #include "tail.h"
 
-// 辅助：判断表达式是否为自求值原子
-static int is_self_evaluating(disp_val expr) {
-    int t = T(expr);
-    return (t == FLAG_BYTE || t == FLAG_SHORT || t == FLAG_INT || t == FLAG_LONG || t == TAG_LONG
-            || t == FLAG_FLOAT || t == FLAG_DOUBLE || t == FLAG_STRING
-            || E(expr, TRUE) || E(expr, NIL) || E(expr, QUIT));
-}
-
-// 辅助：求值参数列表（用于自调用）
-static disp_val * eval_args_for_tail(disp_env_t *env, disp_val arg_list, int *arg_count) {
-    *arg_count = 0;
-    for (disp_val a = arg_list; NN(a) && T(a) == FLAG_CONS; a = disp_cdr(a))
-        (*arg_count)++;
-    if (*arg_count == 0) return NULL;
-    GC_ROOT(disp_val, args) = gc_typed_malloc(*arg_count * sizeof(disp_val), &GC_TYPE_PTR_ARRAY);
-    int i = 0;
-    for (disp_val a = arg_list; NN(a) && T(a) == FLAG_CONS; a = disp_cdr(a)) {
-        args[i++] = disp_eval(env, disp_car(a));
-    }
-    return args;
-}
-
-// 核心尾位置求值函数
-eval_result_t disp_eval_tail(disp_env_t *env, disp_val expr, int is_tail, disp_val current_closure) {
-    if (E(expr, NIL)) return RESULT_NORMAL(NIL);
-
-    // 自求值原子
-    if (is_self_evaluating(expr)) {
-        return RESULT_NORMAL(expr);
-    }
-
-    // 符号：查找变量
-    if (T(expr) == FLAG_SYMBOL) {
-        disp_val sym = disp_find_symbol(env, SI(expr));
-        if (N(sym)) {
-            ERRO("unbound symbol: %s", SN(expr));
-            return RESULT_NORMAL(NIL);
-        }
-        return RESULT_NORMAL(SV(sym));
-    }
-
-    // 不是 cons 则错误
-    if (T(expr) != FLAG_CONS) {
-        ERRO("invalid expression");
-        return RESULT_NORMAL(NIL);
-    }
-
-    disp_val op = disp_car(expr);
-    disp_val args = disp_cdr(expr);
-
-    // 特殊形式处理
-    if (T(op) == FLAG_SYMBOL) {
-        if (E(op, QUOTE))
-            return disp_eval_tail_flow(env, expr, is_tail, current_closure);
-        if (E(op, IF))
-            return disp_eval_tail_flow(env, expr, is_tail, current_closure);
-        if (E(op, BEGIN) || E(op, PROGN))
-            return disp_eval_tail_flow(env, expr, is_tail, current_closure);
-        if (E(op, COND))
-            return disp_eval_tail_flow(env, expr, is_tail, current_closure);
-        if (E(op, AND))
-            return disp_eval_tail_flow(env, expr, is_tail, current_closure);
-        if (E(op, OR))
-            return disp_eval_tail_flow(env, expr, is_tail, current_closure);
-        if (E(op, SET) || E(op, SETQ))
-            return disp_eval_tail_flow(env, expr, is_tail, current_closure);
-        if (E(op, DEFINE))
-            return disp_eval_tail_flow(env, expr, is_tail, current_closure);
-        if (E(op, LAMBDA))
-            return disp_eval_tail_flow(env, expr, is_tail, current_closure);
-        if (E(op, LET))
-            return disp_eval_tail_let(env, expr, is_tail, current_closure);
-        if (E(op, LETA))
-            return disp_eval_tail_leta(env, expr, is_tail, current_closure);
-        if (E(op, LETREC))
-            return disp_eval_tail_letrec(env, expr, is_tail, current_closure);
-        if (E(op, LETRECA))
-            return disp_eval_tail_letreca(env, expr, is_tail, current_closure);
-    }
-
-    // 函数调用
-    // 先求值操作符
-    disp_val func = disp_eval(env, op);
-
-    if (is_tail && (T(func) == FLAG_CLOSURE || T(func) == FLAG_BUILTIN || T(func) == FLAG_SYSCALL)) {
-        // 尾调用优化：求值参数后返回尾调用结果（不立即应用）
-        int arg_count = 0;
-        disp_val *args_arr = eval_args_for_tail(env, args, &arg_count);
-        GC_ROOT_AUTO(args_arr);
-        return RESULT_TAIL(func, args_arr, arg_count);
-    } else {
-        // 正常调用：求值参数并应用
-        disp_val result;
-        if (T(func) == FLAG_BUILTIN) {
-            result = disp_get_builtin(func)(env, expr);
-            return RESULT_NORMAL(result);
-        } else {
-            int arg_count = 0;
-            for (disp_val a = args; NN(a) && T(a) == FLAG_CONS; a = disp_cdr(a)) arg_count++;
-            GC_ROOT(disp_val, argv) = gc_typed_malloc(arg_count * sizeof(disp_val), &GC_TYPE_PTR_ARRAY);
-            int i = 0;
-            for (disp_val a = args; NN(a) && T(a) == FLAG_CONS; a = disp_cdr(a)) {
-                argv[i++] = disp_eval(env, disp_car(a));
-            }
-            if (T(func) == FLAG_CLOSURE) {
-                result = disp_apply_closure(func, argv, arg_count);
-            } else if (T(func) == FLAG_SYSCALL) {
-                result = disp_get_syscall(func)(argv, arg_count);
-            } else {
-                gc_free(argv);
-                if (T(func) != FLAG_CLOSURE && T(func) != FLAG_BUILTIN && T(func) != FLAG_SYSCALL) {
-                    ERRO("func type=%d, value=%p, symbol name=%s\n", T(func), D(func), SN(func));
-                }
-                char *s = disp_string(func);
-                ERRO("%s is not a function or macro", s);
-                return RESULT_NORMAL(NIL);
-            }
-            gc_free(argv);
-            return RESULT_NORMAL(result);
-        }
-    }
-}
-
-disp_val disp_apply_builtin_from_array(disp_val builtin, disp_env_t *env, disp_val *args, int arg_count) {
+/* 从参数数组调用内置函数（构造临时表达式） */
+static disp_val disp_apply_builtin_from_array(disp_val builtin, disp_env_t *env, disp_val *args, int arg_count) {
     // 1. 构建参数列表 (arg1 arg2 ... argN)
     disp_val arg_list = NIL;
     for (int i = arg_count - 1; i >= 0; i--) {
@@ -151,4 +78,117 @@ disp_val disp_apply_builtin_from_array(disp_val builtin, disp_env_t *env, disp_v
     disp_val result = disp_get_builtin(builtin)(env, expr);
     // 临时构造的 cons 节点会在下次 GC 时自动回收（无根引用）
     return result;
+}
+
+disp_val disp_apply_closure(disp_val closure, disp_val *args, int arg_count) {
+    if (!disp_is_closure_reuse_env(closure)) {
+        GC_ROOT(disp_env_t, new_env) = disp_new_env(disp_get_closure_env(closure));
+        bind_arguments_to_env(new_env, disp_get_closure_params(closure), args, arg_count);
+        disp_val ret = disp_eval_body(new_env, disp_get_closure_body(closure));
+        return ret;
+    }
+
+    disp_env_t *env = disp_get_closure_env(closure);
+    disp_val params = disp_get_closure_params(closure);
+    disp_val body = disp_get_closure_body(closure);
+    disp_val *current_args = args;
+    int current_argc = arg_count;
+    eval_result_t res;
+
+    // 用于保护当前参数数组的根指针（静态或局部静态，但需要线程安全）
+    static _Thread_local disp_val *protected_args = NULL;  // 注意：多线程下需要 TLS 或锁
+
+    // 保护初始参数数组（如果非空）
+    if (current_args != NULL) {
+        gc_add_root(&protected_args);
+        protected_args = current_args;
+    }
+
+    while (1) {
+        bind_arguments_to_env(env, params, current_args, current_argc);
+
+        disp_val exprs = body;
+        while (NN(exprs) && T(exprs) == FLAG_CONS) {
+            disp_val expr = disp_car(exprs);
+            disp_val next = disp_cdr(exprs);
+            int tail = E(next, NIL);
+            res = disp_eval_tail(env, expr, tail, closure);
+            // 保护新的 res
+            if (res.kind == 1) {
+                // 释放旧的参数数组前，先移除其根
+                if (current_args != args && current_args != NULL) {
+                    if (protected_args) gc_remove_root(&protected_args);
+                    protected_args = NULL;
+                    gc_free(current_args);
+                }
+
+                // 取出新目标和新参数
+                closure = res.tail.target;
+                current_args = res.tail.new_args;
+                current_argc = res.tail.arg_count;
+
+                // 保护新数组
+                if (current_args != NULL) {
+                    if (protected_args) gc_remove_root(&protected_args);
+                    protected_args = current_args;
+                    gc_add_root(&protected_args);
+                }
+
+                // 更新循环所需的新闭包内部数据
+                if (T(closure) == FLAG_CLOSURE) {
+                    env = disp_get_closure_env(closure);
+                    params = disp_get_closure_params(closure);
+                    body = disp_get_closure_body(closure);
+                    goto restart;
+                } 
+                else if (T(closure) == FLAG_BUILTIN) {
+                    // 内置函数：调用后直接返回（不继续蹦床）
+                    disp_val result = disp_apply_builtin_from_array(closure, env, current_args, current_argc);
+                    // 清理当前参数数组（如果是从堆分配的）
+                    if (current_args != args && current_args != NULL)
+                        gc_free(current_args);
+                    return result;
+                }
+                else if (T(closure) == FLAG_SYSCALL) {
+                    // 系统调用：参数数组直接可用
+                    disp_val result = disp_get_syscall(closure)(current_args, current_argc);
+                    if (current_args != args && current_args != NULL)
+                        gc_free(current_args);
+                    return result;
+                }
+                else {
+                    // 非法目标
+                    ERET(NIL, "tail call target is not callable");
+                }
+            } else if (tail) {
+                disp_val result = res.normal;
+                if (current_args != args && current_args != NULL) {
+                    if (protected_args) {
+                        gc_remove_root(&protected_args);
+                        protected_args = NULL;
+                    }
+                    gc_free(current_args);
+                }
+                return result;
+            } else {
+                // 非尾表达式，继续下一个
+                exprs = next;
+            }
+        }
+        // body 为空时（理论上不应发生），返回 NIL
+        if (current_args != args && current_args != NULL) {
+            if (protected_args) {
+                gc_remove_root(&protected_args);
+                protected_args = NULL;
+            }
+            gc_free(current_args);
+        }
+        return NIL;
+
+        restart:
+        continue;
+    }
+    // 清理根（实际可能永远到不了）
+    if (protected_args) gc_remove_root(&protected_args);
+    return NIL;
 }

@@ -42,6 +42,3 @@ eval_result_t disp_eval_tail_let(disp_env_t *env, disp_val expr, int is_tail, di
 eval_result_t disp_eval_tail_leta(disp_env_t *env, disp_val expr, int is_tail, disp_val current_closure);
 eval_result_t disp_eval_tail_letrec(disp_env_t *env, disp_val expr, int is_tail, disp_val current_closure);
 eval_result_t disp_eval_tail_letreca(disp_env_t *env, disp_val expr, int is_tail, disp_val current_closure);
-
-/* 从参数数组调用内置函数（构造临时表达式） */
-disp_val disp_apply_builtin_from_array(disp_val builtin, disp_env_t *env, disp_val *args, int arg_count);

@@ -27,6 +27,7 @@ void disp_init_env(void);
 #include "name.h"
 #include "func.h"
 #include "closure.h"
+#include "apply.h"
 #include "number.h"
 #include "cons.h"
 #include "literal.h"
