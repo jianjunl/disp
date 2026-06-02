@@ -155,31 +155,31 @@ void disp_init() {
     DEF("trace" , MKF(trace_syscall  , "<trace>" ), 1);
 
     // make else evaluate to true (so cond's default clause works)
-    DEF("else"   , TRUE, 1); ELSE    = SYMBOL(disp_global_env, "else");
-    DEF("default", NIL , 0); DEFAULT = SYMBOL(disp_global_env, "default");
-    DEF("it"     , NIL , 0); IT      = SYMBOL(disp_global_env, "it");
-    DEF("recv"   , NIL , 0); RECV    = SYMBOL(disp_global_env, "recv");
-    DEF("send"   , NIL , 0); SEND    = SYMBOL(disp_global_env, "send");
-    DEF("after"  , NIL , 0); AFTER   = SYMBOL(disp_global_env, "after");
+    DEF("else"   , TRUE, 1); ELSE    = SYMBOL_BY_NAME(disp_global_env, "else");
+    DEF("default", NIL , 0); DEFAULT = SYMBOL_BY_NAME(disp_global_env, "default");
+    DEF("it"     , NIL , 0); IT      = SYMBOL_BY_NAME(disp_global_env, "it");
+    DEF("recv"   , NIL , 0); RECV    = SYMBOL_BY_NAME(disp_global_env, "recv");
+    DEF("send"   , NIL , 0); SEND    = SYMBOL_BY_NAME(disp_global_env, "send");
+    DEF("after"  , NIL , 0); AFTER   = SYMBOL_BY_NAME(disp_global_env, "after");
 ///*
 ///*
     disp_import("disp.data.so");
-    CONS              = SYMBOL(disp_global_env, "cons");
-    LIST              = SYMBOL(disp_global_env, "list");
+    CONS              = SYMBOL_BY_NAME(disp_global_env, "cons");
+    LIST              = SYMBOL_BY_NAME(disp_global_env, "list");
     disp_import("disp.quote.so");
-    APPEND            = SYMBOL(disp_global_env, "append");
-    QUOTE             = SYMBOL(disp_global_env, "quote");
-    QUASIQUOTE        = SYMBOL(disp_global_env, "quasiquote");
-    UNQUOTE           = SYMBOL(disp_global_env, "unquote");
-    UNQUOTE_SPLICING  = SYMBOL(disp_global_env, "unquote-splicing");
+    APPEND            = SYMBOL_BY_NAME(disp_global_env, "append");
+    QUOTE             = SYMBOL_BY_NAME(disp_global_env, "quote");
+    QUASIQUOTE        = SYMBOL_BY_NAME(disp_global_env, "quasiquote");
+    UNQUOTE           = SYMBOL_BY_NAME(disp_global_env, "unquote");
+    UNQUOTE_SPLICING  = SYMBOL_BY_NAME(disp_global_env, "unquote-splicing");
     disp_import("disp.lambda.so");
-    LAMBDA  = SYMBOL(disp_global_env, "lambda");
+    LAMBDA  = SYMBOL_BY_NAME(disp_global_env, "lambda");
     disp_import("disp.let.so");
-    LET     = SYMBOL(disp_global_env, "let");
-    LETA    = SYMBOL(disp_global_env, "let*");
+    LET     = SYMBOL_BY_NAME(disp_global_env, "let");
+    LETA    = SYMBOL_BY_NAME(disp_global_env, "let*");
     disp_import("disp.letrec.so");
-    LETREC  = SYMBOL(disp_global_env, "letrec");
-    LETRECA = SYMBOL(disp_global_env, "letrec*");
+    LETREC  = SYMBOL_BY_NAME(disp_global_env, "letrec");
+    LETRECA = SYMBOL_BY_NAME(disp_global_env, "letrec*");
 
     disp_import("disp.define.so");
     disp_import("disp.flow.so");
@@ -194,14 +194,14 @@ void disp_init() {
     disp_import("disp.os.so");
     disp_import("disp.coro.so");
     disp_import("disp.thread.so");
-    IF     = SYMBOL(disp_global_env, "if");
-    BEGIN  = SYMBOL(disp_global_env, "begin");
-    PROGN  = SYMBOL(disp_global_env, "progn");
-    COND   = SYMBOL(disp_global_env, "cond");
-    AND    = SYMBOL(disp_global_env, "and");
-    OR     = SYMBOL(disp_global_env, "or");
-    SET    = SYMBOL(disp_global_env, "set!");
-    SETQ   = SYMBOL(disp_global_env, "setq");
-    DEFINE = SYMBOL(disp_global_env, "define");
+    IF     = SYMBOL_BY_NAME(disp_global_env, "if");
+    BEGIN  = SYMBOL_BY_NAME(disp_global_env, "begin");
+    PROGN  = SYMBOL_BY_NAME(disp_global_env, "progn");
+    COND   = SYMBOL_BY_NAME(disp_global_env, "cond");
+    AND    = SYMBOL_BY_NAME(disp_global_env, "and");
+    OR     = SYMBOL_BY_NAME(disp_global_env, "or");
+    SET    = SYMBOL_BY_NAME(disp_global_env, "set!");
+    SETQ   = SYMBOL_BY_NAME(disp_global_env, "setq");
+    DEFINE = SYMBOL_BY_NAME(disp_global_env, "define");
 //*/
 }
