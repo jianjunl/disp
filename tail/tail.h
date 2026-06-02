@@ -13,7 +13,7 @@
 #ifndef DEBUG
 //#define DEBUG
 #endif
-#include "disp.h"
+#include "../disp.h"
 
 // 在 closure.c 或单独的头文件中定义
 typedef struct eval_result {

@@ -63,7 +63,7 @@ void bind_arguments_to_env(disp_env_t *env, disp_val params, disp_val *args, int
     }
 }
 
-#include "tail.h"
+#include "tail/tail.h"
 
 /* 从参数数组调用内置函数（构造临时表达式） */
 static disp_val disp_apply_builtin_from_array(disp_val builtin, disp_env_t *env, disp_val *args, int arg_count) {

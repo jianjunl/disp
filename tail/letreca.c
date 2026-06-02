@@ -12,20 +12,21 @@
 #ifndef DEBUG
 //#define DEBUG
 #endif
-#include "disp.h"
+#include "../disp.h"
 
 #include "tail.h"
 
-eval_result_t disp_eval_tail_leta(disp_env_t *env, disp_val expr, int is_tail, disp_val current_closure) {
+eval_result_t disp_eval_tail_letreca(disp_env_t *env, disp_val expr, int is_tail, disp_val current_closure) {
     disp_val op = disp_car(expr);
     disp_val args = disp_cdr(expr);
 
     // 特殊形式处理
     if (T(op) == FLAG_SYMBOL) {
-        // let* : 顺序绑定，每个初值在扩展后的作用域中求值
-        if (E(op, LETA)) {
+
+        // letrec* : 顺序绑定，每个初值在已包含前面变量的作用域中求值
+        if (E(op, LETRECA)) {
             if (N(args) || T(args) != FLAG_CONS) {
-                ERRO("malformed let*");
+                ERRO("malformed letrec*");
                 return RESULT_NORMAL(NIL);
             }
 
@@ -44,11 +45,11 @@ eval_result_t disp_eval_tail_leta(disp_env_t *env, disp_val expr, int is_tail, d
             disp_val bindings = first;
             disp_val body_exprs = disp_cdr(args);
             if (N(body_exprs)) {
-                ERRO("let*: missing body");
+                ERRO("letrec*: missing body");
                 return RESULT_NORMAL(NIL);
             }
 
-            // 创建新作用域，父作用域为当前 env
+            // 创建新作用域
             GC_ROOT(disp_env_t, new_env) = disp_new_env(env);
 
             // 顺序处理每个绑定
@@ -56,19 +57,22 @@ eval_result_t disp_eval_tail_leta(disp_env_t *env, disp_val expr, int is_tail, d
             while (NN(b) && T(b) == FLAG_CONS) {
                 disp_val pair = disp_car(b);
                 if (T(pair) != FLAG_CONS || T(disp_car(pair)) != FLAG_SYMBOL) {
-                    ERRO("malformed let* binding");
+                    ERRO("malformed letrec* binding");
                     return RESULT_NORMAL(NIL);
                 }
                 disp_val sym = disp_car(pair);
                 uint64_t id = SI(sym);
                 disp_val init_expr = disp_car(disp_cdr(pair));
-                // 在新作用域中求值初值（可以引用之前绑定的变量）
+                // 先绑定占位符 NIL（使变量在作用域内可用）
+                disp_define_symbol(new_env, id, NIL, 0);
+                // 求值初值（此时变量已存在，值为 NIL，但表达式可引用自身或其他已绑定的变量）
                 disp_val val = disp_eval(new_env, init_expr);
-                disp_define_symbol(new_env, id, val, 0);
+                // 更新绑定为实际值
+                disp_define_symbol(new_env, id, val, 1);
                 b = disp_cdr(b);
             }
 
-            // 对 body 序列进行尾求值（类似于 begin）
+            // 对 body 序列进行尾求值
             while (NN(body_exprs) && T(body_exprs) == FLAG_CONS) {
                 disp_val cur = disp_car(body_exprs);
                 disp_val next = disp_cdr(body_exprs);
@@ -79,11 +83,12 @@ eval_result_t disp_eval_tail_leta(disp_env_t *env, disp_val expr, int is_tail, d
                     body_exprs = next;
                 }
             }
+            ERRO("not letreca branch");
             return RESULT_NORMAL(NIL);
         }
-        ERRO("not leta branch");
+        ERRO("not letreca branch");
         return RESULT_NORMAL(NIL);
     }
-    ERRO("not leta branch");
+    ERRO("not letreca branch");
     return RESULT_NORMAL(NIL);
 }

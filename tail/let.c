@@ -12,7 +12,7 @@
 #ifndef DEBUG
 //#define DEBUG
 #endif
-#include "disp.h"
+#include "../disp.h"
 
 #include "tail.h"
 
