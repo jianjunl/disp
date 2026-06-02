@@ -60,7 +60,7 @@ static disp_val letrec_builtin(disp_env_t *env, disp_val expr) {
 
     /* 先在新作用域中绑定占位符 NIL */
     for (int i = 0; i < var_count; i++) {
-        uint64_t id = SI(var_syms[i]);
+        uint64_t id = SYM_ID(var_syms[i]);
         disp_define_symbol(new_env, id, NIL, 0);
     }
 
@@ -70,7 +70,7 @@ static disp_val letrec_builtin(disp_env_t *env, disp_val expr) {
         for (int i = 0; i < var_count; i++) {
             values[i] = disp_eval(new_env, init_exprs[i]);
             /* 立即更新绑定 */
-            uint64_t id = SI(var_syms[i]);
+            uint64_t id = SYM_ID(var_syms[i]);
             disp_define_symbol(new_env, id, values[i], 0);
         }
     } else {                           /* letrec : 并行初始化 */
@@ -78,7 +78,7 @@ static disp_val letrec_builtin(disp_env_t *env, disp_val expr) {
             values[i] = disp_eval(new_env, init_exprs[i]);
         }
         for (int i = 0; i < var_count; i++) {
-            uint64_t id = SI(var_syms[i]);
+            uint64_t id = SYM_ID(var_syms[i]);
             disp_define_symbol(new_env, id, values[i], 0);
         }
     }

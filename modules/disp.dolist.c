@@ -25,7 +25,7 @@ static disp_val dolist_builtin(disp_env_t *env, disp_val expr) {
     disp_val var = disp_car(binding);
     if (T(var) != FLAG_SYMBOL)
         ERET(NIL, "dolist: variable must be a symbol");
-    uint64_t var_name = SI(var);
+    uint64_t var_name = SYM_ID(var);
     disp_val list_expr = disp_car(disp_cdr(binding));
     if (N(list_expr))
         ERET(NIL, "dolist: missing list");

@@ -49,12 +49,12 @@ eval_result_t disp_eval_tail(disp_env_t *env, disp_val expr, int is_tail, disp_v
 
     // 符号：查找变量
     if (T(expr) == FLAG_SYMBOL) {
-        disp_val sym = disp_find_symbol(env, SI(expr));
+        disp_val sym = disp_find_symbol(env, SYM_ID(expr));
         if (N(sym)) {
-            ERRO("unbound symbol: %s", SN(expr));
+            ERRO("unbound symbol: %s", SYM_NAME(expr));
             return RESULT_NORMAL(NIL);
         }
-        return RESULT_NORMAL(SV(sym));
+        return RESULT_NORMAL(SYM_VALUE(sym));
     }
 
     // 不是 cons 则错误
@@ -127,7 +127,7 @@ eval_result_t disp_eval_tail(disp_env_t *env, disp_val expr, int is_tail, disp_v
             } else {
                 gc_free(argv);
                 if (T(func) != FLAG_CLOSURE && T(func) != FLAG_BUILTIN && T(func) != FLAG_SYSCALL) {
-                    ERRO("func type=%d, value=%p, symbol name=%s\n", T(func), D(func), SN(func));
+                    ERRO("func type=%d, value=%p, symbol name=%s\n", T(func), D(func), SYM_NAME(func));
                 }
                 char *s = disp_string(func);
                 ERRO("%s is not a function or macro", s);

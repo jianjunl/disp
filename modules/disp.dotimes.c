@@ -25,7 +25,7 @@ static disp_val dotimes_builtin(disp_env_t *env, disp_val expr) {
     disp_val var = disp_car(binding);
     if (T(var) != FLAG_SYMBOL)
         ERET(NIL, "dotimes: variable must be a symbol");
-    uint64_t var_name = SI(var);
+    uint64_t var_name = SYM_ID(var);
     disp_val count_expr = disp_car(disp_cdr(binding));
     if (N(count_expr))
         ERET(NIL, "dotimes: missing count");

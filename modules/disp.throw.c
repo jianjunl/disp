@@ -139,7 +139,7 @@ static disp_val block_builtin(disp_env_t *env, disp_val expr) {
     if (N(rest) || T(rest) != FLAG_CONS) ERET(NIL, "block: missing name");
     disp_val name = disp_car(rest);
     /* 把符号 "nil" 转换为常量 NIL */
-    if (T(name) == FLAG_SYMBOL && strcmp(SN(name), "nil") == 0) {
+    if (T(name) == FLAG_SYMBOL && strcmp(SYM_NAME(name), "nil") == 0) {
         name = NIL;
     }
     if (T(name) != FLAG_SYMBOL && NE(name, NIL))

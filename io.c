@@ -60,7 +60,7 @@ void disp_fprint(FILE *out, disp_val v) {
         case FLAG_FLOAT:  fprintf(out, "%g",         (double)disp_get_float(v)); break;
         case FLAG_DOUBLE: fprintf(out, "%g",         disp_get_double(v));        break;
         case FLAG_STRING: fprintf(out, "\"%s\"",     disp_get_str(v));           break;
-        case FLAG_SYMBOL: fprintf(out, "%s",         SN(v));                     break;
+        case FLAG_SYMBOL: fprintf(out, "%s",         SYM_NAME(v));                     break;
         case TAG_TYPE:    fprintf(out, "%s",         disp_get_type_name(v));     break;
         case TAG_CORO:    fprintf(out, "#<coroutine>"); break;
         case TAG_CHAN:    fprintf(out, "#<channel>"); break;
@@ -118,7 +118,7 @@ void disp_fwrite(FILE *out, disp_val v) {
         case FLAG_FLOAT:  fprintf(out, "%g",         (double)disp_get_float(v)); break;
         case FLAG_DOUBLE: fprintf(out, "%g",         disp_get_double(v));        break;
         case FLAG_STRING: fprintf(out, "%s",         disp_get_str(v));           break;
-        case FLAG_SYMBOL: fprintf(out, "%s",         SN(v));                     break;
+        case FLAG_SYMBOL: fprintf(out, "%s",         SYM_NAME(v));                     break;
         case TAG_TYPE:    fprintf(out, "%s",         disp_get_type_name(v));     break;
         case TAG_CORO:    fprintf(out, "#<coroutine>"); break;
         case TAG_CHAN:    fprintf(out, "#<channel>"); break;

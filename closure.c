@@ -34,7 +34,7 @@ static void intern_params(disp_env_t *env, disp_val params) {
     for (disp_val p = params; NN(p) && T(p) == FLAG_CONS; p = disp_cdr(p)) {
         disp_val sym = disp_car(p);
         if (T(sym) == FLAG_SYMBOL) {
-            uint64_t id = SI(sym);
+            uint64_t id = SYM_ID(sym);
             if (NN(disp_find_symbol(env, id))) {
                 disp_define_symbol(env, id, NIL, 0);
             }

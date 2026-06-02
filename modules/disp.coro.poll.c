@@ -161,8 +161,8 @@ static disp_val try_recv(disp_val ch, disp_val body, int *executed) {
     if (!ok) return DNULL;
 
     // 绑定 'it' 并执行 body
-    uint64_t it_sym = SI(IT);
-    disp_val old_it = NN(IT) ? SV(IT) : NIL;
+    uint64_t it_sym = SYM_ID(IT);
+    disp_val old_it = NN(IT) ? SYM_VALUE(IT) : NIL;
     disp_define_symbol(disp_global_env, it_sym, value, 0);
 
     disp_val result = NIL;
@@ -304,8 +304,8 @@ static disp_val handle_ready_cases(case_info_t *infos, int count, disp_val curre
             if (ok) {
                 gc_pthread_mutex_unlock(LOCK(c));
                 // 绑定 'it' 并执行 body
-                uint64_t it_sym = SI(IT);
-                disp_val old_it = NN(IT) ? SV(IT) : NIL;
+                uint64_t it_sym = SYM_ID(IT);
+                disp_val old_it = NN(IT) ? SYM_VALUE(IT) : NIL;
                 disp_define_symbol(disp_global_env, it_sym, value, 0);
 
                 disp_val body_it = info->body;
@@ -404,7 +404,7 @@ static disp_val select_builtin(disp_env_t *env, disp_val expr) {
         disp_val op = disp_car(clause);
         disp_val body = disp_cdr(clause);
 
-        if (T(op) == FLAG_SYMBOL && SI(op) == SI(DEFAULT)) {
+        if (T(op) == FLAG_SYMBOL && SYM_ID(op) == SYM_ID(DEFAULT)) {
             infos[i].type = CASE_DEFAULT;
             infos[i].body = body;
             default_idx = i;
@@ -420,9 +420,9 @@ static disp_val select_builtin(disp_env_t *env, disp_val expr) {
             gc_free(infos);
             ERET(NIL, "select: unknown operation");
         }
-        uint64_t op_id = SI(op_name);
+        uint64_t op_id = SYM_ID(op_name);
 
-        if (op_id == SI(RECV)) {
+        if (op_id == SYM_ID(RECV)) {
             disp_val rest = disp_cdr(op);
             if (N(rest) || T(rest) != FLAG_CONS) {
                 gc_free(infos);
@@ -437,7 +437,7 @@ static disp_val select_builtin(disp_env_t *env, disp_val expr) {
             infos[i].type = CASE_RECV;
             infos[i].channel = ch_arg;
             infos[i].body = body;
-        } else if (op_id == SI(SEND)) {
+        } else if (op_id == SYM_ID(SEND)) {
             disp_val rest = disp_cdr(op);
             if (N(rest) || T(rest) != FLAG_CONS) {
                 gc_free(infos);
@@ -455,7 +455,7 @@ static disp_val select_builtin(disp_env_t *env, disp_val expr) {
             infos[i].channel = ch_arg;
             infos[i].value = val_arg;
             infos[i].body = body;
-        } else if (op_id == SI(AFTER)) {
+        } else if (op_id == SYM_ID(AFTER)) {
             disp_val rest = disp_cdr(op);
             if (N(rest) || T(rest) != FLAG_CONS) {
                 gc_free(infos);
@@ -480,7 +480,7 @@ static disp_val select_builtin(disp_env_t *env, disp_val expr) {
             infos[i].body = body;
         } else {
             gc_free(infos);
-            ERET(NIL, "select: unknown operation %s", SN(op_name));
+            ERET(NIL, "select: unknown operation %s", SYM_NAME(op_name));
         }
     }
 

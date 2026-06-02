@@ -68,14 +68,14 @@ disp_val disp_eval(disp_env_t *env, disp_val expr) {
         case TAG_ARGS:
             return expr;
         case FLAG_SYMBOL: {
-            if (E(SV(expr), QUIT)) {
+            if (E(SYM_VALUE(expr), QUIT)) {
                 exit(0);
             }
-            disp_val val = disp_find_symbol(env, SI(expr));
+            disp_val val = disp_find_symbol(env, SYM_ID(expr));
             if (N(val) || E(val, NIL)) {
-                ERET(NIL, "undefined symbol: %s", SN(expr));
+                ERET(NIL, "undefined symbol: %s", SYM_NAME(expr));
             }
-            disp_val value = SV(val);   // 注意：需要查找后取其 value
+            disp_val value = SYM_VALUE(val);   // 注意：需要查找后取其 value
             return value;
         }
         case FLAG_CONS: {

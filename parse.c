@@ -41,7 +41,7 @@ static disp_val parse_list(FILE *f, char e, int comma_separated) {
 
         // 仅在非逗号分隔模式下处理点对
         if (!comma_separated && NN(elem) && T(elem) == FLAG_SYMBOL &&
-            strcmp(SN(elem), ".") == 0) {
+            strcmp(SYM_NAME(elem), ".") == 0) {
             // 点对语法：下一个 sexpr 是 cdr
             int next_c = skip_and_get(f);
             if (next_c == EOF) {

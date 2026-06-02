@@ -94,7 +94,7 @@ eval_result_t disp_eval_tail_let(disp_env_t *env, disp_val expr, int is_tail, di
 
             // 将所有变量绑定到新作用域（并行，一次性）
             for (int i = 0; i < var_count; i++) {
-                uint64_t id = SI(var_syms[i]);
+                uint64_t id = SYM_ID(var_syms[i]);
                 disp_define_symbol(new_env, id, init_vals[i], 0);
             }
 

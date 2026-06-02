@@ -134,7 +134,7 @@ eval_result_t disp_eval_tail_flow(disp_env_t *env, disp_val expr, int is_tail, d
         // set!
         if (E(op, SET) || E(op, SETQ)) {
             if (N(args) || T(args) != FLAG_CONS || T(disp_car(args)) != FLAG_SYMBOL) ERRO("malformed set!");
-            uint64_t varid = SI(disp_car(args));
+            uint64_t varid = SYM_ID(disp_car(args));
             disp_val val_expr = disp_car(disp_cdr(args));
             disp_val val = disp_eval(env, val_expr);
             disp_val sym = disp_find_symbol(env, varid);
@@ -148,7 +148,7 @@ eval_result_t disp_eval_tail_flow(disp_env_t *env, disp_val expr, int is_tail, d
             if (N(args) || T(args) != FLAG_CONS) ERRO("malformed define");
             disp_val first = disp_car(args);
             if (T(first) == FLAG_SYMBOL) {
-                uint64_t id = SI(first);
+                uint64_t id = SYM_ID(first);
                 disp_val val_expr = disp_car(disp_cdr(args));
                 disp_val val = disp_eval(env, val_expr);
                 disp_define_symbol(env, id, val, 0);

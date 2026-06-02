@@ -97,7 +97,7 @@ static disp_val do_builtin(disp_env_t *env, disp_val expr) {
             gc_free(var_names); gc_free(init_exprs); gc_free(step_exprs);
             ERET(NIL, "do: variable name must be a symbol");
         }
-        var_names[i] = SI(var);
+        var_names[i] = SYM_ID(var);
         disp_val init_part = disp_cdr(spec);
         if (N(init_part) || T(init_part) != FLAG_CONS) {
             gc_remove_root(&step_exprs);
@@ -164,7 +164,7 @@ static disp_val do_builtin(disp_env_t *env, disp_val expr) {
                 } else {
                     // 无步进，保持当前值（从作用域中取出）
                     disp_val sym = disp_find_symbol(loop_env, var_names[j]);
-                    new_vals[j] = NN(sym) ? SV(sym) : NIL;
+                    new_vals[j] = NN(sym) ? SYM_VALUE(sym) : NIL;
                 }
                 gc_add_root(&new_vals[j]);
             }

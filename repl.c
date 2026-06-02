@@ -92,7 +92,7 @@ void disp_repl() {
         repl_started = 1;
         disp_val expr = disp_read(mem);
 
-        if (NN(expr) && T(expr) == FLAG_SYMBOL && strcmp(SN(expr), ":clh") == 0) {
+        if (NN(expr) && T(expr) == FLAG_SYMBOL && strcmp(SYM_NAME(expr), ":clh") == 0) {
             bestlineHistoryFree();
             printf("History cleared.\n");
             free(line);

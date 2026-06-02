@@ -318,8 +318,8 @@ static disp_val equal_syscall(disp_val *args, int count) {
             return (strcmp(sa, sb) == 0) ? TRUE : NIL;
         }
         case FLAG_SYMBOL: {
-            uint64_t na = SI(a);
-            uint64_t nb = SI(b);
+            uint64_t na = SYM_ID(a);
+            uint64_t nb = SYM_ID(b);
             if (!na || !nb) return NIL;
             return (na == nb) ? TRUE : NIL;
         }

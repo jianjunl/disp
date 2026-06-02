@@ -21,8 +21,8 @@ uint64_t disp_get_symbol_id(disp_val v);
 char* disp_get_symbol_name(disp_val v);
 disp_val disp_get_symbol_value(disp_val v);
 
-#define SI(v) disp_get_symbol_id(v)
-#define SN(v) disp_get_name(SI(v))
-#define SV(v) disp_get_symbol_value(v)
+#define SYM_ID(v) disp_get_symbol_id(v)
+#define SYM_NAME(v) disp_get_name(SYM_ID(v))
+#define SYM_VALUE(v) disp_get_symbol_value(v)
  
 #endif // SYMBOL_H

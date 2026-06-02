@@ -92,7 +92,7 @@ eval_result_t disp_eval_tail_letrec(disp_env_t *env, disp_val expr, int is_tail,
 
             // 先绑定所有变量为 NIL（占位符）
             for (int i = 0; i < var_count; i++) {
-                uint64_t id = SI(var_syms[i]);
+                uint64_t id = SYM_ID(var_syms[i]);
                 disp_define_symbol(new_env, id, NIL, 0);
             }
 
@@ -104,7 +104,7 @@ eval_result_t disp_eval_tail_letrec(disp_env_t *env, disp_val expr, int is_tail,
 
             // 更新绑定为实际值
             for (int i = 0; i < var_count; i++) {
-                uint64_t id = SI(var_syms[i]);
+                uint64_t id = SYM_ID(var_syms[i]);
                 disp_define_symbol(new_env, id, init_vals[i], 1);
             }
 

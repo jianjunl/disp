@@ -61,7 +61,7 @@ eval_result_t disp_eval_tail_letreca(disp_env_t *env, disp_val expr, int is_tail
                     return RESULT_NORMAL(NIL);
                 }
                 disp_val sym = disp_car(pair);
-                uint64_t id = SI(sym);
+                uint64_t id = SYM_ID(sym);
                 disp_val init_expr = disp_car(disp_cdr(pair));
                 // 先绑定占位符 NIL（使变量在作用域内可用）
                 disp_define_symbol(new_env, id, NIL, 0);
