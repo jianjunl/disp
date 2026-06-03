@@ -6,7 +6,7 @@
   (dotimes (i 1000)
     (lock m)
     (set! counter (+ counter 1))
-    (unlock m))))
+    (unlock m))()))
 
 (define t1 (make-thread inc))
 (define t2 (make-thread inc))

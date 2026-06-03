@@ -4,15 +4,16 @@
 
 extern disp_val disp_builtin_roots[];
 
-#define NUM_BUILTIN_ROOTS 42
+#define NUM_BUILTIN_ROOTS 45
 
 enum disp_builtin_root_idx {
     IDX_NIL = 0, IDX_TRUE, IDX_QUIT,
     IDX_BYTE, IDX_SHORT, IDX_INT, IDX_LONG, IDX_FLOAT, IDX_DOUBLE, IDX_PNTR,
-    IDX_LAMBDA, IDX_LET, IDX_LETA, IDX_LETREC, IDX_LETRECA,
+    IDX_LAMBDA, IDX_MACRO, IDX_LET, IDX_LETA, IDX_LETREC, IDX_LETRECA,
     IDX_CONS, IDX_LIST, IDX_QUOTE, IDX_QUASIQUOTE, IDX_UNQUOTE, IDX_UNQUOTE_SPLICING, IDX_APPEND,
     IDX_ELSE, IDX_IF, IDX_BEGIN, IDX_PROGN, IDX_COND, IDX_AND, IDX_OR, IDX_SET, IDX_SETQ, IDX_DEFINE,
-    IDX_MODPATH, IDX_ARGS, IDX_IT, IDX_DEFAULT, IDX_RECV, IDX_SEND, IDX_AFTER
+    IDX_MODPATH, IDX_ARGS, IDX_IT, IDX_DEFAULT, IDX_RECV, IDX_SEND, IDX_AFTER,
+    IDX_DO, IDX_DOTIMES, IDX_DOLIST
 };
 
 #define NIL              disp_builtin_roots[IDX_NIL]
@@ -27,6 +28,7 @@ enum disp_builtin_root_idx {
 #define DOUBLE           disp_builtin_roots[IDX_DOUBLE]
 #define PNTR             disp_builtin_roots[IDX_PNTR]
 #define LAMBDA           disp_builtin_roots[IDX_LAMBDA]
+#define MACRO            disp_builtin_roots[IDX_MACRO]
 #define LET              disp_builtin_roots[IDX_LET]
 #define LETA             disp_builtin_roots[IDX_LETA]
 #define LETREC           disp_builtin_roots[IDX_LETREC]
@@ -55,5 +57,8 @@ enum disp_builtin_root_idx {
 #define RECV             disp_builtin_roots[IDX_RECV]
 #define SEND             disp_builtin_roots[IDX_SEND]
 #define AFTER            disp_builtin_roots[IDX_AFTER]
+#define DO               disp_builtin_roots[IDX_DO]
+#define DOTIMES          disp_builtin_roots[IDX_DOTIMES]
+#define DOLIST           disp_builtin_roots[IDX_DOLIST]
 
 #endif /* _GLOBAL_H */

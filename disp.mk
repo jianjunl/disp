@@ -38,8 +38,8 @@ MAIN_OBJ := main.o
 
 MODULES0 := 
 MODULES := disp.data.so disp.quote.so \
-           disp.lambda.so disp.throw.so \
-           disp.flow.so disp.define.so \
+           disp.lambda.so disp.apply.so disp.throw.so \
+           disp.flow.so disp.define.so disp.set.so \
            disp.do.so disp.dotimes.so disp.dolist.so \
            disp.let.so disp.letrec.so \
            disp.math.so disp.string.so \

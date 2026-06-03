@@ -94,6 +94,16 @@ eval_result_t disp_eval_tail(disp_env_t *env, disp_val expr, int is_tail, disp_v
             return disp_eval_tail_letrec(env, expr, is_tail, current_closure);
         if (E(op, LETRECA))
             return disp_eval_tail_letreca(env, expr, is_tail, current_closure);
+        if (E(op, DO) || E(op, DOTIMES) || E(op, DOLIST)) {
+            disp_val func = disp_eval(env, op);
+            if (T(func) == FLAG_BUILTIN) {
+                disp_val result = disp_get_builtin(func)(env, expr);
+                return RESULT_NORMAL(result);
+            } else {
+                ERRO("%s is not a builtin", SYM_NAME(op));
+                return RESULT_NORMAL(NIL);
+            }
+        }
     }
 
     // 函数调用

@@ -30,7 +30,7 @@
     (println "Produced:" i)
     (condition-signal q-cond)
     (unlock q-mutex)
-    (thread-sleep 0.1))))
+    (thread-sleep 0.1))()))
 
 (define consumer (lambda ()
   (dotimes (i 5)
@@ -40,7 +40,7 @@
     (let ((item (car queue)))
       (set! queue (cdr queue))
       (println "Consumed:" item))
-    (unlock q-mutex))))
+    (unlock q-mutex))()))
 
 (define pt (make-thread producer))
 (define ct (make-thread consumer))

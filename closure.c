@@ -30,20 +30,7 @@ GC_STRUCT_TI(disp_data,
     GC_OFF(disp_data, env)
 );
 
-static void intern_params(disp_env_t *env, disp_val params) {
-    for (disp_val p = params; NN(p) && T(p) == FLAG_CONS; p = disp_cdr(p)) {
-        disp_val sym = disp_car(p);
-        if (T(sym) == FLAG_SYMBOL) {
-            uint64_t id = SYM_ID(sym);
-            if (NN(disp_find_symbol(env, id))) {
-                disp_define_symbol(env, id, NIL, 0);
-            }
-        }
-    }
-}
-
 disp_val disp_make_closure(disp_env_t *env, disp_val params, disp_val body, int reuse_env) {
-    intern_params(env, params);
     disp_val v = ALLOC_TI(FLAG_CLOSURE, 0);
     D(v)->params = params;
     D(v)->body   = body;
@@ -53,7 +40,6 @@ disp_val disp_make_closure(disp_env_t *env, disp_val params, disp_val body, int 
 }
 
 disp_val disp_make_macro(disp_env_t *env, disp_val params, disp_val body, int reuse_env) {
-    intern_params(env, params);
     disp_val v = ALLOC_TI(FLAG_MACRO, 0);
     D(v)->params = params;
     D(v)->body   = body;

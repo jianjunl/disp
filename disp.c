@@ -174,6 +174,7 @@ void disp_init() {
     UNQUOTE_SPLICING  = SYMBOL_BY_NAME(disp_global_env, "unquote-splicing");
     disp_import("disp.lambda.so");
     LAMBDA  = SYMBOL_BY_NAME(disp_global_env, "lambda");
+    MACRO   = SYMBOL_BY_NAME(disp_global_env, "macro");
     disp_import("disp.let.so");
     LET     = SYMBOL_BY_NAME(disp_global_env, "let");
     LETA    = SYMBOL_BY_NAME(disp_global_env, "let*");
@@ -183,10 +184,15 @@ void disp_init() {
 
     disp_import("disp.define.so");
     disp_import("disp.flow.so");
+    disp_import("disp.set.so");
     disp_import("disp.do.so");
     disp_import("disp.dotimes.so");
     disp_import("disp.dolist.so");
+    DO      = SYMBOL_BY_NAME(disp_global_env, "do");
+    DOTIMES = SYMBOL_BY_NAME(disp_global_env, "dotimes");
+    DOLIST  = SYMBOL_BY_NAME(disp_global_env, "dolist");
     disp_import("disp.throw.so");
+    disp_import("disp.apply.so");
 
     disp_import("disp.math.so");
     disp_import("disp.string.so");
