@@ -66,7 +66,7 @@ static disp_val letrec_builtin(disp_env_t *env, disp_val expr) {
 
     /* 计算所有初值（在新作用域中，此时变量已存在但值为 NIL） */
     GC_ROOT(disp_val, values) = gc_typed_malloc(var_count * sizeof(disp_val), &GC_TYPE_PTR_ARRAY);
-    if (E(disp_car(expr), LETRECA)) {   /* letrec* : 顺序初始化 */
+    if (SYM_ID(disp_car(expr)) == LETRECA) {   /* letrec* : 顺序初始化 */
         for (int i = 0; i < var_count; i++) {
             values[i] = disp_eval(new_env, init_exprs[i]);
             /* 立即更新绑定 */

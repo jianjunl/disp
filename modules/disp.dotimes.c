@@ -103,5 +103,6 @@ static disp_val dotimes_builtin(disp_env_t *env, disp_val expr) {
 
 /* Initialisation function called when the shared library is loaded */
 void disp_init_module(void) {
-    DEF("dotimes" , MKB(dotimes_builtin, "<#dotimes>"), 1);
+    DEF2(DOTIMES  , MKB(dotimes_builtin     , "<#do>"     ), 1);
+
 }

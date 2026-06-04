@@ -72,12 +72,12 @@ static disp_val quote_builtin(disp_env_t *env, disp_val expr) {
 
 /* * Helper: Checks if a list starts with a specific symbol (e.g., "unquote")
  */
-static int is_tag(disp_val expr, disp_val tag) {
+static int is_tag(disp_val expr, uint64_t tag) {
     if (N(expr) || E(expr, NIL) || T(expr) != FLAG_CONS) 
         return 0;
     disp_val head = disp_car(expr);
     // Ensure the head is a symbol and matches the tag
-    return (NN(head) && T(head) == FLAG_SYMBOL && E(head, tag));
+    return (NN(head) && T(head) == FLAG_SYMBOL && SYM_ID(head) == tag);
 }
 
 static disp_val unquote(disp_val expr) {
@@ -108,18 +108,17 @@ static disp_val expand_list(disp_val list, int level);
  * The main expansion engine
  */
 static disp_val qq_expand(disp_val expr, int level) {
-    //if (expr == NIL) return disp_make_cons(QUOTE, disp_make_cons(NIL, NIL));
     if(is_prim(expr)) return expr;
 
     // If it's a basic atom, return it quoted so it evaluates to itself
     if (T(expr) != FLAG_CONS) {
-        return disp_make_cons(QUOTE, disp_make_cons(expr, NIL));
+        return disp_make_cons(GLOBAL(QUOTE), disp_make_cons(expr, NIL));
     }
     
     if (is_tag(expr, QUASIQUOTE)) {
         disp_val inner = disp_car(disp_cdr(expr));
-        return disp_make_cons(LIST, 
-            disp_make_cons(disp_make_cons(QUOTE, disp_make_cons(QUASIQUOTE, NIL)),
+        return disp_make_cons(GLOBAL(LIST), 
+            disp_make_cons(disp_make_cons(GLOBAL(QUOTE), disp_make_cons(GLOBAL(QUASIQUOTE), NIL)),
             disp_make_cons(qq_expand(inner, level + 1), NIL)));
     }
     else if (is_tag(expr, UNQUOTE)) {
@@ -135,8 +134,8 @@ static disp_val qq_expand(disp_val expr, int level) {
             // We expand the inner part, then wrap it back in UNQUOTE.
             // FIX: We need to make sure the result is treated as a list 
             // construction so that it produces (unquote 5) instead of (unquote (quote 5)).
-            return disp_make_cons(LIST, 
-                disp_make_cons(disp_make_cons(QUOTE, disp_make_cons(UNQUOTE, NIL)),
+            return disp_make_cons(GLOBAL(LIST), 
+                disp_make_cons(disp_make_cons(GLOBAL(QUOTE), disp_make_cons(GLOBAL(UNQUOTE), NIL)),
                 disp_make_cons(qq_expand(inner, level - 1), NIL)));
         }
     }    
@@ -147,8 +146,8 @@ static disp_val qq_expand(disp_val expr, int level) {
             // Return a special marker for expand_list to handle
             return disp_make_cons(SPLICE_MARK, disp_make_cons(inner, NIL));
         } else {
-            return disp_make_cons(LIST, 
-                disp_make_cons(disp_make_cons(QUOTE, disp_make_cons(UNQUOTE_SPLICING, NIL)),
+            return disp_make_cons(GLOBAL(LIST), 
+                disp_make_cons(disp_make_cons(GLOBAL(QUOTE), disp_make_cons(GLOBAL(UNQUOTE_SPLICING), NIL)),
                 disp_make_cons(qq_expand(inner, level - 1), NIL)));
         }
     }
@@ -160,7 +159,7 @@ static disp_val qq_expand(disp_val expr, int level) {
  * Expands elements within a list, handling unquote-splicing
  */
 static disp_val expand_list(disp_val list, int level) {
-    if (E(list, NIL)) return disp_make_cons(QUOTE, disp_make_cons(NIL, NIL));
+    if (E(list, NIL)) return disp_make_cons(GLOBAL(QUOTE), disp_make_cons(NIL, NIL));
 
     disp_val head = disp_car(list);
     disp_val expanded_head = qq_expand(head, level);
@@ -170,12 +169,12 @@ static disp_val expand_list(disp_val list, int level) {
     if (T(expanded_head) == FLAG_CONS && E(disp_car(expanded_head), SPLICE_MARK)) {
         disp_val inner = disp_car(disp_cdr(expanded_head));
         // Result: (APPEND inner tail)
-        return disp_make_cons(APPEND,
+        return disp_make_cons(GLOBAL(APPEND),
                  disp_make_cons(inner,
                    disp_make_cons(tail, NIL)));
     } else {
         // Result: (CONS expanded_head tail)
-        return disp_make_cons(CONS,
+        return disp_make_cons(GLOBAL(CONS),
                  disp_make_cons(expanded_head,
                    disp_make_cons(tail, NIL)));
     }

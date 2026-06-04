@@ -24,7 +24,7 @@ eval_result_t disp_eval_tail_letreca(disp_env_t *env, disp_val expr, int is_tail
     if (T(op) == FLAG_SYMBOL) {
 
         // letrec* : 顺序绑定，每个初值在已包含前面变量的作用域中求值
-        if (E(op, LETRECA)) {
+        if (SYM_ID(op) == LETRECA) {
             if (N(args) || T(args) != FLAG_CONS) {
                 ERRO("malformed letrec*");
                 return RESULT_NORMAL(NIL);

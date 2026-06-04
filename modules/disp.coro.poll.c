@@ -404,7 +404,7 @@ static disp_val select_builtin(disp_env_t *env, disp_val expr) {
         disp_val op = disp_car(clause);
         disp_val body = disp_cdr(clause);
 
-        if (T(op) == FLAG_SYMBOL && SYM_ID(op) == SYM_ID(DEFAULT)) {
+        if (T(op) == FLAG_SYMBOL && SYM_ID(op) == DEFAULT) {
             infos[i].type = CASE_DEFAULT;
             infos[i].body = body;
             default_idx = i;
@@ -422,7 +422,7 @@ static disp_val select_builtin(disp_env_t *env, disp_val expr) {
         }
         uint64_t op_id = SYM_ID(op_name);
 
-        if (op_id == SYM_ID(RECV)) {
+        if (op_id == RECV) {
             disp_val rest = disp_cdr(op);
             if (N(rest) || T(rest) != FLAG_CONS) {
                 gc_free(infos);
@@ -437,7 +437,7 @@ static disp_val select_builtin(disp_env_t *env, disp_val expr) {
             infos[i].type = CASE_RECV;
             infos[i].channel = ch_arg;
             infos[i].body = body;
-        } else if (op_id == SYM_ID(SEND)) {
+        } else if (op_id == SEND) {
             disp_val rest = disp_cdr(op);
             if (N(rest) || T(rest) != FLAG_CONS) {
                 gc_free(infos);
@@ -455,7 +455,7 @@ static disp_val select_builtin(disp_env_t *env, disp_val expr) {
             infos[i].channel = ch_arg;
             infos[i].value = val_arg;
             infos[i].body = body;
-        } else if (op_id == SYM_ID(AFTER)) {
+        } else if (op_id == AFTER) {
             disp_val rest = disp_cdr(op);
             if (N(rest) || T(rest) != FLAG_CONS) {
                 gc_free(infos);

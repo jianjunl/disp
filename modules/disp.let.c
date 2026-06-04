@@ -61,7 +61,7 @@ static disp_val let_builtin(disp_env_t *env, disp_val expr) {
 
     disp_val result = NIL;
 
-    if (E(disp_car(expr), LETA)) {   /* let* : 顺序绑定 */
+    if (SYM_ID(disp_car(expr)) == LETA) {   /* let* : 顺序绑定 */
         for (int i = 0; i < var_count; i++) {
             disp_val val = disp_eval(new_env, init_exprs[i]);
             /* 立即绑定到新作用域 */

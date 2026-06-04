@@ -106,10 +106,7 @@ disp_val disp_define_symbol(const disp_env_t *env, uint64_t id, disp_val value, 
     }
     
     // 创建新符号
-    disp_val sym = disp_make_symbol(disp_get_name(id));  // 需要名称，但这里可能没有，我们可传入临时名
-    // 更好的做法：提前通过 id 获取 name，但 id 已知时通常 name 已存在全局表
-    // 若无法获取 name，可暂时传 "?"，但正常情况下不会发生
-    // 所以我们需要一个从 id 到 name 的映射，即 disp_get_name(id)
+    disp_val sym = disp_make_symbol(id);
     disp_set_symbol_value(sym, value);
     
     struct sym_entry *new_entry = gc_typed_malloc(sizeof(struct sym_entry), &struct_sym_entry_ti);
@@ -136,8 +133,7 @@ disp_val disp_intern_symbol(const disp_env_t *env, uint64_t id) {
     }
     
     // 未找到，创建新符号
-    const char *name = disp_get_name(id);
-    disp_val sym = disp_make_symbol(name ? name : "?");
+    disp_val sym = disp_make_symbol(id);
     disp_set_symbol_value(sym, NIL);
     
     struct sym_entry *new_entry = gc_typed_malloc(sizeof(struct sym_entry), &struct_sym_entry_ti);

@@ -18,6 +18,37 @@
 //disp_val __attribute__((section("gc_roots"))) disp_builtin_roots[NUM_BUILTIN_ROOTS] = {};
 disp_val disp_builtin_roots[NUM_BUILTIN_ROOTS] = {};
 
+uint64_t LAMBDA;
+uint64_t MACRO;
+uint64_t LET;
+uint64_t LETA;
+uint64_t LETREC;
+uint64_t LETRECA;
+uint64_t CONS;
+uint64_t LIST;
+uint64_t QUOTE;
+uint64_t QUASIQUOTE;
+uint64_t UNQUOTE;
+uint64_t UNQUOTE_SPLICING;
+uint64_t APPEND;
+uint64_t IF;
+uint64_t BEGIN;
+uint64_t PROGN;
+uint64_t COND;
+uint64_t AND;
+uint64_t OR;
+uint64_t SET;
+uint64_t SETQ;
+uint64_t DEFINE;
+
+uint64_t DEFAULT;
+uint64_t RECV;
+uint64_t SEND;
+uint64_t AFTER;
+uint64_t DO;
+uint64_t DOTIMES;
+uint64_t DOLIST;
+
 /* ======================== Built‑in 'load' ======================== */
 static disp_val import_syscall(disp_val *args, int argc) {
     if (argc != 1 || T(args[0]) != FLAG_STRING) {
@@ -123,6 +154,35 @@ void disp_init() {
     disp_init_name_table();
     disp_init_env();
     disp_init_symbol();
+    LAMBDA           = disp_get_id("lambda");
+    MACRO            = disp_get_id("macro");
+    LET              = disp_get_id("let");
+    LETA             = disp_get_id("leta");
+    LETREC           = disp_get_id("letrec");
+    LETRECA          = disp_get_id("letreca");
+    CONS             = disp_get_id("cons");
+    LIST             = disp_get_id("list");
+    QUOTE            = disp_get_id("quote");
+    QUASIQUOTE       = disp_get_id("quasiquote");
+    UNQUOTE          = disp_get_id("unquote");
+    UNQUOTE_SPLICING = disp_get_id("unquote_splicing");
+    APPEND           = disp_get_id("append");
+    IF               = disp_get_id("if");
+    BEGIN            = disp_get_id("begin");
+    PROGN            = disp_get_id("progn");
+    COND             = disp_get_id("cond");
+    AND              = disp_get_id("and");
+    OR               = disp_get_id("or");
+    SET              = disp_get_id("set!");
+    SETQ             = disp_get_id("setq");
+    DEFINE           = disp_get_id("define");
+    DO               = disp_get_id("do");
+    DOTIMES          = disp_get_id("dotimes");
+    DOLIST           = disp_get_id("dolist");
+    DEFAULT          = disp_get_id("default");
+    RECV             = disp_get_id("recv");
+    SEND             = disp_get_id("send");
+    AFTER            = disp_get_id("after");
       
     char p[PATH_MAX] = "\0";
     if (!readlink("/proc/self/exe", p, sizeof(p) - 1)) {
@@ -132,7 +192,7 @@ void disp_init() {
         strcat(p, "../share/disp/modules/"); 
 	DBG("disp module path is '%s'\n", p);
         MODPATH = MKS(p);
-        DEF(":path", MODPATH, 1);
+        disp_define_symbol_by_name(disp_global_env, ":path", MODPATH, 1);
     }
 
     BYTE    = disp_define_type("byte"     , MKS(":byte"  ));
@@ -155,32 +215,13 @@ void disp_init() {
     DEF("trace" , MKF(trace_syscall  , "<trace>" ), 1);
 
     // make else evaluate to true (so cond's default clause works)
-    DEF("else"   , TRUE, 1); ELSE    = SYMBOL_BY_NAME(disp_global_env, "else");
-    DEF("default", NIL , 0); DEFAULT = SYMBOL_BY_NAME(disp_global_env, "default");
-    DEF("it"     , NIL , 0); IT      = SYMBOL_BY_NAME(disp_global_env, "it");
-    DEF("recv"   , NIL , 0); RECV    = SYMBOL_BY_NAME(disp_global_env, "recv");
-    DEF("send"   , NIL , 0); SEND    = SYMBOL_BY_NAME(disp_global_env, "send");
-    DEF("after"  , NIL , 0); AFTER   = SYMBOL_BY_NAME(disp_global_env, "after");
-///*
-///*
+    ELSE = DEF("else", TRUE, 1);
+
     disp_import("disp.data.so");
-    CONS              = SYMBOL_BY_NAME(disp_global_env, "cons");
-    LIST              = SYMBOL_BY_NAME(disp_global_env, "list");
     disp_import("disp.quote.so");
-    APPEND            = SYMBOL_BY_NAME(disp_global_env, "append");
-    QUOTE             = SYMBOL_BY_NAME(disp_global_env, "quote");
-    QUASIQUOTE        = SYMBOL_BY_NAME(disp_global_env, "quasiquote");
-    UNQUOTE           = SYMBOL_BY_NAME(disp_global_env, "unquote");
-    UNQUOTE_SPLICING  = SYMBOL_BY_NAME(disp_global_env, "unquote-splicing");
     disp_import("disp.lambda.so");
-    LAMBDA  = SYMBOL_BY_NAME(disp_global_env, "lambda");
-    MACRO   = SYMBOL_BY_NAME(disp_global_env, "macro");
     disp_import("disp.let.so");
-    LET     = SYMBOL_BY_NAME(disp_global_env, "let");
-    LETA    = SYMBOL_BY_NAME(disp_global_env, "let*");
     disp_import("disp.letrec.so");
-    LETREC  = SYMBOL_BY_NAME(disp_global_env, "letrec");
-    LETRECA = SYMBOL_BY_NAME(disp_global_env, "letrec*");
 
     disp_import("disp.define.so");
     disp_import("disp.flow.so");
@@ -188,9 +229,6 @@ void disp_init() {
     disp_import("disp.do.so");
     disp_import("disp.dotimes.so");
     disp_import("disp.dolist.so");
-    DO      = SYMBOL_BY_NAME(disp_global_env, "do");
-    DOTIMES = SYMBOL_BY_NAME(disp_global_env, "dotimes");
-    DOLIST  = SYMBOL_BY_NAME(disp_global_env, "dolist");
     disp_import("disp.throw.so");
     disp_import("disp.apply.so");
 
@@ -200,14 +238,4 @@ void disp_init() {
     disp_import("disp.os.so");
     disp_import("disp.coro.so");
     disp_import("disp.thread.so");
-    IF     = SYMBOL_BY_NAME(disp_global_env, "if");
-    BEGIN  = SYMBOL_BY_NAME(disp_global_env, "begin");
-    PROGN  = SYMBOL_BY_NAME(disp_global_env, "progn");
-    COND   = SYMBOL_BY_NAME(disp_global_env, "cond");
-    AND    = SYMBOL_BY_NAME(disp_global_env, "and");
-    OR     = SYMBOL_BY_NAME(disp_global_env, "or");
-    SET    = SYMBOL_BY_NAME(disp_global_env, "set!");
-    SETQ   = SYMBOL_BY_NAME(disp_global_env, "setq");
-    DEFINE = SYMBOL_BY_NAME(disp_global_env, "define");
-//*/
 }

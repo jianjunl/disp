@@ -214,5 +214,5 @@ static disp_val do_builtin(disp_env_t *env, disp_val expr) {
 
 /* Initialisation function called when the shared library is loaded */
 void disp_init_module(void) {
-    DEF("do"      , MKB(do_builtin     , "<#do>"     ), 1);
+    DEF2(DO      , MKB(do_builtin     , "<#do>"     ), 1);
 }

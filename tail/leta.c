@@ -23,7 +23,7 @@ eval_result_t disp_eval_tail_leta(disp_env_t *env, disp_val expr, int is_tail, d
     // 特殊形式处理
     if (T(op) == FLAG_SYMBOL) {
         // let* : 顺序绑定，每个初值在扩展后的作用域中求值
-        if (E(op, LETA)) {
+        if (SYM_ID(op) == LETA) {
             if (N(args) || T(args) != FLAG_CONS) {
                 ERRO("malformed let*");
                 return RESULT_NORMAL(NIL);

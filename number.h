@@ -18,11 +18,5 @@ disp_val disp_make_float(float f);
 disp_val disp_make_double(double d);
 float disp_get_float(disp_val v);
 double disp_get_double(disp_val v);
-disp_val disp_make_string(const char *s);
-char* disp_get_str(disp_val v);
-size_t disp_get_str_len(disp_val v);
-disp_val disp_define_type(char *name, disp_val decl);
-char* disp_get_type_name(disp_val t);
-disp_val disp_get_type_decl(disp_val t);
 
 #endif // _NUMBER_H

@@ -68,33 +68,33 @@ eval_result_t disp_eval_tail(disp_env_t *env, disp_val expr, int is_tail, disp_v
 
     // 特殊形式处理
     if (T(op) == FLAG_SYMBOL) {
-        if (E(op, QUOTE))
+        if (SYM_ID(op) == QUOTE)
             return disp_eval_tail_flow(env, expr, is_tail, current_closure);
-        if (E(op, IF))
+        if (SYM_ID(op) == IF)
             return disp_eval_tail_flow(env, expr, is_tail, current_closure);
-        if (E(op, BEGIN) || E(op, PROGN))
+        if (SYM_ID(op) == BEGIN || SYM_ID(op) == PROGN)
             return disp_eval_tail_flow(env, expr, is_tail, current_closure);
-        if (E(op, COND))
+        if (SYM_ID(op) == COND)
             return disp_eval_tail_flow(env, expr, is_tail, current_closure);
-        if (E(op, AND))
+        if (SYM_ID(op) == AND)
             return disp_eval_tail_flow(env, expr, is_tail, current_closure);
-        if (E(op, OR))
+        if (SYM_ID(op) == OR)
             return disp_eval_tail_flow(env, expr, is_tail, current_closure);
-        if (E(op, SET) || E(op, SETQ))
+        if (SYM_ID(op) == SET || SYM_ID(op) == SETQ)
             return disp_eval_tail_flow(env, expr, is_tail, current_closure);
-        if (E(op, DEFINE))
+        if (SYM_ID(op) == DEFINE)
             return disp_eval_tail_flow(env, expr, is_tail, current_closure);
-        if (E(op, LAMBDA))
+        if (SYM_ID(op) == LAMBDA)
             return disp_eval_tail_flow(env, expr, is_tail, current_closure);
-        if (E(op, LET))
+        if (SYM_ID(op) == LET)
             return disp_eval_tail_let(env, expr, is_tail, current_closure);
-        if (E(op, LETA))
+        if (SYM_ID(op) == LETA)
             return disp_eval_tail_leta(env, expr, is_tail, current_closure);
-        if (E(op, LETREC))
+        if (SYM_ID(op) == LETREC)
             return disp_eval_tail_letrec(env, expr, is_tail, current_closure);
-        if (E(op, LETRECA))
+        if (SYM_ID(op) == LETRECA)
             return disp_eval_tail_letreca(env, expr, is_tail, current_closure);
-        if (E(op, DO) || E(op, DOTIMES) || E(op, DOLIST)) {
+        if (SYM_ID(op) == DO || SYM_ID(op) == DOTIMES || SYM_ID(op) == DOLIST) {
             disp_val func = disp_eval(env, op);
             if (T(func) == FLAG_BUILTIN) {
                 disp_val result = disp_get_builtin(func)(env, expr);

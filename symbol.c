@@ -34,15 +34,18 @@ void disp_set_symbol_value(disp_val sym, disp_val value) {
     D(sym)->value = value;
 }
 
-disp_val disp_make_symbol(const char *name) {
+disp_val disp_make_symbol(uint64_t id) {
     disp_val v = ALLOC_TI(FLAG_SYMBOL, 0);
     if (N(v)) return DNULL;
     
-    uint64_t id = disp_get_id(name);   // 获取或创建 ID
     D(v)->id = id;
     D(v)->value = NIL;
     
     return v;
+}
+
+inline disp_val disp_make_symbol_by_name(const char *name) {
+    return disp_make_symbol(disp_get_id(name));
 }
 
 uint64_t disp_get_symbol_id(disp_val v) {

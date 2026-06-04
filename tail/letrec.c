@@ -24,7 +24,7 @@ eval_result_t disp_eval_tail_letrec(disp_env_t *env, disp_val expr, int is_tail,
     if (T(op) == FLAG_SYMBOL) {
         // letrec : 并行绑定，所有初值在同一作用域内求值，变量可互相引用
         // letrec : 并行绑定（使用堆分配 + GC 根保护）
-        if (E(op, LETREC)) {
+        if (SYM_ID(op) == LETREC) {
             if (N(args) || T(args) != FLAG_CONS) {
                 ERRO("malformed letrec");
                 return RESULT_NORMAL(NIL);

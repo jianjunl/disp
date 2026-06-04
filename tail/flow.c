@@ -24,13 +24,13 @@ eval_result_t disp_eval_tail_flow(disp_env_t *env, disp_val expr, int is_tail, d
     if (T(op) == FLAG_SYMBOL) {
 
         // quote
-        if (E(op, QUOTE)) {
+        if (SYM_ID(op) == QUOTE) {
             if (N(args) || T(args) != FLAG_CONS) ERRO("malformed quote");
             return RESULT_NORMAL(disp_car(args));
         }
 
         // if
-        if (E(op, IF)) {
+        if (SYM_ID(op) == IF) {
             if (N(args) || T(args) != FLAG_CONS) ERRO("malformed if");
             disp_val test = disp_car(args);
             disp_val then_branch = disp_car(disp_cdr(args));
@@ -42,7 +42,7 @@ eval_result_t disp_eval_tail_flow(disp_env_t *env, disp_val expr, int is_tail, d
         }
 
         // begin
-        if (E(op, BEGIN) || E(op, PROGN)) {
+        if (SYM_ID(op) == BEGIN || SYM_ID(op) == PROGN) {
             if (N(args)) return RESULT_NORMAL(NIL);
             disp_val exprs = args;
             while (NN(exprs) && T(exprs) == FLAG_CONS) {
@@ -61,7 +61,7 @@ eval_result_t disp_eval_tail_flow(disp_env_t *env, disp_val expr, int is_tail, d
         }
 
         // cond – 简单展开为嵌套 if
-        if (E(op, COND)) {
+        if (SYM_ID(op) == COND) {
             if (N(args)) return RESULT_NORMAL(NIL);
             disp_val clauses = args;
             while (NN(clauses) && T(clauses) == FLAG_CONS) {
@@ -93,7 +93,7 @@ eval_result_t disp_eval_tail_flow(disp_env_t *env, disp_val expr, int is_tail, d
         }
 
         // and
-        if (E(op, AND)) {
+        if (SYM_ID(op) == AND) {
             if (E(args, NIL)) return RESULT_NORMAL(TRUE);
             disp_val exprs = args;
             disp_val last_val = TRUE;
@@ -112,7 +112,7 @@ eval_result_t disp_eval_tail_flow(disp_env_t *env, disp_val expr, int is_tail, d
             return RESULT_NORMAL(last_val);
         }
         // or
-        if (E(op, OR)) {
+        if (SYM_ID(op) == OR) {
             if (E(args, NIL)) return RESULT_NORMAL(NIL);
             disp_val exprs = args;
             disp_val last_val = NIL;
@@ -132,7 +132,7 @@ eval_result_t disp_eval_tail_flow(disp_env_t *env, disp_val expr, int is_tail, d
         }
 
         // set!
-        if (E(op, SET) || E(op, SETQ)) {
+        if (SYM_ID(op) == SET || SYM_ID(op) == SETQ) {
             if (N(args) || T(args) != FLAG_CONS || T(disp_car(args)) != FLAG_SYMBOL) ERRO("malformed set!");
             uint64_t varid = SYM_ID(disp_car(args));
             disp_val val_expr = disp_car(disp_cdr(args));
@@ -144,7 +144,7 @@ eval_result_t disp_eval_tail_flow(disp_env_t *env, disp_val expr, int is_tail, d
         }
 
         // define (仅允许顶层，但这里按局部处理)
-        if (E(op, DEFINE)) {
+        if (SYM_ID(op) == DEFINE) {
             if (N(args) || T(args) != FLAG_CONS) ERRO("malformed define");
             disp_val first = disp_car(args);
             if (T(first) == FLAG_SYMBOL) {
@@ -163,7 +163,7 @@ eval_result_t disp_eval_tail_flow(disp_env_t *env, disp_val expr, int is_tail, d
         }
 
         // lambda
-        if (E(op, LAMBDA)) {
+        if (SYM_ID(op) == LAMBDA) {
             if (N(args) || T(args) != FLAG_CONS) ERRO("malformed lambda");
             disp_val params = disp_car(args);
             disp_val body = disp_cdr(args);
