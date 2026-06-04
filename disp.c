@@ -16,7 +16,23 @@
 #include "disp.h"
 
 //disp_val __attribute__((section("gc_roots"))) disp_builtin_roots[NUM_BUILTIN_ROOTS] = {};
-disp_val disp_builtin_roots[NUM_BUILTIN_ROOTS] = {};
+//disp_val disp_builtin_roots[NUM_BUILTIN_ROOTS] = {};
+
+disp_val NIL;
+disp_val TRUE;
+disp_val QUIT;
+disp_val ELSE;
+disp_val BYTE;
+disp_val SHORT;
+disp_val INT;
+disp_val LONG;
+disp_val FLOAT;
+disp_val LONG;
+disp_val DOUBLE;
+disp_val PNTR;
+disp_val MODPATH;
+disp_val ARGS;
+disp_val IT;
 
 uint64_t LAMBDA;
 uint64_t MACRO;

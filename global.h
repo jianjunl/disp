@@ -2,13 +2,14 @@
 #ifndef _GLOBAL_H
 #define _GLOBAL_H
 
+/*
 extern disp_val disp_builtin_roots[];
 
-#define NUM_BUILTIN_ROOTS 45
+#define NUM_BUILTIN_ROOTS 16
 
 enum disp_builtin_root_idx {
     IDX_NIL = 0, IDX_TRUE, IDX_QUIT, IDX_ELSE,
-    IDX_BYTE, IDX_SHORT, IDX_INT, IDX_LONG, IDX_FLOAT, IDX_DOUBLE, IDX_PNTR,
+    IDX_BYTE, IDX_SHORT, IDX_INT, IDX_LONG, IDX_FLOAT, IDX_DOUBLE, IDX_PNTR
     IDX_MODPATH, IDX_ARGS, IDX_IT
 };
 
@@ -27,6 +28,23 @@ enum disp_builtin_root_idx {
 #define MODPATH          disp_builtin_roots[IDX_MODPATH]
 #define ARGS             disp_builtin_roots[IDX_ARGS]
 #define IT               disp_builtin_roots[IDX_IT]
+*/
+
+extern disp_val NIL;
+extern disp_val TRUE;
+extern disp_val QUIT;
+extern disp_val ELSE;
+extern disp_val BYTE;
+extern disp_val SHORT;
+extern disp_val INT;
+extern disp_val LONG;
+extern disp_val FLOAT;
+extern disp_val LONG;
+extern disp_val DOUBLE;
+extern disp_val PNTR;
+extern disp_val MODPATH;
+extern disp_val ARGS;
+extern disp_val IT;
 
 extern uint64_t LAMBDA;
 extern uint64_t MACRO;

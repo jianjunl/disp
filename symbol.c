@@ -15,8 +15,8 @@
 #include "disp.h"
 
 struct disp_data {
-    uint64_t id;
     disp_val value;
+    uint64_t id;
 };
 
 GC_STRUCT_TI(disp_data,
