@@ -102,7 +102,7 @@ static disp_val accept_socket_syscall(disp_val *args, int count) {
             snprintf(addr_str, sizeof(addr_str), "%s:%d",
                      inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
             disp_val sock_obj = disp_make_socket(client_fd);
-            disp_val addr_obj = disp_make_string(addr_str);
+            disp_val addr_obj = disp_make_str(addr_str);
             return disp_make_cons(sock_obj, addr_obj);
         }
         if (errno == EAGAIN || errno == EWOULDBLOCK) {
@@ -190,7 +190,7 @@ static disp_val recv_socket_syscall(disp_val *args, int count) {
         ssize_t n = recv(fd, buf, max_size, 0);
         if (n > 0) {
             buf[n] = '\0';
-            disp_val res = disp_make_string(buf);
+            disp_val res = disp_make_str(buf);
             gc_free(buf);
             return res;
         }

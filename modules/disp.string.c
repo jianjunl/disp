@@ -47,7 +47,7 @@ static disp_val make_string_syscall(disp_val *args, int count) {
     if (!buf) return NIL;
     memset(buf, fill, len);
     buf[len] = '\0';
-    disp_val result = disp_make_string(buf);
+    disp_val result = disp_make_str(buf);
     gc_free(buf);
     return result;
 }
@@ -73,7 +73,7 @@ static disp_val string_syscall(disp_val *args, int count) {
         gc_free(parts[i]);
     }
     gc_free(parts);
-    disp_val result = disp_make_string(buf);
+    disp_val result = disp_make_str(buf);
     gc_free(buf);
     return result;
 }
@@ -107,7 +107,7 @@ static disp_val string_ref_syscall(disp_val *args, int count) {
         ERET(NIL, "string-ref: index out of range");
     // 返回字符（作为单字符字符串或字符类型？目前没有 FLAG_CHAR，我们用字符串）
     char buf[2] = { str[idx], '\0' };
-    return disp_make_string(buf);
+    return disp_make_str(buf);
 }
 
 /* ----- string-set! (破坏性修改) ----- */
@@ -161,7 +161,7 @@ static disp_val substring_syscall(disp_val *args, int count) {
     if (!buf) return NIL;
     memcpy(buf, str + start, sub_len);
     buf[sub_len] = '\0';
-    disp_val result = disp_make_string(buf);
+    disp_val result = disp_make_str(buf);
     gc_free(buf);
     return result;
 }
@@ -169,7 +169,7 @@ static disp_val substring_syscall(disp_val *args, int count) {
 /* ----- string-append ----- */
 static disp_val string_append_syscall(disp_val *args, int count) {
     size_t total_len = 0;
-    char **parts = gc_typed_malloc(count * sizeof(char*), &GC_TYPE_PTR_ARRAY);
+    const char **parts = gc_typed_malloc(count * sizeof(char*), &GC_TYPE_PTR_ARRAY);
     if (!parts) return NIL;
     for (int i = 0; i < count; i++) {
         if (T(args[i]) != FLAG_STRING) {
@@ -189,7 +189,7 @@ static disp_val string_append_syscall(disp_val *args, int count) {
         strcat(buf, parts[i]);
     }
     gc_free(parts);
-    disp_val result = disp_make_string(buf);
+    disp_val result = disp_make_str(buf);
     gc_free(buf);
     return result;
 }
@@ -203,7 +203,7 @@ static disp_val string_to_list_syscall(disp_val *args, int count) {
     size_t len = strlen(str);
     for (size_t i = len; i-- > 0; ) {
         char buf[2] = { str[i], '\0' };
-        disp_val ch = disp_make_string(buf);
+        disp_val ch = disp_make_str(buf);
         list = disp_make_cons(ch, list);
     }
     return list;
@@ -233,7 +233,7 @@ static disp_val list_to_string_syscall(disp_val *args, int count) {
         buf[i++] = disp_get_str(item)[0];
     }
     buf[i] = '\0';
-    disp_val result = disp_make_string(buf);
+    disp_val result = disp_make_str(buf);
     gc_free(buf);
     return result;
 }
@@ -242,7 +242,7 @@ static disp_val list_to_string_syscall(disp_val *args, int count) {
 static disp_val string_copy_syscall(disp_val *args, int count) {
     if (count != 1 || T(args[0]) != FLAG_STRING)
         ERET(NIL, "string-copy: expects a string");
-    return disp_make_string(disp_get_str(args[0]));
+    return disp_make_str(disp_get_str(args[0]));
 }
 
 /* ----- 字符串比较 ----- */
@@ -286,7 +286,7 @@ static disp_val string_upcase_syscall(disp_val *args, int count) {
     char *buf = gc_strdup(s);
     if (!buf) return NIL;
     for (char *p = buf; *p; p++) *p = toupper((unsigned char)*p);
-    disp_val result = disp_make_string(buf);
+    disp_val result = disp_make_str(buf);
     gc_free(buf);
     return result;
 }
@@ -298,7 +298,7 @@ static disp_val string_downcase_syscall(disp_val *args, int count) {
     char *buf = gc_strdup(s);
     if (!buf) return NIL;
     for (char *p = buf; *p; p++) *p = tolower((unsigned char)*p);
-    disp_val result = disp_make_string(buf);
+    disp_val result = disp_make_str(buf);
     gc_free(buf);
     return result;
 }
@@ -323,7 +323,7 @@ static disp_val string_trim_syscall(disp_val *args, int count) {
     if (!buf) return NIL;
     memcpy(buf, start, new_len);
     buf[new_len] = '\0';
-    disp_val result = disp_make_string(buf);
+    disp_val result = disp_make_str(buf);
     gc_free(buf);
     return result;
 }
@@ -333,7 +333,7 @@ static disp_val number_to_string_syscall(disp_val *args, int count) {
     if (count != 1) ERET(NIL, "number->string: expects one number");
     char *s = disp_str(args[0]);   // disp_str 返回可读表示
     if (!s) return NIL;
-    disp_val result = disp_make_string(s);
+    disp_val result = disp_make_str(s);
     gc_free(s);
     return result;
 }

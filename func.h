@@ -21,6 +21,6 @@ disp_val disp_make_builtin(disp_builtin_t f, char *d);
 
 #define MKB disp_make_builtin
 #define MKF disp_make_syscall
-#define MKS disp_make_string
+#define MKS disp_make_str
 
 #endif // FUNC_H

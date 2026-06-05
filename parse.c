@@ -131,7 +131,7 @@ static disp_val parse_string(FILE *f) {
         if (i < 1023) buf[i++] = c;
     }
     buf[i] = '\0';
-    return disp_make_string(buf);
+    return disp_make_str(buf);
 }
 
 static disp_val parse_atom(int first, FILE *f) {

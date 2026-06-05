@@ -112,7 +112,7 @@ static disp_val info_syscall(disp_val *args, int arg_count) {
     (void)args; (void)arg_count;
     disp_info_t *info = disp_get_current_info();
     if (!info || !info->filename) return NIL;
-    disp_val fname = disp_make_string(info->filename);
+    disp_val fname = disp_make_str(info->filename);
     disp_val line  = disp_make_int(info->line);
     disp_val col   = disp_make_int(info->column);
     return disp_make_cons(fname, disp_make_cons(line, disp_make_cons(col, NIL)));
@@ -124,7 +124,7 @@ static disp_val trace_syscall(disp_val *args, int arg_count) {
     disp_val trace = NIL;
     for (disp_info_t *p = disp_get_current_info(); p; p = p->next) {
         if (!p->filename) continue;
-        disp_val frame = disp_make_cons(disp_make_string(p->filename),
+        disp_val frame = disp_make_cons(disp_make_str(p->filename),
                          disp_make_cons(disp_make_int(p->line),
                          disp_make_cons(disp_make_int(p->column), NIL)));
         trace = disp_make_cons(frame, trace);

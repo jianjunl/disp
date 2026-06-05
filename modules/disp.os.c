@@ -265,7 +265,7 @@ static disp_val time_builtin(disp_env_t *env, disp_val expr) {
         struct tm *tm = localtime(&t);
         char buf[128];
         strftime(buf, sizeof(buf), "%c", tm);
-        return disp_make_string(buf);
+        return disp_make_str(buf);
     } else {
         // (time expr) -> 执行并计时
         if (NE(disp_cdr(rest), NIL)) {

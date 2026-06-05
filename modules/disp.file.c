@@ -72,7 +72,7 @@ static disp_val fread_syscall(disp_val *args, int count) {
     // 去掉末尾换行符（可选）
     size_t len = strlen(buf);
     if (len > 0 && buf[len-1] == '\n') buf[len-1] = '\0';
-    return disp_make_string(buf);
+    return disp_make_str(buf);
 }
 
 // (fwrite file string) -> bool

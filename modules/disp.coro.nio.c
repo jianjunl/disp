@@ -67,7 +67,7 @@ static disp_val fread_nb_syscall(disp_val *args, int count) {
     }
     if (n == 0) return NIL; // EOF
     buf[n] = '\0';
-    return disp_make_string(buf);
+    return disp_make_str(buf);
 }
 
 static disp_val fwrite_nb_syscall(disp_val *args, int count) {

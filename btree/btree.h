@@ -18,8 +18,8 @@ typedef int (*btree_cmp_t)(uint64_t a, uint64_t b);
 // B树主结构
 typedef struct {
     btree_node_t *root;         // 根节点
-    int t;                      // 最小度数（每个节点至少有 t-1 个键）
     btree_cmp_t cmp;            // 比较函数
+    int t;                      // 最小度数（每个节点至少有 t-1 个键）
 } btree_t;
 
 #if BTREE_NO_GC

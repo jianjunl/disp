@@ -5,11 +5,11 @@
 
 // 节点结构
 struct btree_node {
-    int n;
-    bool leaf;
     uint64_t *keys;
     void **values;
     btree_node_t **children;
+    int n;
+    bool leaf;
 };
 
 // 基础函数
