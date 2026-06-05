@@ -13,8 +13,13 @@ struct btree_node {
 };
 
 // 基础函数
+#if BTREE_NO_GC
 btree_node_t* btree_node_create(int t, bool leaf);
 void btree_node_destroy(btree_node_t *node, int t);
+#else // BTREE_NO_GC
+btree_node_t* btree_node_create_gc(int t, bool leaf);
+#endif // BTREE_NO_GC
+
 void* btree_search_node(const btree_node_t *node, uint64_t key, btree_cmp_t cmp, int t);  // 新增，供 delete.c 使用
 
 // 插入相关

@@ -5,6 +5,10 @@
 #include <stddef.h>
 #include <stdbool.h>
 
+#ifndef BTREE_NO_GC
+#define BTREE_NO_GC 1
+#endif
+
 // B树节点结构（前向声明）
 typedef struct btree_node btree_node_t;
 
@@ -18,11 +22,20 @@ typedef struct {
     btree_cmp_t cmp;            // 比较函数
 } btree_t;
 
+#if BTREE_NO_GC
+
 // 创建B树：t 为最小度数（t >= 2），cmp 为比较函数（若为 NULL 则使用默认数值比较）
 btree_t* btree_create(int t, btree_cmp_t cmp);
 
 // 销毁B树（释放所有节点内存）
 void btree_destroy(btree_t *tree);
+
+#else // BTREE_NO_GC
+
+// GC 版本创建（树节点由 GC 管理，值存储不受 GC 追踪，但可额外保护）
+btree_t* btree_create_gc(int t, btree_cmp_t cmp);
+
+#endif // BTREE_NO_GC
 
 // 插入键值对
 void btree_insert(btree_t *tree, uint64_t key, void *value);
@@ -42,8 +55,5 @@ void btree_inorder(const btree_t *tree, btree_visit_t visit, void *userdata);
 
 // 获取节点数量（可选）
 size_t btree_count(const btree_t *tree);
-
-// GC 版本创建（树节点由 GC 管理，值存储不受 GC 追踪，但可额外保护）
-btree_t* btree_create_gc(int t, btree_cmp_t cmp);
 
 #endif // BTREE_H

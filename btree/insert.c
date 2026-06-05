@@ -41,7 +41,11 @@ void btree_insert(btree_t *tree, uint64_t key, void *value) {
     
     // 如果根节点已满，需要分裂并创建新根
     if (root->n == 2*t - 1) {
+#if BTREE_NO_GC
         btree_node_t *new_root = btree_node_create(t, false);
+#else // BTREE_NO_GC
+        btree_node_t *new_root = btree_node_create_gc(t, false);
+#endif // BTREE_NO_GC
         if (!new_root) return;
         new_root->children[0] = root;
         tree->root = new_root;

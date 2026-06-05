@@ -6,7 +6,11 @@
 void btree_split_child(btree_t *tree, btree_node_t *parent, int idx) {
     int t = tree->t;
     btree_node_t *child = parent->children[idx];
+#if BTREE_NO_GC
     btree_node_t *new_child = btree_node_create(t, child->leaf);
+#else // BTREE_NO_GC
+    btree_node_t *new_child = btree_node_create_gc(t, child->leaf);
+#endif // BTREE_NO_GC
     
     if (!new_child) {
         // 内存分配失败处理（实际可根据需要 abort 或 return）

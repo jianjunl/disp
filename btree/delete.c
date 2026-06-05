@@ -100,10 +100,12 @@ bool btree_delete(btree_t *tree, uint64_t key) {
         } else {
             tree->root = NULL;
         }
+#if BTREE_NO_GC
         free(old_root->keys);
         free(old_root->values);
         free(old_root->children);
         free(old_root);
+#endif // BTREE_NO_GC
     }
     return true;
 }
