@@ -36,9 +36,9 @@ typedef struct eval_result {
     .tail.target = t \
 }
 
-eval_result_t disp_eval_tail(disp_env_t *env, disp_val expr, int is_tail, disp_val current_closure);
-eval_result_t disp_eval_tail_flow(disp_env_t *env, disp_val expr, int is_tail, disp_val current_closure);
-eval_result_t disp_eval_tail_let(disp_env_t *env, disp_val expr, int is_tail, disp_val current_closure);
-eval_result_t disp_eval_tail_leta(disp_env_t *env, disp_val expr, int is_tail, disp_val current_closure);
-eval_result_t disp_eval_tail_letrec(disp_env_t *env, disp_val expr, int is_tail, disp_val current_closure);
-eval_result_t disp_eval_tail_letreca(disp_env_t *env, disp_val expr, int is_tail, disp_val current_closure);
+eval_result_t disp_eval_tail(disp_env_t *env, disp_val expr, disp_val current_closure, int is_tail);
+eval_result_t disp_eval_tail_flow(disp_env_t *env, disp_val expr, disp_val current_closure, int is_tail);
+eval_result_t disp_eval_tail_let(disp_env_t *env, disp_val expr, disp_val current_closure, int is_tail);
+eval_result_t disp_eval_tail_leta(disp_env_t *env, disp_val expr, disp_val current_closure, int is_tail);
+eval_result_t disp_eval_tail_letrec(disp_env_t *env, disp_val expr, disp_val current_closure, int is_tail);
+eval_result_t disp_eval_tail_letreca(disp_env_t *env, disp_val expr, disp_val current_closure, int is_tail);

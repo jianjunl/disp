@@ -27,7 +27,7 @@ static disp_val setq_builtin(disp_env_t *env, disp_val expr) {
     if (N(found_sym)) {
         ERET(NIL, "set!: undefined variable '%s'", disp_get_name(id));
     }
-    disp_set_symbol_value(found_sym, new_value);
+    disp_set_symbol_value_unlock(env, found_sym, new_value);
     return new_value;
 }
 

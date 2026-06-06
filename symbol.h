@@ -15,7 +15,7 @@
 
 /* --- Symbol table --- */
 void disp_init_symbol(void);
-void disp_set_symbol_value(disp_val sym, disp_val value);
+void disp_set_symbol_value_unlock(const disp_env_t *env, disp_val sym, disp_val value);
 disp_val disp_make_symbol(uint64_t);
 disp_val disp_make_symbol_by_name(const char *name);
 uint64_t disp_get_symbol_id(disp_val v);

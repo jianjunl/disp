@@ -16,7 +16,7 @@
 
 #include "tail.h"
 
-eval_result_t disp_eval_tail_let(disp_env_t *env, disp_val expr, int is_tail, disp_val current_closure) {
+eval_result_t disp_eval_tail_let(disp_env_t *env, disp_val expr, disp_val current_closure, int is_tail) {
     disp_val op = disp_car(expr);
     disp_val args = disp_cdr(expr);
 
@@ -58,7 +58,7 @@ eval_result_t disp_eval_tail_let(disp_env_t *env, disp_val expr, int is_tail, di
                     disp_val cur = disp_car(body_exprs);
                     disp_val next = disp_cdr(body_exprs);
                     if (E(next, NIL)) {
-                        return disp_eval_tail(env, cur, is_tail, current_closure);
+                        return disp_eval_tail(env, cur,  current_closure, is_tail);
                     } else {
                         disp_eval(env, cur);
                         body_exprs = next;
@@ -107,7 +107,7 @@ eval_result_t disp_eval_tail_let(disp_env_t *env, disp_val expr, int is_tail, di
                 disp_val next = disp_cdr(body_exprs);
                 if (E(next, NIL)) {
                     // 最后一个表达式，保持 is_tail 和 current_closure
-                    return disp_eval_tail(new_env, cur, is_tail, current_closure);
+                    return disp_eval_tail(new_env, cur,  current_closure, is_tail);
                 } else {
                     disp_eval(new_env, cur);
                     body_exprs = next;

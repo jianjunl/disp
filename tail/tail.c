@@ -39,7 +39,7 @@ static disp_val * eval_args_for_tail(disp_env_t *env, disp_val arg_list, int *ar
 }
 
 // 核心尾位置求值函数
-eval_result_t disp_eval_tail(disp_env_t *env, disp_val expr, int is_tail, disp_val current_closure) {
+eval_result_t disp_eval_tail(disp_env_t *env, disp_val expr, disp_val current_closure, int is_tail) {
     if (E(expr, NIL)) return RESULT_NORMAL(NIL);
 
     // 自求值原子
@@ -69,31 +69,31 @@ eval_result_t disp_eval_tail(disp_env_t *env, disp_val expr, int is_tail, disp_v
     // 特殊形式处理
     if (T(op) == FLAG_SYMBOL) {
         if (SYM_ID(op) == QUOTE)
-            return disp_eval_tail_flow(env, expr, is_tail, current_closure);
+            return disp_eval_tail_flow(env, expr,  current_closure, is_tail);
         if (SYM_ID(op) == IF)
-            return disp_eval_tail_flow(env, expr, is_tail, current_closure);
+            return disp_eval_tail_flow(env, expr,  current_closure, is_tail);
         if (SYM_ID(op) == BEGIN || SYM_ID(op) == PROGN)
-            return disp_eval_tail_flow(env, expr, is_tail, current_closure);
+            return disp_eval_tail_flow(env, expr,  current_closure, is_tail);
         if (SYM_ID(op) == COND)
-            return disp_eval_tail_flow(env, expr, is_tail, current_closure);
+            return disp_eval_tail_flow(env, expr,  current_closure, is_tail);
         if (SYM_ID(op) == AND)
-            return disp_eval_tail_flow(env, expr, is_tail, current_closure);
+            return disp_eval_tail_flow(env, expr,  current_closure, is_tail);
         if (SYM_ID(op) == OR)
-            return disp_eval_tail_flow(env, expr, is_tail, current_closure);
+            return disp_eval_tail_flow(env, expr,  current_closure, is_tail);
         if (SYM_ID(op) == SET || SYM_ID(op) == SETQ)
-            return disp_eval_tail_flow(env, expr, is_tail, current_closure);
+            return disp_eval_tail_flow(env, expr,  current_closure, is_tail);
         if (SYM_ID(op) == DEFINE)
-            return disp_eval_tail_flow(env, expr, is_tail, current_closure);
+            return disp_eval_tail_flow(env, expr,  current_closure, is_tail);
         if (SYM_ID(op) == LAMBDA)
-            return disp_eval_tail_flow(env, expr, is_tail, current_closure);
+            return disp_eval_tail_flow(env, expr,  current_closure, is_tail);
         if (SYM_ID(op) == LET)
-            return disp_eval_tail_let(env, expr, is_tail, current_closure);
+            return disp_eval_tail_let(env, expr,  current_closure, is_tail);
         if (SYM_ID(op) == LETA)
-            return disp_eval_tail_leta(env, expr, is_tail, current_closure);
+            return disp_eval_tail_leta(env, expr,  current_closure, is_tail);
         if (SYM_ID(op) == LETREC)
-            return disp_eval_tail_letrec(env, expr, is_tail, current_closure);
+            return disp_eval_tail_letrec(env, expr,  current_closure, is_tail);
         if (SYM_ID(op) == LETRECA)
-            return disp_eval_tail_letreca(env, expr, is_tail, current_closure);
+            return disp_eval_tail_letreca(env, expr,  current_closure, is_tail);
         if (SYM_ID(op) == DO || SYM_ID(op) == DOTIMES || SYM_ID(op) == DOLIST) {
             disp_val func = disp_eval(env, op);
             if (T(func) == FLAG_BUILTIN) {

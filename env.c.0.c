@@ -14,9 +14,7 @@
 #endif
 #include "disp.h"
 
-//#define DISP_ENV_HASHING
-
-#ifndef DISP_ENV_HASHING
+#if DISP_BOXING
 
 #include "btree/btree.h"
 
@@ -40,8 +38,9 @@ static int id_cmp(uint64_t a, uint64_t b) {
 disp_env_t* disp_new_env(disp_env_t *parent) {
     disp_env_t *env = gc_typed_malloc(sizeof(disp_env_t), &struct_disp_env_ti);
     gc_pthread_mutex_init(&env->lock, NULL);
-    env->symbols = btree_create(3, id_cmp);
+    env->symbols = btree_create_gc(3, id_cmp);   // 最小度数 3
     env->parent = parent;
+    // 根保护：可将整个树的根注册，但 btree 内部已注册根节点，这里不再重复
     return env;
 }
 
@@ -70,9 +69,9 @@ disp_env_t* disp_dup_env(disp_env_t *old) {
 disp_val disp_find_symbol(const disp_env_t *env, uint64_t id) {
     while (env) {
         env_lock(env);
-        disp_val sym = (disp_val)btree_search(env->symbols, id);
+        disp_val sym = (disp_val)(uintptr_t)btree_search(env->symbols, id);
         env_unlock(env);
-        if (NN(sym)) return sym;
+        if (sym != (disp_val)0) return sym;
         env = env->parent;
     }
     return NIL;
@@ -81,34 +80,34 @@ disp_val disp_find_symbol(const disp_env_t *env, uint64_t id) {
 // 定义符号
 disp_val disp_define_symbol(const disp_env_t *env, uint64_t id, disp_val value, int final) {
     env_lock(env);
-    disp_val existing = (disp_val)btree_search(env->symbols, id);
-    if (NN(existing)) {
+    disp_val existing = (disp_val)(uintptr_t)btree_search(env->symbols, id);
+    if (existing != (disp_val)0) {
         // 符号已存在，更新其值（如果允许 final 等逻辑）
         if (!final) {  // 假设 final 标志表示不可修改
-            disp_set_symbol_value_unlock(env, existing, value);
+            disp_set_symbol_value_unlock(existing, value);
         }
         env_unlock(env);
         return existing;
     }
     // 创建新符号
     disp_val sym = disp_make_symbol(id);
-    btree_insert(env->symbols, id, sym);
-    disp_set_symbol_value_unlock(env, sym, value);
+    disp_set_symbol_value_unlock(sym, value);
+    btree_insert(env->symbols, id, (void*)(uintptr_t)sym);
     env_unlock(env);
     return sym;
 }
 
 disp_val disp_intern_symbol(const disp_env_t *env, uint64_t id) {
     env_lock(env);
-    disp_val existing = (disp_val)btree_search(env->symbols, id);
-    if (NN(existing)) {
+    disp_val existing = (disp_val)(uintptr_t)btree_search(env->symbols, id);
+    if (existing != (disp_val)0) {
         env_unlock(env);
         return existing;
     }
     // 创建新符号
     disp_val sym = disp_make_symbol(id);
-    btree_insert(env->symbols, id, sym);
-    disp_set_symbol_value_unlock(env, sym, NIL);
+    disp_set_symbol_value_unlock(sym, NIL);
+    btree_insert(env->symbols, id, (void*)(uintptr_t)sym);
     env_unlock(env);
     return sym;
 }
@@ -128,28 +127,18 @@ disp_val disp_intern_symbol_by_name(const disp_env_t *env, const char *name) {
     return disp_intern_symbol(env, id);
 }
 
-inline void disp_set_symbol_value(const disp_env_t *env, disp_val sym, disp_val value) {
-    env_lock(env);
-    disp_set_symbol_value(env, sym, value);
-    env_unlock(env);
-}
-
-inline bool disp_update_symbol(const disp_env_t *env, disp_val sym) {
-    return btree_update(env->symbols, SYM_ID(sym), sym);
-}
-
 /* ======================== GC 初始化和全局常量 ======================== */
 
 void disp_init_env() {
 
     disp_global_env = gc_typed_malloc(sizeof(disp_env_t), &struct_disp_env_ti);
     gc_pthread_mutex_init(&disp_global_env->lock, NULL);
-    disp_global_env->symbols = btree_create(3, id_cmp);   // 最小度数 3
+    disp_global_env->symbols = btree_create_gc(3, id_cmp);   // 最小度数 3
 
     gc_add_root(&disp_global_env);
 }
 
-#else // DISP_ENV_HASHING
+#else // DISP_BOXING
 
 struct sym_entry {
     disp_val symbol;
@@ -234,7 +223,7 @@ disp_val disp_define_symbol(const disp_env_t *env, uint64_t id, disp_val value, 
             if (e->final) {
                 DBG("  trying to update final symbol id %llu\n", (unsigned long long)id);
             } else {
-                disp_set_symbol_value_unlock(env, e->symbol, value);
+                disp_set_symbol_value_unlock(e->symbol, value);
             }
             env_unlock(env);
             return e->symbol;
@@ -244,7 +233,7 @@ disp_val disp_define_symbol(const disp_env_t *env, uint64_t id, disp_val value, 
     
     // 创建新符号
     disp_val sym = disp_make_symbol(id);
-    disp_set_symbol_value_unlock(env, sym, value);
+    disp_set_symbol_value_unlock(sym, value);
     
     struct sym_entry *new_entry = gc_typed_malloc(sizeof(struct sym_entry), &struct_sym_entry_ti);
     new_entry->id = id;
@@ -271,7 +260,7 @@ disp_val disp_intern_symbol(const disp_env_t *env, uint64_t id) {
     
     // 未找到，创建新符号
     disp_val sym = disp_make_symbol(id);
-    disp_set_symbol_value_unlock(env, sym, NIL);
+    disp_set_symbol_value_unlock(sym, NIL);
     
     struct sym_entry *new_entry = gc_typed_malloc(sizeof(struct sym_entry), &struct_sym_entry_ti);
     new_entry->id = id;
@@ -298,12 +287,6 @@ disp_val disp_intern_symbol_by_name(const disp_env_t *env, const char *name) {
     uint64_t id = disp_get_id(name);
     return disp_intern_symbol(env, id);
 }
-
-inline bool disp_update_symbol(const disp_env_t *env, disp_val sym) {
-    (void)env;(void)sym;
-    return true;
-}
-
 
 /* ======================== GC 初始化和全局常量 ======================== */
 

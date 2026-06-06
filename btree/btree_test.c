@@ -5,7 +5,7 @@
 #include "btree.h"
 
 // 遍历回调，打印键值
-void print_node(uint64_t key, void *value, void *userdata) {
+void print_node(btree_key_t key, btree_val_t value, void *userdata) {
     (void)userdata;
     printf("(%llu -> %s) ", (unsigned long long)key, (char*)value);
 }
@@ -17,7 +17,7 @@ int main() {
 
     // 插入一些键值对
     printf("Inserting keys 1..20\n");
-    for (uint64_t i = 1; i <= 20; i++) {
+    for (btree_key_t i = 1; i <= 20; i++) {
         char buf[32];
         snprintf(buf, sizeof(buf), "val_%llu", (unsigned long long)i);
         // 注意：为了简单，直接传 buf 的副本（实际应动态分配或使用持久存储）
@@ -29,7 +29,7 @@ int main() {
 
     // 查找测试
     printf("Searching key 10: ");
-    void *v = btree_search(tree, 10);
+    btree_val_t v = btree_search(tree, 10);
     if (v) printf("%s\n", (char*)v);
     else printf("not found\n");
 
@@ -62,6 +62,19 @@ int main() {
     // 统计节点数量
     size_t count = btree_count(tree);
     printf("Total number of key-value pairs: %zu\n", count);
+
+printf("Inserting keys 0xFFFFFFFFFFFFFFF0  ..   0xFFFFFFFFFFFFFFFF\n");
+for (int j = 0; j < 16; j++) {
+    uint64_t i = 0xFFFFFFFFFFFFFFF0ULL + j;
+    btree_insert(tree, i, (btree_val_t)i);
+}
+printf("Searching keys 0xFFFFFFFFFFFFFFF0  ..   0xFFFFFFFFFFFFFFFF\n");
+for (int j = 0; j < 16; j++) {
+    uint64_t i = 0xFFFFFFFFFFFFFFF0ULL + j;
+    btree_val_t v = btree_search(tree, i);
+    if (i == (uint64_t)v) printf("%llx found\n", (unsigned long long)i);
+    else printf("%llx not found\n", (unsigned long long)i);
+}
 
     // 清理（需遍历释放每个值的 malloc 内存，但此处为演示简单跳过）
     // 实际应在销毁树之前先遍历 free 所有 value

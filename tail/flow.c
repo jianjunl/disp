@@ -16,7 +16,7 @@
 
 #include "tail.h"
 
-eval_result_t disp_eval_tail_flow(disp_env_t *env, disp_val expr, int is_tail, disp_val current_closure) {
+eval_result_t disp_eval_tail_flow(disp_env_t *env, disp_val expr, disp_val current_closure, int is_tail) {
     disp_val op = disp_car(expr);
     disp_val args = disp_cdr(expr);
 
@@ -38,7 +38,7 @@ eval_result_t disp_eval_tail_flow(disp_env_t *env, disp_val expr, int is_tail, d
             disp_val test_val = disp_eval(env, test);
             disp_val branch = NE(test_val, NIL) ? then_branch : else_branch;
             // 尾位置继续传递
-            return disp_eval_tail(env, branch, is_tail, current_closure);
+            return disp_eval_tail(env, branch,  current_closure, is_tail);
         }
 
         // begin
@@ -50,7 +50,7 @@ eval_result_t disp_eval_tail_flow(disp_env_t *env, disp_val expr, int is_tail, d
                 disp_val next = disp_cdr(exprs);
                 if (E(next, NIL)) {
                     // 最后一个表达式，保持 is_tail
-                    return disp_eval_tail(env, cur, is_tail, current_closure);
+                    return disp_eval_tail(env, cur,  current_closure, is_tail);
                 } else {
                     // 非尾表达式，忽略结果
                     disp_eval(env, cur);
@@ -80,7 +80,7 @@ eval_result_t disp_eval_tail_flow(disp_env_t *env, disp_val expr, int is_tail, d
                             disp_val cur = disp_car(body);
                             disp_val next = disp_cdr(body);
                             if (E(next, NIL))
-                                return disp_eval_tail(env, cur, is_tail, current_closure);
+                                return disp_eval_tail(env, cur,  current_closure, is_tail);
                             else
                                 disp_eval(env, cur);
                             body = next;
@@ -105,7 +105,7 @@ eval_result_t disp_eval_tail_flow(disp_env_t *env, disp_val expr, int is_tail, d
                     return RESULT_NORMAL(last_val);
                 }
                 if (E(next, NIL)) {
-                    return disp_eval_tail(env, cur, is_tail, current_closure);
+                    return disp_eval_tail(env, cur,  current_closure, is_tail);
                 }
                 exprs = next;
             }
@@ -121,10 +121,10 @@ eval_result_t disp_eval_tail_flow(disp_env_t *env, disp_val expr, int is_tail, d
                 disp_val next = disp_cdr(exprs);
                 last_val = disp_eval(env, cur);
                 if (NE(last_val, NIL)) {
-                    return disp_eval_tail(env, cur, is_tail, current_closure);
+                    return disp_eval_tail(env, cur,  current_closure, is_tail);
                 }
                 if (E(next, NIL)) {
-                    return disp_eval_tail(env, cur, is_tail, current_closure);
+                    return disp_eval_tail(env, cur,  current_closure, is_tail);
                 }
                 exprs = next;
             }
@@ -139,7 +139,7 @@ eval_result_t disp_eval_tail_flow(disp_env_t *env, disp_val expr, int is_tail, d
             disp_val val = disp_eval(env, val_expr);
             disp_val sym = disp_find_symbol(env, varid);
             if (N(sym)) ERRO("set! on unbound variable: %s", disp_get_name(varid));
-            disp_set_symbol_value(sym, val);
+            disp_set_symbol_value(env, sym, val);
             return RESULT_NORMAL(val);
         }
 

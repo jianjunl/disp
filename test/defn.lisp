@@ -23,8 +23,8 @@
     (set! counter (+ counter 1))
   )))
 (inc2)
+#|
 (println "Counter2:" counter)
-
 (define counter 0)
 (define inc3 (lambda ()
   (dotimes (i 1000)
@@ -54,3 +54,4 @@
   ))))
 (inc6)
 (println "Counter6:" counter)
+|#

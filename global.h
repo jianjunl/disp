@@ -9,7 +9,7 @@ extern disp_val disp_builtin_roots[];
 
 enum disp_builtin_root_idx {
     IDX_NIL = 0, IDX_TRUE, IDX_QUIT, IDX_ELSE,
-    IDX_BYTE, IDX_SHORT, IDX_INT, IDX_LONG, IDX_FLOAT, IDX_DOUBLE, IDX_PNTR
+    IDX_BYTE, IDX_SHORT, IDX_INT, IDX_LONG, IDX_FLOAT, IDX_DOUBLE, IDX_PNTR,
     IDX_MODPATH, IDX_ARGS, IDX_IT
 };
 

@@ -23,15 +23,15 @@ GC_STRUCT_TI(disp_data,
     GC_OFF(disp_data, value)
 );
 
-/* ======================== 符号表 ======================== */
-#define SYM_TABLE_SIZE 1024
-
-void disp_set_symbol_value(disp_val sym, disp_val value) {
+void disp_set_symbol_value_unlock(const disp_env_t *env, disp_val sym, disp_val value) {
     if (N(sym) || T(sym) != FLAG_SYMBOL) {
-        ERRO("disp_set_symbol_value: not a symbol");
+        ERRO("disp_set_symbol_value_unlock: not a symbol");
         return;
     }
     D(sym)->value = value;
+    if (!disp_update_symbol(env, sym)) {
+        //ERRO("disp_update_symbol failed");
+    }
 }
 
 disp_val disp_make_symbol(uint64_t id) {
@@ -77,7 +77,6 @@ void disp_init_symbol() {
     NIL  = V(FLAG_VOID, 0, calloc(1, sizeof(disp_data)));
     TRUE = V(FLAG_VOID, 0, calloc(1, sizeof(disp_data)));
     QUIT = V(FLAG_VOID, 0, calloc(1, sizeof(disp_data)));
-    DEF("nil",   NIL,  1);
     DEF("false", NIL,  1);
     DEF("true",  TRUE, 1);
     DEF("quit",  QUIT, 1);

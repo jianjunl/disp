@@ -2,21 +2,21 @@
 #include <stdlib.h>
 
 // 在子树中查找最小键（用于后继）
-static uint64_t get_min_key(btree_node_t *node) {
+static btree_key_t get_min_key(btree_node_t *node) {
     while (!node->leaf)
         node = node->children[0];
     return node->keys[0];
 }
 
 // 在子树中查找最大键（用于前驱）
-static uint64_t get_max_key(btree_node_t *node) {
+static btree_key_t get_max_key(btree_node_t *node) {
     while (!node->leaf)
         node = node->children[node->n];
     return node->keys[node->n - 1];
 }
 
 // 从节点中删除指定键（内部递归）
-void btree_delete_node(btree_t *tree, btree_node_t *node, uint64_t key) {
+void btree_delete_node(btree_t *tree, btree_node_t *node, btree_key_t key) {
     int t = tree->t;
     int i = 0;
     // 找到第一个 >= key 的位置
@@ -39,15 +39,15 @@ void btree_delete_node(btree_t *tree, btree_node_t *node, uint64_t key) {
 
             if (left_child->n >= t) {
                 // 前驱：左子树的最大键
-                uint64_t pred_key = get_max_key(left_child);
-                void *pred_val = btree_search_node(left_child, pred_key, tree->cmp, t);
+                btree_key_t pred_key = get_max_key(left_child);
+                btree_val_t pred_val = btree_search_node(left_child, pred_key, tree->cmp, t);
                 node->keys[i] = pred_key;
                 node->values[i] = pred_val;
                 btree_delete_node(tree, left_child, pred_key);
             } else if (right_child->n >= t) {
                 // 后继：右子树的最小键
-                uint64_t succ_key = get_min_key(right_child);
-                void *succ_val = btree_search_node(right_child, succ_key, tree->cmp, t);
+                btree_key_t succ_key = get_min_key(right_child);
+                btree_val_t succ_val = btree_search_node(right_child, succ_key, tree->cmp, t);
                 node->keys[i] = succ_key;
                 node->values[i] = succ_val;
                 btree_delete_node(tree, right_child, succ_key);
@@ -89,7 +89,7 @@ void btree_delete_node(btree_t *tree, btree_node_t *node, uint64_t key) {
 }
 
 // 公共删除接口
-bool btree_delete(btree_t *tree, uint64_t key) {
+bool btree_delete(btree_t *tree, btree_key_t key) {
     if (!tree || !tree->root) return false;
     btree_delete_node(tree, tree->root, key);
     // 如果根节点变空，则将第一个孩子作为新根（如果存在）
@@ -100,12 +100,10 @@ bool btree_delete(btree_t *tree, uint64_t key) {
         } else {
             tree->root = NULL;
         }
-#if BTREE_NO_GC
-        free(old_root->keys);
-        free(old_root->values);
-        free(old_root->children);
-        free(old_root);
-#endif // BTREE_NO_GC
+        BT_FREE(old_root->keys);
+        BT_FREE(old_root->values);
+        BT_FREE(old_root->children);
+        BT_FREE(old_root);
     }
     return true;
 }

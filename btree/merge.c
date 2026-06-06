@@ -81,10 +81,8 @@ void btree_merge_children(btree_t *tree, btree_node_t *parent, int idx) {
     }
     parent->n--;
 
-#if BTREE_NO_GC
-    free(right->keys);
-    free(right->values);
-    free(right->children);
-    free(right);
-#endif // BTREE_NO_GC
+    BT_FREE(right->keys);
+    BT_FREE(right->values);
+    BT_FREE(right->children);
+    BT_FREE(right);
 }

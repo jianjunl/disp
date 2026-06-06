@@ -6,13 +6,11 @@
 #include <stdio.h>
 
 // 默认比较函数（数值比较）
-static int default_cmp(uint64_t a, uint64_t b) {
+static int default_cmp(btree_key_t a, btree_key_t b) {
     if (a < b) return -1;
     if (a > b) return 1;
     return 0;
 }
-
-#if BTREE_NO_GC
 
 // 释放节点（仅内部使用，保留 static）
 void btree_node_destroy(btree_node_t *node, int t) {
@@ -22,26 +20,10 @@ void btree_node_destroy(btree_node_t *node, int t) {
             btree_node_destroy(node->children[i], t);
         }
     }
-    free(node->keys);
-    free(node->values);
-    free(node->children);
-    free(node);
-}
-
-// 创建B树
-btree_t* btree_create(int t, btree_cmp_t cmp) {
-    if (t < 2) t = 2;   // 最小度数至少为2
-    btree_t *tree = (btree_t*)malloc(sizeof(btree_t));
-    if (!tree) return NULL;
-    tree->t = t;
-    tree->cmp = cmp ? cmp : default_cmp;
-    // 创建根节点（初始为叶子）
-    tree->root = btree_node_create(t, true);
-    if (!tree->root) {
-        free(tree);
-        return NULL;
-    }
-    return tree;
+    BT_FREE(node->keys);
+    BT_FREE(node->values);
+    BT_FREE(node->children);
+    BT_FREE(node);
 }
 
 // 销毁B树
@@ -49,85 +31,68 @@ void btree_destroy(btree_t *tree) {
     if (!tree) return;
     if (tree->root)
         btree_node_destroy(tree->root, tree->t);
-    free(tree);
+    BT_FREE(tree);
+}
+
+// 创建B树
+btree_t* btree_create(int t, btree_cmp_t cmp) {
+    if (t < 2) t = 2;   // 最小度数至少为2
+    btree_t *tree = (btree_t*)BT_MALLOC(sizeof(btree_t));
+    if (!tree) return NULL;
+    tree->t = t;
+    tree->cmp = cmp ? cmp : default_cmp;
+    // 创建根节点（初始为叶子）
+    tree->root = btree_node_create(t, true);
+    if (!tree->root) {
+        BT_FREE(tree);
+        return NULL;
+    }
+    return tree;
 }
 
 // 创建新节点（非静态，供其他模块使用）
 btree_node_t* btree_node_create(int t, bool leaf) {
-    btree_node_t *node = (btree_node_t*)malloc(sizeof(btree_node_t));
+    btree_node_t *node = (btree_node_t*)BT_MALLOC(sizeof(btree_node_t));
     if (!node) return NULL;
     node->n = 0;
     node->leaf = leaf;
-    node->keys = (uint64_t*)malloc((2*t - 1) * sizeof(uint64_t));
-    node->values = (void**)malloc((2*t - 1) * sizeof(void*));
-    node->children = (btree_node_t**)malloc((2*t) * sizeof(btree_node_t*));
+    node->keys = (btree_key_t*)BT_MALLOC((2*t - 1) * sizeof(btree_key_t));
+    node->values = (btree_val_t*)BT_MALLOC((2*t - 1) * sizeof(btree_val_t));
+    node->children = (btree_node_t**)BT_MALLOC((2*t) * sizeof(btree_node_t*));
     if (!node->keys || !node->values || !node->children) {
-        free(node->keys); free(node->values); free(node->children); free(node);
+        BT_FREE(node->keys); BT_FREE(node->values); BT_FREE(node->children); BT_FREE(node);
         return NULL;
     }
     for (int i = 0; i < 2*t; i++) {
         if (i < 2*t-1) {
             node->keys[i] = 0;
-            node->values[i] = NULL;
+            node->values[i] = VNULL;
         }
         node->children[i] = NULL;
     }
     return node;
 }
 
-#else // BTREE_NO_GC
-
-#include "../gc/gc.h"
-
-btree_node_t* btree_node_create_gc(int t, bool leaf) {
-    btree_node_t *node = (btree_node_t*)gc_typed_malloc(sizeof(btree_node_t), &GC_TYPE_PTR_ARRAY);
-    if (!node) return NULL;
-    node->n = 0;
-    node->leaf = leaf;
-    node->keys = (uint64_t*)gc_typed_calloc(2*t - 1, sizeof(uint64_t), &GC_TYPE_PTR_ARRAY);
-    node->values = (void**)gc_typed_calloc(2*t - 1, sizeof(void*), &GC_TYPE_PTR_ARRAY);
-    node->children = (btree_node_t**)gc_typed_calloc(2*t, sizeof(btree_node_t*), &GC_TYPE_PTR_ARRAY);
-    if (!node->keys || !node->values || !node->children) {
-        // 注意：GC 版本不需要显式 free，让 GC 回收即可
-        return NULL;
-    }
-    return node;
-}
-
-btree_t* btree_create_gc(int t, btree_cmp_t cmp) {
-    if (t < 2) t = 2;
-    btree_t *tree = (btree_t*)gc_typed_malloc(sizeof(btree_t), &GC_TYPE_PTR_ARRAY);
-    if (!tree) return NULL;
-    tree->t = t;
-    tree->cmp = cmp ? cmp : default_cmp;
-    tree->root = btree_node_create_gc(t, true);
-    if (!tree->root) return NULL;
-    // 将根节点注册为 GC 根（如果整个树需要被扫描）
-    //gc_add_root(&tree->root);
-    return tree;
-}
-
-#endif // BTREE_NO_GC
-
 // 查找键（非静态，供 delete.c 使用）
-void* btree_search_node(const btree_node_t *node, uint64_t key, btree_cmp_t cmp, int t) {
+btree_val_t btree_search_node(const btree_node_t *node, btree_key_t key, btree_cmp_t cmp, int t) {
     int i = 0;
     while (i < node->n && cmp(key, node->keys[i]) > 0)
         i++;
     if (i < node->n && cmp(key, node->keys[i]) == 0)
         return node->values[i];
     if (node->leaf)
-        return NULL;
+        return VNULL;
     return btree_search_node(node->children[i], key, cmp, t);
 }
 
-void* btree_search(const btree_t *tree, uint64_t key) {
-    if (!tree || !tree->root) return NULL;
-    return btree_search_node(tree->root, key, tree->cmp, tree->t);
+btree_val_t btree_search(const btree_t *tree, btree_key_t key) {
+    if (!tree || !tree->root) return VNULL;
+    btree_val_t value = btree_search_node(tree->root, key, tree->cmp, tree->t);
+    return value;
 }
 
 // 更新键对应的值
-bool btree_update(btree_t *tree, uint64_t key, void *new_value) {
+bool btree_update(btree_t *tree, btree_key_t key, btree_val_t new_value) {
     if (!tree || !tree->root) return false;
     btree_node_t *node = tree->root;
     while (node) {

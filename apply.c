@@ -112,7 +112,7 @@ disp_val disp_apply_closure(disp_val closure, disp_val *args, int arg_count) {
             disp_val expr = disp_car(exprs);
             disp_val next = disp_cdr(exprs);
             int tail = E(next, NIL);
-            res = disp_eval_tail(env, expr, tail, closure);
+            res = disp_eval_tail(env, expr, closure, tail);
             // 保护新的 res
             if (res.kind == 1) {
                 // 释放旧的参数数组前，先移除其根
