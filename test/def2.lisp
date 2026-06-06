@@ -1,4 +1,4 @@
-(define (a n) (if (= n 0) 0 (b (- n 1))))
-(define (b n) (c n))
-(define (c n) (a n))
-(a 500000)
+(define (aa n) (if (= n 0) 0 (bb (- n 1))))
+(define (bb n) (cc n))
+(define (cc n) (aa n))
+(aa 500000)
