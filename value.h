@@ -10,7 +10,7 @@
 #include <errno.h>
 #include <stdbool.h>
 
-#define DISP_BOXING     0  // 2 = NaN-Addr-Boxing, 1 = Addr-Boxing, 0 = none
+#define DISP_BOXING     1  // 2 = NaN-Addr-Boxing, 1 = Addr-Boxing, 0 = none
 #define DISP_NAN_BOXING (DISP_BOXING >> 1)
 
 typedef struct disp_data disp_data;
@@ -19,41 +19,41 @@ typedef struct disp_data disp_data;
 
 typedef uint16_t disp_flag_t;
 
-#define FLAG_DOUBLE     0
+#define FLAG_DOUBLE     (disp_flag_t)0
 
 // Tags of DATA (Pointers with FLAG_EXTRA)
-#define TAG_ARGS        1
-#define TAG_TYPE        2
-#define TAG_LONG        3
-#define TAG_FILE        4
-#define TAG_CORO        5
-#define TAG_CHAN        6
-#define TAG_SOCKET      7
-#define TAG_THREAD      8
-#define TAG_MUTEX       9
-#define TAG_COND        10
+#define TAG_ARGS        (disp_flag_t)1
+#define TAG_TYPE        (disp_flag_t)2
+#define TAG_LONG        (disp_flag_t)3
+#define TAG_FILE        (disp_flag_t)4
+#define TAG_CORO        (disp_flag_t)5
+#define TAG_CHAN        (disp_flag_t)6
+#define TAG_SOCKET      (disp_flag_t)7
+#define TAG_THREAD      (disp_flag_t)8
+#define TAG_MUTEX       (disp_flag_t)9
+#define TAG_COND        (disp_flag_t)10
 
 // Flags of Primitives (0xFFFF - 0xFFF8)
-#define FLAG_VOID       0xFFFF
-#define FLAG_NAN        0xFFFE
-#define FLAG_BYTE       0xFFFD
-#define FLAG_SHORT      0xFFFC
-#define FLAG_INT        0xFFFB
-#define FLAG_FLOAT      0xFFFA
-#define FLAG_LONG       0xFFF9
+#define FLAG_VOID       (disp_flag_t)0xFFFF
+#define FLAG_NAN        (disp_flag_t)0xFFFE
+#define FLAG_BYTE       (disp_flag_t)0xFFFD
+#define FLAG_SHORT      (disp_flag_t)0xFFFC
+#define FLAG_INT        (disp_flag_t)0xFFFB
+#define FLAG_FLOAT      (disp_flag_t)0xFFFA
+#define FLAG_LONG       (disp_flag_t)0xFFF9
 
 // Flags of Pointers (0x7FFF - 0x7FF8)
-#define FLAG_SYMBOL     0x7FFF
-#define FLAG_STRING     0x7FFE
-#define FLAG_CONS       0x7FFD
-#define FLAG_CLOSURE    0x7FFC
-#define FLAG_MACRO      0x7FFB
-#define FLAG_BUILTIN    0x7FFA
-#define FLAG_SYSCALL    0x7FF9
+#define FLAG_SYMBOL     (disp_flag_t)0x7FFF
+#define FLAG_STRING     (disp_flag_t)0x7FFE
+#define FLAG_CONS       (disp_flag_t)0x7FFD
+#define FLAG_CLOSURE    (disp_flag_t)0x7FFC
+#define FLAG_MACRO      (disp_flag_t)0x7FFB
+#define FLAG_BUILTIN    (disp_flag_t)0x7FFA
+#define FLAG_SYSCALL    (disp_flag_t)0x7FF9
 
-#define FLAG_EXTRA      0x7FF8
+#define FLAG_EXTRA      (disp_flag_t)0x7FF8
 
-typedef uint64_t disp_val;
+typedef struct disp_val { uint64_t x; } disp_val;
 
 typedef union disp_long {
     long l;
@@ -69,30 +69,32 @@ typedef struct disp_extra {
 #define BOX_MASK        0x0000FFFFFFFFFFFFULL
 #define NaN_HEADER      0x7FF8000000000000ULL
 
-#define FLAG(v) ((disp_flag_t)(v >> BOX_SHIFT))
-#define SIGN(v) (FLAG(v) & 0x8000)
-#define BOX_FLAG(v) (((disp_flag_t)((disp_flag_t)(v >> BOX_SHIFT))))
+#define FLAG(v) ((disp_flag_t)(v.x >> BOX_SHIFT))
+#define SIGN(v) (FLAG(v.x) & 0x8000)
+#define BOX_FLAG(v) (((disp_flag_t)((disp_flag_t)(v.x >> BOX_SHIFT))))
 
-#define BOX_UNBOX(v) (v & BOX_MASK)
+#define BOX_UNBOX(v) (v.x & BOX_MASK)
 
-#define BOX_BOX(t, v) (NaN_HEADER | ((((disp_val)t) & TAG_MASK) << BOX_SHIFT) | (((disp_val)v) & BOX_MASK))
+#define BOX_BOX(t, u) (disp_val){.x=(NaN_HEADER|((((uint64_t)t)&TAG_MASK)<<BOX_SHIFT)|(((uint64_t)u) & BOX_MASK))}
 
 #define D(v) ((disp_data *)BOX_UNBOX(v))
 
-static inline disp_flag_t T(disp_val v) {
-    uint64_t exp = (v >> 52) & 0x7FF;
+static inline disp_flag_t TU(uint64_t x) {
+    uint64_t exp = (x >> 52) & 0x7FF;
     if (exp != 0x7FF)        // 不是 NaN，则是 double
         return FLAG_DOUBLE;
     // 是 NaN，从高 16 位提取 tag
-    disp_flag_t f = (v >> 48) & 0xFFFF;
+    disp_flag_t f = (x >> 48) & 0xFFFF;
     if (f == FLAG_EXTRA) {
-        disp_extra *e = (disp_extra *)(v & BOX_MASK);
+        disp_extra *e = (disp_extra *)(x & BOX_MASK);
         return e->tag;
     }
     return f;
 }
 
-#define E(v, u)  (v == u)
+#define T(v) TU(v.x)
+
+#define E(v, u) (v.x == u.x)
 
 #define NE(v, u) !E(v, u) 
 
@@ -152,23 +154,23 @@ typedef union disp_long {
     long l;
 } disp_long;
 
-typedef uint64_t disp_val;
+typedef struct disp_val { uint64_t x; } disp_val;
 
 // Flags (High 8 bits)
 #define BOX_SHIFT       56
 #define BOX_MASK        0x00FFFFFFFFFFFFFFULL
 
-#define BOX_FLAG(v) ((disp_flag_t)(v >> BOX_SHIFT))
+#define BOX_FLAG(v) ((disp_flag_t)(v.x >> BOX_SHIFT))
 
-#define BOX_UNBOX(v) (v & BOX_MASK)
+#define BOX_UNBOX(v) (v.x & BOX_MASK)
 
-#define BOX_BOX(t, v) ((((disp_val)(t & 0xFF)) << BOX_SHIFT) | (((disp_val)v) & BOX_MASK))
+#define BOX_BOX(t, u) (disp_val){.x=((((uint64_t)(t&0xFF))<<BOX_SHIFT)|(((uint64_t)u)&BOX_MASK))}
 
 #define D(v) ((disp_data *)BOX_UNBOX(v))
 
 #define T(v) BOX_FLAG(v)
 
-#define E(v, u)  (v == u)
+#define E(v, u)  (v.x == u.x)
 
 #define NE(v, u) !E(v, u) 
 

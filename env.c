@@ -32,11 +32,6 @@ GC_STRUCT_TI(disp_env,
     GC_OFF(disp_env, parent)
 );
 
-// 比较函数（符号 ID 比较）
-static int id_cmp(uint64_t a, uint64_t b) {
-    return (a < b) ? -1 : (a > b) ? 1 : 0;
-}
-
 disp_env_t* disp_new_env(disp_env_t *parent) {
     disp_env_t *env = gc_typed_malloc(sizeof(disp_env_t), &struct_disp_env_ti);
     gc_pthread_mutex_init(&env->lock, NULL);

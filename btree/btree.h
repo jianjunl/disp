@@ -5,11 +5,11 @@
 #include <stddef.h>
 #include <stdbool.h>
 
-#ifndef BTREE_NO_GC
-#define BTREE_NO_GC 1
+#ifndef BTREE_DEFAULT
+#define BTREE_DEFAULT 1
 #endif
 
-#if BTREE_NO_GC
+#if BTREE_DEFAULT
 
 typedef uint64_t btree_key_t;
 typedef void*    btree_val_t;
@@ -18,11 +18,11 @@ typedef void*    btree_val_t;
 #define BT_FREE(v)   free(v)
 #define VNULL NULL
 
-#else // BTREE_NO_GC
+#else // BTREE_DEFAULT
 
 #include "../btdefs.h"
 
-#endif // BTREE_NO_GC
+#endif // BTREE_DEFAULT
 
 // B树节点结构（前向声明）
 typedef struct btree_node btree_node_t;

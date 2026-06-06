@@ -94,15 +94,15 @@ inline double disp_get_double(disp_val v) {
 #endif // DISP_NAN_BOXING
 
 inline disp_val disp_make_byte(char c) {
-    return BOX_BOX(FLAG_BYTE, (disp_val)(uint8_t)c);
+    return BOX_BOX(FLAG_BYTE, (uint8_t)c);
 }
 
 inline disp_val disp_make_short(short s) {
-    return BOX_BOX(FLAG_SHORT, (disp_val)(uint16_t)s);
+    return BOX_BOX(FLAG_SHORT, (uint16_t)s);
 }
 
 inline disp_val disp_make_int(int i) {
-    return BOX_BOX(FLAG_INT, (disp_val)(uint32_t)i);
+    return BOX_BOX(FLAG_INT, (uint32_t)i);
 }
 
 #if DISP_NAN_BOXING
@@ -129,7 +129,7 @@ inline disp_val disp_make_long(long l) {
 inline disp_val disp_make_long(long l) {
     disp_long *p = (disp_long *)gc_malloc(sizeof(disp_long));
     p->l = l;
-    return BOX_BOX(FLAG_LONG, (disp_val)p);
+    return BOX_BOX(FLAG_LONG, p);
 }
 
 #endif // DISP_NAN_BOXING
@@ -138,7 +138,7 @@ inline disp_val disp_make_float(float f) {
     if (f != f) return BOX_BOX(FLAG_NAN, 0);
     uint32_t bits;
     memcpy(&bits, &f, sizeof(bits));
-    return BOX_BOX(FLAG_FLOAT, (disp_val)bits);
+    return BOX_BOX(FLAG_FLOAT, bits);
 }
 
 #if DISP_NAN_BOXING
@@ -155,7 +155,7 @@ inline disp_val disp_make_double(double d) {
 inline disp_val disp_make_double(double d) {
     disp_long *p = (disp_long *)gc_malloc(sizeof(disp_long));
     p->d = d;
-    return BOX_BOX(FLAG_DOUBLE, (disp_val)p);
+    return BOX_BOX(FLAG_DOUBLE, p);
 }
 
 #endif // DISP_NAN_BOXING
