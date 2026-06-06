@@ -68,33 +68,33 @@ eval_result_t disp_eval_tail(disp_env_t *env, disp_val expr, disp_val current_cl
 
     // 特殊形式处理
     if (T(op) == FLAG_SYMBOL) {
-        if (SYM_ID(op) == QUOTE)
+        if (SYM_ID(op).id == QUOTE.id)
             return disp_eval_tail_flow(env, expr,  current_closure, is_tail);
-        if (SYM_ID(op) == IF)
+        if (SYM_ID(op).id == IF.id)
             return disp_eval_tail_flow(env, expr,  current_closure, is_tail);
-        if (SYM_ID(op) == BEGIN || SYM_ID(op) == PROGN)
+        if (SYM_ID(op).id == BEGIN.id || SYM_ID(op).id == PROGN.id)
             return disp_eval_tail_flow(env, expr,  current_closure, is_tail);
-        if (SYM_ID(op) == COND)
+        if (SYM_ID(op).id == COND.id)
             return disp_eval_tail_flow(env, expr,  current_closure, is_tail);
-        if (SYM_ID(op) == AND)
+        if (SYM_ID(op).id == AND.id)
             return disp_eval_tail_flow(env, expr,  current_closure, is_tail);
-        if (SYM_ID(op) == OR)
+        if (SYM_ID(op).id == OR.id)
             return disp_eval_tail_flow(env, expr,  current_closure, is_tail);
-        if (SYM_ID(op) == SET || SYM_ID(op) == SETQ)
+        if (SYM_ID(op).id == SET.id || SYM_ID(op).id == SETQ.id)
             return disp_eval_tail_flow(env, expr,  current_closure, is_tail);
-        if (SYM_ID(op) == DEFINE)
+        if (SYM_ID(op).id == DEFINE.id)
             return disp_eval_tail_flow(env, expr,  current_closure, is_tail);
-        if (SYM_ID(op) == LAMBDA)
+        if (SYM_ID(op).id == LAMBDA.id)
             return disp_eval_tail_flow(env, expr,  current_closure, is_tail);
-        if (SYM_ID(op) == LET)
+        if (SYM_ID(op).id == LET.id)
             return disp_eval_tail_let(env, expr,  current_closure, is_tail);
-        if (SYM_ID(op) == LETA)
+        if (SYM_ID(op).id == LETA.id)
             return disp_eval_tail_leta(env, expr,  current_closure, is_tail);
-        if (SYM_ID(op) == LETREC)
+        if (SYM_ID(op).id == LETREC.id)
             return disp_eval_tail_letrec(env, expr,  current_closure, is_tail);
-        if (SYM_ID(op) == LETRECA)
+        if (SYM_ID(op).id == LETRECA.id)
             return disp_eval_tail_letreca(env, expr,  current_closure, is_tail);
-        if (SYM_ID(op) == DO || SYM_ID(op) == DOTIMES || SYM_ID(op) == DOLIST) {
+        if (SYM_ID(op).id == DO.id || SYM_ID(op).id == DOTIMES.id || SYM_ID(op).id == DOLIST.id) {
             disp_val func = disp_eval(env, op);
             if (T(func) == FLAG_BUILTIN) {
                 disp_val result = disp_get_builtin(func)(env, expr);

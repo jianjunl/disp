@@ -16,14 +16,14 @@
 /* --- Symbol table --- */
 void disp_init_symbol(void);
 void disp_set_symbol_value_unlock(const disp_env_t *env, disp_val sym, disp_val value);
-disp_val disp_make_symbol(uint64_t);
+disp_val disp_make_symbol(disp_sid id);
 disp_val disp_make_symbol_by_name(const char *name);
-uint64_t disp_get_symbol_id(disp_val v);
+disp_sid disp_get_symbol_id(disp_val v);
 char* disp_get_symbol_name(disp_val v);
 disp_val disp_get_symbol_value(disp_val v);
 
 #define SYM_ID(v) disp_get_symbol_id(v)
-#define SYM_NAME(v) disp_get_name(SYM_ID(v))
+#define SYM_NAME(v) disp_get_name(SYM_ID(v).id)
 #define SYM_VALUE(v) disp_get_symbol_value(v)
  
 #endif // SYMBOL_H

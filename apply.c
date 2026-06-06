@@ -45,7 +45,7 @@ void bind_arguments_to_env(disp_env_t *env, disp_val params, disp_val *args, int
             ERRO("bind_arguments_to_env: parameter is not a symbol");
             return;
         }
-        uint64_t id = SYM_ID(sym);
+        disp_sid id = SYM_ID(sym);
         disp_val val = (idx < arg_count) ? args[idx] : NIL;
         disp_define_symbol(env, id, val, 0);
         idx++;
@@ -54,7 +54,7 @@ void bind_arguments_to_env(disp_env_t *env, disp_val params, disp_val *args, int
 
     // 绑定 rest 参数（如果有）
     if (NE(rest_sym, NIL)) {
-        uint64_t rest_id = SYM_ID(rest_sym);
+        disp_sid rest_id = SYM_ID(rest_sym);
         disp_val rest_list = NIL;
         for (int j = arg_count - 1; j >= fixed; j--) {
             rest_list = disp_make_cons(args[j], rest_list);

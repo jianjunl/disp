@@ -16,7 +16,7 @@
 
 struct disp_data {
     disp_val value;
-    uint64_t id;
+    disp_sid id;
 };
 
 GC_STRUCT_TI(disp_data,
@@ -34,7 +34,7 @@ void disp_set_symbol_value_unlock(const disp_env_t *env, disp_val sym, disp_val 
     }
 }
 
-disp_val disp_make_symbol(uint64_t id) {
+disp_val disp_make_symbol(disp_sid id) {
     disp_val v = ALLOC_TI(FLAG_SYMBOL, 0);
     if (N(v)) return DNULL;
     
@@ -45,13 +45,13 @@ disp_val disp_make_symbol(uint64_t id) {
 }
 
 inline disp_val disp_make_symbol_by_name(const char *name) {
-    return disp_make_symbol(disp_get_id(name));
+    return disp_make_symbol(disp_get_sid(name));
 }
 
-uint64_t disp_get_symbol_id(disp_val v) {
+disp_sid disp_get_symbol_id(disp_val v) {
     if (N(v) || T(v) != FLAG_SYMBOL) {
         ERRO("disp_get_symbol_id failed");
-        return 0;
+        return SNULL;
     }
     return D(v)->id;
 }
@@ -61,7 +61,7 @@ char* disp_get_symbol_name(disp_val v) {
         ERRO("disp_get_symbol_name failed");
         return NULL;
     }
-    return (char*)disp_get_name(disp_get_symbol_id(v));   // 通过 ID 反查字符串
+    return (char*)disp_get_name(disp_get_symbol_id(v).id);   // 通过 ID 反查字符串
 }
 
 disp_val disp_get_symbol_value(disp_val v) {

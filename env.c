@@ -62,7 +62,7 @@ disp_env_t* disp_dup_env(disp_env_t *old) {
 }
 
 // 查找符号
-disp_val disp_find_symbol(const disp_env_t *env, uint64_t id) {
+disp_val disp_find_symbol(const disp_env_t *env, disp_sid id) {
     while (env) {
         env_lock(env);
         disp_val sym = (disp_val)btree_search(env->symbols, id);
@@ -74,7 +74,7 @@ disp_val disp_find_symbol(const disp_env_t *env, uint64_t id) {
 }
 
 // 定义符号
-disp_val disp_define_symbol(const disp_env_t *env, uint64_t id, disp_val value, int final) {
+disp_val disp_define_symbol(const disp_env_t *env, disp_sid id, disp_val value, int final) {
     env_lock(env);
     disp_val existing = (disp_val)btree_search(env->symbols, id);
     if (NN(existing)) {
@@ -93,7 +93,7 @@ disp_val disp_define_symbol(const disp_env_t *env, uint64_t id, disp_val value, 
     return sym;
 }
 
-disp_val disp_intern_symbol(const disp_env_t *env, uint64_t id) {
+disp_val disp_intern_symbol(const disp_env_t *env, disp_sid id) {
     env_lock(env);
     disp_val existing = (disp_val)btree_search(env->symbols, id);
     if (NN(existing)) {
@@ -109,17 +109,17 @@ disp_val disp_intern_symbol(const disp_env_t *env, uint64_t id) {
 }
 
 disp_val disp_find_symbol_by_name(const disp_env_t *env, const char *name) {
-    uint64_t id = disp_get_id(name);
+    disp_sid id = disp_get_sid(name);
     return disp_find_symbol(env, id);
 }
 
 disp_val disp_define_symbol_by_name(const disp_env_t *env, const char *name, disp_val value, int final) {
-    uint64_t id = disp_get_id(name);
+    disp_sid id = disp_get_sid(name);
     return disp_define_symbol(env, id, value, final);
 }
 
 disp_val disp_intern_symbol_by_name(const disp_env_t *env, const char *name) {
-    uint64_t id = disp_get_id(name);
+    disp_sid id = disp_get_sid(name);
     return disp_intern_symbol(env, id);
 }
 
@@ -149,7 +149,7 @@ void disp_init_env() {
 struct sym_entry {
     disp_val symbol;
     struct sym_entry *next;
-    uint64_t id;
+    disp_sid id;
     int final;
 };
 
@@ -202,7 +202,7 @@ disp_env_t* disp_dup_env(disp_env_t *old) {
     return t;
 }
 
-disp_val disp_find_symbol(const disp_env_t *env, uint64_t id) {
+disp_val disp_find_symbol(const disp_env_t *env, disp_sid id) {
     while (env) {
         env_lock(env);
         unsigned int idx = id % SYM_TABLE_SIZE;   // 直接用 id 作为哈希
@@ -220,7 +220,7 @@ disp_val disp_find_symbol(const disp_env_t *env, uint64_t id) {
     return DNULL;
 }
 
-disp_val disp_define_symbol(const disp_env_t *env, uint64_t id, disp_val value, int final) {
+disp_val disp_define_symbol(const disp_env_t *env, disp_sid id, disp_val value, int final) {
     env_lock(env);
     unsigned int idx = id % SYM_TABLE_SIZE;
     struct sym_entry *e = env->buckets[idx];
@@ -252,7 +252,7 @@ disp_val disp_define_symbol(const disp_env_t *env, uint64_t id, disp_val value, 
     return sym;
 }
 
-disp_val disp_intern_symbol(const disp_env_t *env, uint64_t id) {
+disp_val disp_intern_symbol(const disp_env_t *env, disp_sid id) {
     env_lock(env);
     unsigned int idx = id % SYM_TABLE_SIZE;
     struct sym_entry *e = env->buckets[idx];
@@ -280,17 +280,17 @@ disp_val disp_intern_symbol(const disp_env_t *env, uint64_t id) {
 }
 
 disp_val disp_find_symbol_by_name(const disp_env_t *env, const char *name) {
-    uint64_t id = disp_get_id(name);
+    disp_sid id = disp_get_sid(name);
     return disp_find_symbol(env, id);
 }
 
 disp_val disp_define_symbol_by_name(const disp_env_t *env, const char *name, disp_val value, int final) {
-    uint64_t id = disp_get_id(name);
+    disp_sid id = disp_get_sid(name);
     return disp_define_symbol(env, id, value, final);
 }
 
 disp_val disp_intern_symbol_by_name(const disp_env_t *env, const char *name) {
-    uint64_t id = disp_get_id(name);
+    disp_sid id = disp_get_sid(name);
     return disp_intern_symbol(env, id);
 }
 

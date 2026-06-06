@@ -32,7 +32,7 @@ static disp_val define_builtin(disp_env_t *env, disp_val expr) {
         if (T(expr_form) == FLAG_CONS) {
             disp_val head = disp_car(expr_form);
             if (T(head) == FLAG_SYMBOL) {
-                if (SYM_ID(head) == LAMBDA) {
+                if (SYM_ID(head).id == LAMBDA.id) {
                     // 提取 (lambda params body...)
                     disp_val lambda_body = disp_cdr(expr_form);
                     if (N(lambda_body) || T(lambda_body) != FLAG_CONS)

@@ -23,8 +23,8 @@ void disp_init_env(void);
 
 #include "value.h"
 #include "args.h"
-#include "env.h"
 #include "name.h"
+#include "env.h"
 #include "func.h"
 #include "closure.h"
 #include "apply.h"

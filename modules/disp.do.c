@@ -70,7 +70,7 @@ static disp_val do_builtin(disp_env_t *env, disp_val expr) {
     }
 
     // 收集变量信息：符号、初值表达式、步进表达式
-    uint64_t *var_names = gc_malloc(var_count * sizeof(uint64_t));
+    disp_sid *var_names = gc_malloc(var_count * sizeof(disp_sid));
     disp_val *init_exprs = gc_typed_malloc(var_count * sizeof(disp_val), &GC_TYPE_PTR_ARRAY);
     disp_val *step_exprs = gc_typed_malloc(var_count * sizeof(disp_val), &GC_TYPE_PTR_ARRAY);
     gc_add_root(&var_names);

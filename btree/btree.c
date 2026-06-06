@@ -5,12 +5,16 @@
 #include <string.h>
 #include <stdio.h>
 
+#if BTREE_DEFAULT
+
 // 默认比较函数（数值比较）
 static int default_cmp(btree_key_t a, btree_key_t b) {
     if (a < b) return -1;
     if (a > b) return 1;
     return 0;
 }
+
+#endif // BTREE_DEFAULT
 
 // 释放节点（仅内部使用，保留 static）
 void btree_node_destroy(btree_node_t *node, int t) {
@@ -40,7 +44,11 @@ btree_t* btree_create(int t, btree_cmp_t cmp) {
     btree_t *tree = (btree_t*)BT_MALLOC(sizeof(btree_t));
     if (!tree) return NULL;
     tree->t = t;
+#if BTREE_DEFAULT
     tree->cmp = cmp ? cmp : default_cmp;
+#else  // BTREE_DEFAULT
+    tree->cmp = cmp;
+#endif // BTREE_DEFAULT
     // 创建根节点（初始为叶子）
     tree->root = btree_node_create(t, true);
     if (!tree->root) {
@@ -65,7 +73,7 @@ btree_node_t* btree_node_create(int t, bool leaf) {
     }
     for (int i = 0; i < 2*t; i++) {
         if (i < 2*t-1) {
-            node->keys[i] = 0;
+            node->keys[i] = KNULL;
             node->values[i] = VNULL;
         }
         node->children[i] = NULL;

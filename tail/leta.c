@@ -23,7 +23,7 @@ eval_result_t disp_eval_tail_leta(disp_env_t *env, disp_val expr, disp_val curre
     // 特殊形式处理
     if (T(op) == FLAG_SYMBOL) {
         // let* : 顺序绑定，每个初值在扩展后的作用域中求值
-        if (SYM_ID(op) == LETA) {
+        if (SYM_ID(op).id == LETA.id) {
             if (N(args) || T(args) != FLAG_CONS) {
                 ERRO("malformed let*");
                 return RESULT_NORMAL(NIL);
@@ -60,7 +60,7 @@ eval_result_t disp_eval_tail_leta(disp_env_t *env, disp_val expr, disp_val curre
                     return RESULT_NORMAL(NIL);
                 }
                 disp_val sym = disp_car(pair);
-                uint64_t id = SYM_ID(sym);
+                disp_sid id = SYM_ID(sym);
                 disp_val init_expr = disp_car(disp_cdr(pair));
                 // 在新作用域中求值初值（可以引用之前绑定的变量）
                 disp_val val = disp_eval(new_env, init_expr);

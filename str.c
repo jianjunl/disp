@@ -21,7 +21,7 @@
 struct disp_data {
     struct {
         char *str;
-//        uint64_t str;
+//        disp_sid str;
         size_t len;
     } string_val;
 };
@@ -37,7 +37,7 @@ char* disp_get_str(disp_val v) {
 	ERRO("disp_get_string failed: %s\n", strerror (errno));
     }
     return D(v)->string_val.str;
-    //return gc_strdup(disp_get_name(D(v)->string_val.str));
+    //return gc_strdup(disp_get_name(D(v)->string_val.str.id));
 }
 
 size_t disp_get_str_len(disp_val v) {

@@ -60,17 +60,17 @@ static disp_val letrec_builtin(disp_env_t *env, disp_val expr) {
 
     /* 先在新作用域中绑定占位符 NIL */
     for (int i = 0; i < var_count; i++) {
-        uint64_t id = SYM_ID(var_syms[i]);
+        disp_sid id = SYM_ID(var_syms[i]);
         disp_define_symbol(new_env, id, NIL, 0);
     }
 
     /* 计算所有初值（在新作用域中，此时变量已存在但值为 NIL） */
     GC_ROOT(disp_val, values) = gc_typed_malloc(var_count * sizeof(disp_val), &GC_TYPE_PTR_ARRAY);
-    if (SYM_ID(disp_car(expr)) == LETRECA) {   /* letrec* : 顺序初始化 */
+    if (SYM_ID(disp_car(expr)).id == LETRECA.id) {   /* letrec* : 顺序初始化 */
         for (int i = 0; i < var_count; i++) {
             values[i] = disp_eval(new_env, init_exprs[i]);
             /* 立即更新绑定 */
-            uint64_t id = SYM_ID(var_syms[i]);
+            disp_sid id = SYM_ID(var_syms[i]);
             disp_define_symbol(new_env, id, values[i], 0);
         }
     } else {                           /* letrec : 并行初始化 */
@@ -78,7 +78,7 @@ static disp_val letrec_builtin(disp_env_t *env, disp_val expr) {
             values[i] = disp_eval(new_env, init_exprs[i]);
         }
         for (int i = 0; i < var_count; i++) {
-            uint64_t id = SYM_ID(var_syms[i]);
+            disp_sid id = SYM_ID(var_syms[i]);
             disp_define_symbol(new_env, id, values[i], 0);
         }
     }

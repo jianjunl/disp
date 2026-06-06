@@ -72,12 +72,12 @@ static disp_val quote_builtin(disp_env_t *env, disp_val expr) {
 
 /* * Helper: Checks if a list starts with a specific symbol (e.g., "unquote")
  */
-static int is_tag(disp_val expr, uint64_t tag) {
+static int is_tag(disp_val expr, disp_sid tag) {
     if (N(expr) || E(expr, NIL) || T(expr) != FLAG_CONS) 
         return 0;
     disp_val head = disp_car(expr);
     // Ensure the head is a symbol and matches the tag
-    return (NN(head) && T(head) == FLAG_SYMBOL && SYM_ID(head) == tag);
+    return (NN(head) && T(head) == FLAG_SYMBOL && SYM_ID(head).id == tag.id);
 }
 
 static disp_val unquote(disp_val expr) {

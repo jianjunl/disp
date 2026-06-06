@@ -61,11 +61,11 @@ static disp_val let_builtin(disp_env_t *env, disp_val expr) {
 
     disp_val result = NIL;
 
-    if (SYM_ID(disp_car(expr)) == LETA) {   /* let* : 顺序绑定 */
+    if (SYM_ID(disp_car(expr)).id == LETA.id) {   /* let* : 顺序绑定 */
         for (int i = 0; i < var_count; i++) {
             disp_val val = disp_eval(new_env, init_exprs[i]);
             /* 立即绑定到新作用域 */
-            uint64_t id = SYM_ID(var_syms[i]);
+            disp_sid id = SYM_ID(var_syms[i]);
             disp_define_symbol(new_env, id, val, 0);
         }
         result = disp_eval_body(new_env, body);

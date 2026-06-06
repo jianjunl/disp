@@ -17,10 +17,11 @@ typedef void*    btree_val_t;
 #define BT_MALLOC(n) malloc(n)
 #define BT_FREE(v)   free(v)
 #define VNULL NULL
+#define KNULL 0
 
 #else // BTREE_DEFAULT
 
-#include "../btdefs.h"
+#include "../btdef.h"
 
 #endif // BTREE_DEFAULT
 

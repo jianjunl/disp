@@ -24,13 +24,13 @@ eval_result_t disp_eval_tail_flow(disp_env_t *env, disp_val expr, disp_val curre
     if (T(op) == FLAG_SYMBOL) {
 
         // quote
-        if (SYM_ID(op) == QUOTE) {
+        if (SYM_ID(op).id == QUOTE.id) {
             if (N(args) || T(args) != FLAG_CONS) ERRO("malformed quote");
             return RESULT_NORMAL(disp_car(args));
         }
 
         // if
-        if (SYM_ID(op) == IF) {
+        if (SYM_ID(op).id == IF.id) {
             if (N(args) || T(args) != FLAG_CONS) ERRO("malformed if");
             disp_val test = disp_car(args);
             disp_val then_branch = disp_car(disp_cdr(args));
@@ -42,7 +42,7 @@ eval_result_t disp_eval_tail_flow(disp_env_t *env, disp_val expr, disp_val curre
         }
 
         // begin
-        if (SYM_ID(op) == BEGIN || SYM_ID(op) == PROGN) {
+        if (SYM_ID(op).id == BEGIN.id || SYM_ID(op).id == PROGN.id) {
             if (N(args)) return RESULT_NORMAL(NIL);
             disp_val exprs = args;
             while (NN(exprs) && T(exprs) == FLAG_CONS) {
@@ -61,7 +61,7 @@ eval_result_t disp_eval_tail_flow(disp_env_t *env, disp_val expr, disp_val curre
         }
 
         // cond – 简单展开为嵌套 if
-        if (SYM_ID(op) == COND) {
+        if (SYM_ID(op).id == COND.id) {
             if (N(args)) return RESULT_NORMAL(NIL);
             disp_val clauses = args;
             while (NN(clauses) && T(clauses) == FLAG_CONS) {
@@ -93,7 +93,7 @@ eval_result_t disp_eval_tail_flow(disp_env_t *env, disp_val expr, disp_val curre
         }
 
         // and
-        if (SYM_ID(op) == AND) {
+        if (SYM_ID(op).id == AND.id) {
             if (E(args, NIL)) return RESULT_NORMAL(TRUE);
             disp_val exprs = args;
             disp_val last_val = TRUE;
@@ -112,7 +112,7 @@ eval_result_t disp_eval_tail_flow(disp_env_t *env, disp_val expr, disp_val curre
             return RESULT_NORMAL(last_val);
         }
         // or
-        if (SYM_ID(op) == OR) {
+        if (SYM_ID(op).id == OR.id) {
             if (E(args, NIL)) return RESULT_NORMAL(NIL);
             disp_val exprs = args;
             disp_val last_val = NIL;
@@ -132,23 +132,23 @@ eval_result_t disp_eval_tail_flow(disp_env_t *env, disp_val expr, disp_val curre
         }
 
         // set!
-        if (SYM_ID(op) == SET || SYM_ID(op) == SETQ) {
+        if (SYM_ID(op).id == SET.id || SYM_ID(op).id == SETQ.id) {
             if (N(args) || T(args) != FLAG_CONS || T(disp_car(args)) != FLAG_SYMBOL) ERRO("malformed set!");
-            uint64_t varid = SYM_ID(disp_car(args));
+            disp_sid varid = SYM_ID(disp_car(args));
             disp_val val_expr = disp_car(disp_cdr(args));
             disp_val val = disp_eval(env, val_expr);
             disp_val sym = disp_find_symbol(env, varid);
-            if (N(sym)) ERRO("set! on unbound variable: %s", disp_get_name(varid));
+            if (N(sym)) ERRO("set! on unbound variable: %s", disp_get_name(varid.id));
             disp_set_symbol_value(env, sym, val);
             return RESULT_NORMAL(val);
         }
 
         // define (仅允许顶层，但这里按局部处理)
-        if (SYM_ID(op) == DEFINE) {
+        if (SYM_ID(op).id == DEFINE.id) {
             if (N(args) || T(args) != FLAG_CONS) ERRO("malformed define");
             disp_val first = disp_car(args);
             if (T(first) == FLAG_SYMBOL) {
-                uint64_t id = SYM_ID(first);
+                disp_sid id = SYM_ID(first);
                 disp_val val_expr = disp_car(disp_cdr(args));
                 disp_val val = disp_eval(env, val_expr);
                 disp_define_symbol(env, id, val, 0);
@@ -163,7 +163,7 @@ eval_result_t disp_eval_tail_flow(disp_env_t *env, disp_val expr, disp_val curre
         }
 
         // lambda
-        if (SYM_ID(op) == LAMBDA) {
+        if (SYM_ID(op).id == LAMBDA.id) {
             if (N(args) || T(args) != FLAG_CONS) ERRO("malformed lambda");
             disp_val params = disp_car(args);
             disp_val body = disp_cdr(args);

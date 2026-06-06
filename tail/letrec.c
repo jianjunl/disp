@@ -24,7 +24,7 @@ eval_result_t disp_eval_tail_letrec(disp_env_t *env, disp_val expr, disp_val cur
     if (T(op) == FLAG_SYMBOL) {
         // letrec : 并行绑定，所有初值在同一作用域内求值，变量可互相引用
         // letrec : 并行绑定（使用堆分配 + GC 根保护）
-        if (SYM_ID(op) == LETREC) {
+        if (SYM_ID(op).id == LETREC.id) {
             if (N(args) || T(args) != FLAG_CONS) {
                 ERRO("malformed letrec");
                 return RESULT_NORMAL(NIL);
@@ -92,7 +92,7 @@ eval_result_t disp_eval_tail_letrec(disp_env_t *env, disp_val expr, disp_val cur
 
             // 先绑定所有变量为 NIL（占位符）
             for (int i = 0; i < var_count; i++) {
-                uint64_t id = SYM_ID(var_syms[i]);
+                disp_sid id = SYM_ID(var_syms[i]);
                 disp_define_symbol(new_env, id, NIL, 0);
             }
 
@@ -104,7 +104,7 @@ eval_result_t disp_eval_tail_letrec(disp_env_t *env, disp_val expr, disp_val cur
 
             // 更新绑定为实际值
             for (int i = 0; i < var_count; i++) {
-                uint64_t id = SYM_ID(var_syms[i]);
+                disp_sid id = SYM_ID(var_syms[i]);
                 disp_define_symbol(new_env, id, init_vals[i], 1);
             }
 

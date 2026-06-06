@@ -24,7 +24,7 @@ eval_result_t disp_eval_tail_letreca(disp_env_t *env, disp_val expr, disp_val cu
     if (T(op) == FLAG_SYMBOL) {
 
         // letrec* : 顺序绑定，每个初值在已包含前面变量的作用域中求值
-        if (SYM_ID(op) == LETRECA) {
+        if (SYM_ID(op).id == LETRECA.id) {
             if (N(args) || T(args) != FLAG_CONS) {
                 ERRO("malformed letrec*");
                 return RESULT_NORMAL(NIL);
@@ -61,7 +61,7 @@ eval_result_t disp_eval_tail_letreca(disp_env_t *env, disp_val expr, disp_val cu
                     return RESULT_NORMAL(NIL);
                 }
                 disp_val sym = disp_car(pair);
-                uint64_t id = SYM_ID(sym);
+                disp_sid id = SYM_ID(sym);
                 disp_val init_expr = disp_car(disp_cdr(pair));
                 // 先绑定占位符 NIL（使变量在作用域内可用）
                 disp_define_symbol(new_env, id, NIL, 0);

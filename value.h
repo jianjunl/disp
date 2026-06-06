@@ -9,11 +9,20 @@
 #include <ctype.h>
 #include <errno.h>
 #include <stdbool.h>
-
-#define DISP_BOXING     1  // 2 = NaN-Addr-Boxing, 1 = Addr-Boxing, 0 = none
-#define DISP_NAN_BOXING (DISP_BOXING >> 1)
+#include "name.h"
 
 typedef struct disp_data disp_data;
+
+typedef struct disp_sid { uint64_t id; } disp_sid;
+
+static inline disp_sid disp_get_sid(const char *name) {
+    return (disp_sid) { .id = disp_get_id(name) };
+}
+
+#define SNULL ((disp_sid) { .id = 0 })
+
+#define DISP_BOXING     2  // 2 = NaN-Addr-Boxing, 1 = Addr-Boxing, 0 = none
+#define DISP_NAN_BOXING (DISP_BOXING >> 1)
 
 #if DISP_NAN_BOXING
 

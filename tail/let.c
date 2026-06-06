@@ -23,7 +23,7 @@ eval_result_t disp_eval_tail_let(disp_env_t *env, disp_val expr, disp_val curren
     // 特殊形式处理
     if (T(op) == FLAG_SYMBOL) {
         // let (简单形式，支持并行绑定)
-        if (SYM_ID(op) == LET) {
+        if (SYM_ID(op).id == LET.id) {
             if (N(args) || T(args) != FLAG_CONS) {
                 ERRO("malformed let");
                 return RESULT_NORMAL(NIL);
@@ -94,7 +94,7 @@ eval_result_t disp_eval_tail_let(disp_env_t *env, disp_val expr, disp_val curren
 
             // 将所有变量绑定到新作用域（并行，一次性）
             for (int i = 0; i < var_count; i++) {
-                uint64_t id = SYM_ID(var_syms[i]);
+                disp_sid id = SYM_ID(var_syms[i]);
                 disp_define_symbol(new_env, id, init_vals[i], 0);
             }
 

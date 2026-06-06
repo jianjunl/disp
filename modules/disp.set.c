@@ -17,7 +17,7 @@ static disp_val setq_builtin(disp_env_t *env, disp_val expr) {
     if (N(cadr) || T(cadr) != FLAG_CONS) ERET(NIL, "set!: missing symbol");
     disp_val sym = disp_car(cadr);
     if (T(sym) != FLAG_SYMBOL) ERET(NIL, "set!: first argument must be a symbol");
-    uint64_t id = SYM_ID(sym);
+    disp_sid id = SYM_ID(sym);
     
     disp_val rest = disp_cdr(cadr);
     if (N(rest) || T(rest) != FLAG_CONS) ERET(NIL, "set!: missing expression");
@@ -25,7 +25,7 @@ static disp_val setq_builtin(disp_env_t *env, disp_val expr) {
     
     disp_val found_sym = disp_find_symbol(env, id);
     if (N(found_sym)) {
-        ERET(NIL, "set!: undefined variable '%s'", disp_get_name(id));
+        ERET(NIL, "set!: undefined variable '%s'", disp_get_name(id.id));
     }
     disp_set_symbol_value_unlock(env, found_sym, new_value);
     return new_value;
