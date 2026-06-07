@@ -1,12 +1,12 @@
-#include "btree_private.h"
+#include "bt_private.h"
 #include <stdlib.h>
 #include <string.h>
 
 // 分裂父节点的第 idx 个子节点（该子节点已满）
-void btree_split_child(btree_t *tree, btree_node_t *parent, int idx) {
+void btree_split_child(btree_t *tree, bt_node_t *parent, int idx) {
     int t = tree->t;
-    btree_node_t *child = parent->children[idx];
-    btree_node_t *new_child = btree_node_create(t, child->leaf);
+    bt_node_t *child = parent->children[idx];
+    bt_node_t *new_child = bt_node_create(t, child->leaf);
     
     if (!new_child) {
         // 内存分配失败处理（实际可根据需要 abort 或 return）

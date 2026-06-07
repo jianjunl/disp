@@ -1,27 +1,21 @@
 
 #include "btree.h"
-#include "btree_private.h"   // 确保声明一致
+#include "bt_private.h"   // 确保声明一致
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 
-#if BTREE_DEFAULT
-
 // 默认比较函数（数值比较）
-static int default_cmp(btree_key_t a, btree_key_t b) {
-    if (a < b) return -1;
-    if (a > b) return 1;
-    return 0;
+static inline int default_cmp(uint64_t a, uint64_t b) {
+    return a < b ? -1 : a > b ? 1 : 0;
 }
 
-#endif // BTREE_DEFAULT
-
 // 释放节点（仅内部使用，保留 static）
-void btree_node_destroy(btree_node_t *node, int t) {
+void bt_node_destroy(bt_node_t *node, int t) {
     if (!node) return;
     if (!node->leaf) {
         for (int i = 0; i <= node->n; i++) {
-            btree_node_destroy(node->children[i], t);
+            bt_node_destroy(node->children[i], t);
         }
     }
     BT_FREE(node->keys);
@@ -34,12 +28,12 @@ void btree_node_destroy(btree_node_t *node, int t) {
 void btree_destroy(btree_t *tree) {
     if (!tree) return;
     if (tree->root)
-        btree_node_destroy(tree->root, tree->t);
+        bt_node_destroy(tree->root, tree->t);
     BT_FREE(tree);
 }
 
 // 创建B树
-btree_t* btree_create(int t, btree_cmp_t cmp) {
+btree_t* btree_create(int t, bt_cmp_t cmp) {
     if (t < 2) t = 2;   // 最小度数至少为2
     btree_t *tree = (btree_t*)BT_MALLOC(sizeof(btree_t));
     if (!tree) return NULL;
@@ -50,7 +44,7 @@ btree_t* btree_create(int t, btree_cmp_t cmp) {
     tree->cmp = cmp;
 #endif // BTREE_DEFAULT
     // 创建根节点（初始为叶子）
-    tree->root = btree_node_create(t, true);
+    tree->root = bt_node_create(t, true);
     if (!tree->root) {
         BT_FREE(tree);
         return NULL;
@@ -59,14 +53,14 @@ btree_t* btree_create(int t, btree_cmp_t cmp) {
 }
 
 // 创建新节点（非静态，供其他模块使用）
-btree_node_t* btree_node_create(int t, bool leaf) {
-    btree_node_t *node = (btree_node_t*)BT_MALLOC(sizeof(btree_node_t));
+bt_node_t* bt_node_create(int t, bool leaf) {
+    bt_node_t *node = (bt_node_t*)BT_MALLOC(sizeof(bt_node_t));
     if (!node) return NULL;
     node->n = 0;
     node->leaf = leaf;
-    node->keys = (btree_key_t*)BT_MALLOC((2*t - 1) * sizeof(btree_key_t));
-    node->values = (btree_val_t*)BT_MALLOC((2*t - 1) * sizeof(btree_val_t));
-    node->children = (btree_node_t**)BT_MALLOC((2*t) * sizeof(btree_node_t*));
+    node->keys = (bt_key_t*)BT_MALLOC((2*t - 1) * sizeof(bt_key_t));
+    node->values = (bt_val_t*)BT_MALLOC((2*t - 1) * sizeof(bt_val_t));
+    node->children = (bt_node_t**)BT_MALLOC((2*t) * sizeof(bt_node_t*));
     if (!node->keys || !node->values || !node->children) {
         BT_FREE(node->keys); BT_FREE(node->values); BT_FREE(node->children); BT_FREE(node);
         return NULL;
@@ -82,7 +76,7 @@ btree_node_t* btree_node_create(int t, bool leaf) {
 }
 
 // 查找键（非静态，供 delete.c 使用）
-btree_val_t btree_search_node(const btree_node_t *node, btree_key_t key, btree_cmp_t cmp, int t) {
+bt_val_t btree_search_node(const bt_node_t *node, bt_key_t key, bt_cmp_t cmp, int t) {
     int i = 0;
     while (i < node->n && cmp(key, node->keys[i]) > 0)
         i++;
@@ -93,16 +87,16 @@ btree_val_t btree_search_node(const btree_node_t *node, btree_key_t key, btree_c
     return btree_search_node(node->children[i], key, cmp, t);
 }
 
-btree_val_t btree_search(const btree_t *tree, btree_key_t key) {
+bt_val_t btree_search(const btree_t *tree, bt_key_t key) {
     if (!tree || !tree->root) return VNULL;
-    btree_val_t value = btree_search_node(tree->root, key, tree->cmp, tree->t);
+    bt_val_t value = btree_search_node(tree->root, key, tree->cmp, tree->t);
     return value;
 }
 
 // 更新键对应的值
-bool btree_update(btree_t *tree, btree_key_t key, btree_val_t new_value) {
+bool btree_update(btree_t *tree, bt_key_t key, bt_val_t new_value) {
     if (!tree || !tree->root) return false;
-    btree_node_t *node = tree->root;
+    bt_node_t *node = tree->root;
     while (node) {
         int i = 0;
         while (i < node->n && tree->cmp(key, node->keys[i]) > 0)
@@ -118,7 +112,7 @@ bool btree_update(btree_t *tree, btree_key_t key, btree_val_t new_value) {
 }
 
 // 中序遍历（递归）
-static void btree_inorder_node(const btree_node_t *node, btree_visit_t visit, void *userdata) {
+static void btree_inorder_node(const bt_node_t *node, btree_visit_t visit, void *userdata) {
     if (!node) return;
     for (int i = 0; i < node->n; i++) {
         if (!node->leaf)
@@ -135,7 +129,7 @@ void btree_inorder(const btree_t *tree, btree_visit_t visit, void *userdata) {
 }
 
 // 统计节点数量（递归）
-static size_t btree_count_node(const btree_node_t *node) {
+static size_t btree_count_node(const bt_node_t *node) {
     if (!node) return 0;
     size_t cnt = node->n;
     if (!node->leaf) {

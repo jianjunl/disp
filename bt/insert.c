@@ -1,8 +1,8 @@
-#include "btree_private.h"
+#include "bt_private.h"
 #include <stdlib.h>
 
 // 在非满节点中插入键值对（辅助函数）
-void btree_insert_nonfull(btree_t *tree, btree_node_t *node, btree_key_t key, btree_val_t value) {
+void btree_insert_nonfull(btree_t *tree, bt_node_t *node, bt_key_t key, bt_val_t value) {
     int t = tree->t;
     int i = node->n - 1;
     
@@ -33,15 +33,15 @@ void btree_insert_nonfull(btree_t *tree, btree_node_t *node, btree_key_t key, bt
 }
 
 // 插入主函数
-void btree_insert(btree_t *tree, btree_key_t key, btree_val_t value) {
+void btree_insert(btree_t *tree, bt_key_t key, bt_val_t value) {
     if (!tree || !tree->root) return;
     
-    btree_node_t *root = tree->root;
+    bt_node_t *root = tree->root;
     int t = tree->t;
     
     // 如果根节点已满，需要分裂并创建新根
     if (root->n == 2*t - 1) {
-        btree_node_t *new_root = btree_node_create(t, false);
+        bt_node_t *new_root = bt_node_create(t, false);
         if (!new_root) return;
         new_root->children[0] = root;
         tree->root = new_root;

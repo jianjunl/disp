@@ -1,11 +1,11 @@
 
-#include "btree_private.h"
+#include "bt_private.h"
 #include <stdlib.h>
 
-void btree_borrow_from_left(btree_t *tree, btree_node_t *parent, int idx) {
+void btree_borrow_from_left(btree_t *tree, bt_node_t *parent, int idx) {
     (void)tree;  // 消除警告
-    btree_node_t *left = parent->children[idx - 1];
-    btree_node_t *right = parent->children[idx];
+    bt_node_t *left = parent->children[idx - 1];
+    bt_node_t *right = parent->children[idx];
 
     for (int i = right->n; i > 0; i--) {
         right->keys[i] = right->keys[i - 1];
@@ -30,10 +30,10 @@ void btree_borrow_from_left(btree_t *tree, btree_node_t *parent, int idx) {
     }
 }
 
-void btree_borrow_from_right(btree_t *tree, btree_node_t *parent, int idx) {
+void btree_borrow_from_right(btree_t *tree, bt_node_t *parent, int idx) {
     (void)tree;
-    btree_node_t *left = parent->children[idx];
-    btree_node_t *right = parent->children[idx + 1];
+    bt_node_t *left = parent->children[idx];
+    bt_node_t *right = parent->children[idx + 1];
 
     left->keys[left->n] = parent->keys[idx];
     left->values[left->n] = parent->values[idx];
@@ -55,10 +55,10 @@ void btree_borrow_from_right(btree_t *tree, btree_node_t *parent, int idx) {
     right->n--;
 }
 
-void btree_merge_children(btree_t *tree, btree_node_t *parent, int idx) {
+void btree_merge_children(btree_t *tree, bt_node_t *parent, int idx) {
     (void)tree;
-    btree_node_t *left = parent->children[idx];
-    btree_node_t *right = parent->children[idx + 1];
+    bt_node_t *left = parent->children[idx];
+    bt_node_t *right = parent->children[idx + 1];
 
     left->keys[left->n] = parent->keys[idx];
     left->values[left->n] = parent->values[idx];

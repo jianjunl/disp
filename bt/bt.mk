@@ -9,13 +9,13 @@ ARFLAGS = rcs
 # 源文件列表
 BTREE_SRCS = btree.c split.c insert.c delete.c merge.c
 BTREE_OBJS = $(BTREE_SRCS:.c=.o)
-BTREE_TEST_SRCS = btree_test.c
+BTREE_TEST_SRCS = btt.c
 BTREE_TEST_OBJS = $(BTREE_TEST_SRCS:.c=.o)
 
 # 目标名称
 LIB_STATIC = libbtree.a
 LIB_SHARED = libbtree.so
-TEST_BIN = btree_test
+TEST_BIN = btt
 
 # 默认目标
 all: $(LIB_STATIC) $(LIB_SHARED) $(TEST_BIN)
@@ -38,7 +38,7 @@ $(TEST_BIN): $(BTREE_TEST_OBJS) $(LIB_STATIC)
 # 	$(CC) -o $@ $(BTREE_TEST_OBJS) -L. -lbtree
 
 # 编译规则
-%.o: %.c btree.h btree_private.h
+%.o: %.c btree.h bt_private.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
 # 清理
