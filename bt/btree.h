@@ -5,43 +5,21 @@
 #include <stddef.h>
 #include <stdbool.h>
 
-#ifndef BTREE_DEFAULT
-#define BTREE_DEFAULT 1
-#endif
-
 typedef uint64_t bt_key_t;
 typedef uint64_t bt_val_t;
 #define VNULL 0ULL
 #define KNULL 0ULL
 
-#if BTREE_DEFAULT
-
-#define BT_MALLOC(n) malloc(n)
-#define BT_FREE(v)   free(v)
-
-#else // BTREE_DEFAULT
-
-#include "../gc/gc.h"
-
-#define BT_MALLOC(n) gc_typed_malloc(n, &GC_TYPE_PTR_ARRAY)
-#define BT_FREE(v)   gc_free(v)
-
-#endif // BTREE_DEFAULT
-
 // 比较函数：返回 -1 表示 a < b, 0 表示相等, 1 表示 a > b
 typedef int (*bt_cmp_t)(bt_key_t a, bt_key_t b);
+typedef void* (*bt_malloc)(size_t size);
+typedef void* (*bt_calloc)(size_t nmemb, size_t size);
+typedef void (*bt_free)(void *ptr);
 
-typedef void* (*bt_malloc_t)(size_t size);
-typedef void* (*bt_calloc_t)(size_t nmemb, size_t size);
-typedef void (*bt_free_t)(void *ptr);
-
-typedef struct bt_conf_t {
-    bt_malloc_t malloc;
-    bt_malloc_t kalloc;
-    bt_malloc_t valloc;
-    bt_free_t free;
-    bt_key_t knull;
-    bt_val_t vnull;
+typedef struct bt_conf {
+    bt_malloc malloc;
+    bt_calloc calloc;
+    bt_free free;
     bt_cmp_t cmp;               // 比较函数
     int t;                      // 最小度数（每个节点至少有 t-1 个键）
 } bt_conf_t;
@@ -52,12 +30,11 @@ typedef struct bt_node bt_node_t;
 // B树主结构
 typedef struct {
     bt_node_t *root;            // 根节点
-    bt_cmp_t cmp;               // 比较函数
-    int t;                      // 最小度数（每个节点至少有 t-1 个键）
+    bt_conf_t *conf;
 } btree_t;
 
 // 创建B树：t 为最小度数（t >= 2），cmp 为比较函数（若为 NULL 则使用默认数值比较）
-btree_t* btree_create(int t, bt_cmp_t cmp);
+btree_t* btree_create(bt_conf_t *conf);
 
 // 销毁B树（释放所有节点内存）
 void btree_destroy(btree_t *tree);

@@ -21,7 +21,7 @@ static inline disp_sid disp_get_sid(const char *name) {
 
 #define SNULL ((disp_sid) { .id = 0 })
 
-#define DISP_BOXING     0  // 2 = NaN-Addr-Boxing, 1 = Addr-Boxing, 0 = none
+#define DISP_BOXING     2  // 2 = NaN-Addr-Boxing, 1 = Addr-Boxing, 0 = none
 #define DISP_NAN_BOXING (DISP_BOXING >> 1)
 
 #if DISP_NAN_BOXING

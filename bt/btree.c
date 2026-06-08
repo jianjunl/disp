@@ -10,55 +10,68 @@ static inline int default_cmp(uint64_t a, uint64_t b) {
     return a < b ? -1 : a > b ? 1 : 0;
 }
 
-// 释放节点（仅内部使用，保留 static）
-void bt_node_destroy(bt_node_t *node, int t) {
+static bt_conf_t default_conf = (struct bt_conf) {
+    .malloc = malloc,
+    .calloc = calloc,
+    .free   = free,
+    .cmp    = default_cmp,
+    .t = 3
+}; 
+
+void bt_node_destroy(btree_t *tree, bt_node_t *node, int t) {
     if (!node) return;
     if (!node->leaf) {
         for (int i = 0; i <= node->n; i++) {
-            bt_node_destroy(node->children[i], t);
+            bt_node_destroy(tree, node->children[i], t);
         }
     }
-    BT_FREE(node->keys);
-    BT_FREE(node->values);
-    BT_FREE(node->children);
-    BT_FREE(node);
+    tree->conf->free(node->keys);
+    tree->conf->free(node->values);
+    tree->conf->free(node->children);
+    tree->conf->free(node);
 }
 
 // 销毁B树
 void btree_destroy(btree_t *tree) {
     if (!tree) return;
     if (tree->root)
-        bt_node_destroy(tree->root, tree->t);
-    BT_FREE(tree);
+        bt_node_destroy(tree, tree->root, tree->conf->t);
+    tree->conf->free(tree);
 }
 
 // 创建B树
-btree_t* btree_create(int t, bt_cmp_t cmp) {
-    if (t < 2) t = 2;   // 最小度数至少为2
-    btree_t *tree = (btree_t*)BT_MALLOC(sizeof(btree_t));
+btree_t* btree_create(bt_conf_t *c) {
+    if (!c) c = &default_conf;
+    if (c->t < 2) c->t = 2;   // 最小度数至少为2
+    if (!c->malloc) c->malloc = malloc;
+    if (!c->calloc) c->calloc = calloc;
+    if (!c->free) c->free = free;
+    if (!c->cmp) c->cmp = default_cmp;
+    btree_t *tree = (btree_t*)c->malloc(sizeof(btree_t));
     if (!tree) return NULL;
-    tree->t = t;
-    tree->cmp = cmp ? cmp : default_cmp;
+    tree->conf = c;
     // 创建根节点（初始为叶子）
-    tree->root = bt_node_create(t, true);
+    tree->root = bt_node_create(tree, true);
     if (!tree->root) {
-        BT_FREE(tree);
+        tree->conf->free(tree);
         return NULL;
     }
     return tree;
 }
 
 // 创建新节点（非静态，供其他模块使用）
-bt_node_t* bt_node_create(int t, bool leaf) {
-    bt_node_t *node = (bt_node_t*)BT_MALLOC(sizeof(bt_node_t));
+bt_node_t* bt_node_create(btree_t *tree, bool leaf) {
+    bt_node_t *node = (bt_node_t*)tree->conf->malloc(sizeof(bt_node_t));
     if (!node) return NULL;
+    int t = tree->conf->t;
+    if (t < 2) t = 2;   // 最小度数至少为2
     node->n = 0;
     node->leaf = leaf;
-    node->keys = (bt_key_t*)BT_MALLOC((2*t - 1) * sizeof(bt_key_t));
-    node->values = (bt_val_t*)BT_MALLOC((2*t - 1) * sizeof(bt_val_t));
-    node->children = (bt_node_t**)BT_MALLOC((2*t) * sizeof(bt_node_t*));
+    node->keys = (bt_key_t*)tree->conf->malloc((2*t - 1) * sizeof(bt_key_t));
+    node->values = (bt_val_t*)tree->conf->malloc((2*t - 1) * sizeof(bt_val_t));
+    node->children = (bt_node_t**)tree->conf->malloc((2*t) * sizeof(bt_node_t*));
     if (!node->keys || !node->values || !node->children) {
-        BT_FREE(node->keys); BT_FREE(node->values); BT_FREE(node->children); BT_FREE(node);
+        tree->conf->free(node->keys); tree->conf->free(node->values); tree->conf->free(node->children); tree->conf->free(node);
         return NULL;
     }
     for (int i = 0; i < 2*t; i++) {
@@ -85,7 +98,7 @@ bt_val_t btree_search_node(const bt_node_t *node, bt_key_t key, bt_cmp_t cmp, in
 
 bt_val_t btree_search(const btree_t *tree, bt_key_t key) {
     if (!tree || !tree->root) return VNULL;
-    bt_val_t value = btree_search_node(tree->root, key, tree->cmp, tree->t);
+    bt_val_t value = btree_search_node(tree->root, key, tree->conf->cmp, tree->conf->t);
     return value;
 }
 
@@ -95,9 +108,9 @@ bool btree_update(btree_t *tree, bt_key_t key, bt_val_t new_value) {
     bt_node_t *node = tree->root;
     while (node) {
         int i = 0;
-        while (i < node->n && tree->cmp(key, node->keys[i]) > 0)
+        while (i < node->n && tree->conf->cmp(key, node->keys[i]) > 0)
             i++;
-        if (i < node->n && tree->cmp(key, node->keys[i]) == 0) {
+        if (i < node->n && tree->conf->cmp(key, node->keys[i]) == 0) {
             node->values[i] = new_value;
             return true;
         }

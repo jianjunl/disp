@@ -12,7 +12,7 @@ void print_node(bt_key_t key, bt_val_t value, void *userdata) {
 
 int main() {
     // 创建 B 树，最小度数 t=3，使用默认数值比较
-    btree_t *tree = btree_create(3, NULL);
+    btree_t *tree = btree_create(NULL);
     assert(tree != NULL);
 
     // 插入一些键值对

@@ -17,13 +17,13 @@ static bt_key_t get_max_key(bt_node_t *node) {
 
 // 从节点中删除指定键（内部递归）
 void btree_delete_node(btree_t *tree, bt_node_t *node, bt_key_t key) {
-    int t = tree->t;
+    int t = tree->conf->t;
     int i = 0;
     // 找到第一个 >= key 的位置
-    while (i < node->n && tree->cmp(key, node->keys[i]) > 0)
+    while (i < node->n && tree->conf->cmp(key, node->keys[i]) > 0)
         i++;
 
-    if (i < node->n && tree->cmp(key, node->keys[i]) == 0) {
+    if (i < node->n && tree->conf->cmp(key, node->keys[i]) == 0) {
         // 键在当前节点中
         if (node->leaf) {
             // 叶子节点：直接删除
@@ -40,14 +40,14 @@ void btree_delete_node(btree_t *tree, bt_node_t *node, bt_key_t key) {
             if (left_child->n >= t) {
                 // 前驱：左子树的最大键
                 bt_key_t pred_key = get_max_key(left_child);
-                bt_val_t pred_val = btree_search_node(left_child, pred_key, tree->cmp, t);
+                bt_val_t pred_val = btree_search_node(left_child, pred_key, tree->conf->cmp, t);
                 node->keys[i] = pred_key;
                 node->values[i] = pred_val;
                 btree_delete_node(tree, left_child, pred_key);
             } else if (right_child->n >= t) {
                 // 后继：右子树的最小键
                 bt_key_t succ_key = get_min_key(right_child);
-                bt_val_t succ_val = btree_search_node(right_child, succ_key, tree->cmp, t);
+                bt_val_t succ_val = btree_search_node(right_child, succ_key, tree->conf->cmp, t);
                 node->keys[i] = succ_key;
                 node->values[i] = succ_val;
                 btree_delete_node(tree, right_child, succ_key);
@@ -100,10 +100,10 @@ bool btree_delete(btree_t *tree, bt_key_t key) {
         } else {
             tree->root = NULL;
         }
-        BT_FREE(old_root->keys);
-        BT_FREE(old_root->values);
-        BT_FREE(old_root->children);
-        BT_FREE(old_root);
+        tree->conf->free(old_root->keys);
+        tree->conf->free(old_root->values);
+        tree->conf->free(old_root->children);
+        tree->conf->free(old_root);
     }
     return true;
 }

@@ -13,8 +13,8 @@ struct bt_node {
 };
 
 // 基础函数
-bt_node_t* bt_node_create(int t, bool leaf);
-void bt_node_destroy(bt_node_t *node, int t);
+bt_node_t* bt_node_create(btree_t *tree, bool leaf);
+void bt_node_destroy(btree_t *tree, bt_node_t *node, int t);
 
 bt_val_t btree_search_node(const bt_node_t *node, bt_key_t key, bt_cmp_t cmp, int t);  // 新增，供 delete.c 使用
 

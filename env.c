@@ -20,6 +20,28 @@
 
 #include "bt/btree.h"
 
+static inline void* bt_malloc_gc(size_t size) {
+    return gc_typed_malloc(size, &GC_TYPE_PTR_ARRAY);
+}
+static inline void* bt_calloc_gc(size_t nmemb, size_t size) {
+    return gc_typed_calloc(nmemb, size, &GC_TYPE_PTR_ARRAY);
+}
+static inline void bt_free_gc(void *ptr) {
+    return gc_free(ptr);
+}
+// 默认比较函数（数值比较）
+static inline int bt_cmp(bt_key_t a, bt_key_t b) {
+    return a < b ? -1 : a > b ? 1 : 0;
+}
+
+static bt_conf_t bt_conf_gc = (bt_conf_t) {
+    .malloc = bt_malloc_gc,
+    .calloc = bt_calloc_gc,
+    .free   = bt_free_gc,
+    .cmp    = bt_cmp,
+    .t      = 3                      // 最小度数（每个节点至少有 t-1 个键）
+};
+
 struct disp_env {
     btree_t *symbols;      // 符号表：id -> disp_val (symbol)
     gc_mutex_t *lock;
@@ -35,7 +57,7 @@ GC_STRUCT_TI(disp_env,
 disp_env_t* disp_new_env(disp_env_t *parent) {
     disp_env_t *env = gc_typed_malloc(sizeof(disp_env_t), &struct_disp_env_ti);
     gc_pthread_mutex_init(&env->lock, NULL);
-    env->symbols = btree_create(3, NULL);
+    env->symbols = btree_create(&bt_conf_gc);
     env->parent = parent;
     return env;
 }
@@ -151,7 +173,7 @@ void disp_init_env() {
 
     disp_global_env = gc_typed_malloc(sizeof(disp_env_t), &struct_disp_env_ti);
     gc_pthread_mutex_init(&disp_global_env->lock, NULL);
-    disp_global_env->symbols = btree_create(3, NULL);   // 最小度数 3
+    disp_global_env->symbols = btree_create(&bt_conf_gc);
 
     gc_add_root(&disp_global_env);
 }

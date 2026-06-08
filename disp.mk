@@ -17,7 +17,6 @@ include $(BESTLINE_DIR)/bestline.mk
 GC_DIR      = gc
 MOD_DIR     = modules
 
-CFLAGS += -DBTREE_DEFAULT=0
 CFLAGS += -g -std=c11 -pthread -fPIC -Wall -Wextra -I$(GC_DIR) -I$(MOD_DIR)
 LDFLAGS += -pthread -ldl -rdynamic
 LDLIBS  += -lm -ldl -lpthread -L$(GC_DIR) -lgc
