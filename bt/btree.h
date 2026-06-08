@@ -9,28 +9,22 @@
 #define BTREE_DEFAULT 1
 #endif
 
-#if BTREE_DEFAULT
-
 typedef uint64_t bt_key_t;
-typedef void*    bt_val_t;
+typedef uint64_t bt_val_t;
+#define VNULL 0ULL
+#define KNULL 0ULL
+
+#if BTREE_DEFAULT
 
 #define BT_MALLOC(n) malloc(n)
 #define BT_FREE(v)   free(v)
-#define VNULL NULL
-#define KNULL 0
 
 #else // BTREE_DEFAULT
 
 #include "../gc/gc.h"
-#include "../value.h"
-
-typedef void* bt_key_t;
-typedef disp_val bt_val_t;
 
 #define BT_MALLOC(n) gc_typed_malloc(n, &GC_TYPE_PTR_ARRAY)
 #define BT_FREE(v)   gc_free(v)
-#define VNULL DNULL
-#define KNULL ((void*)SNULL.id)
 
 #endif // BTREE_DEFAULT
 

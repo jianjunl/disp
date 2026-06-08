@@ -203,6 +203,7 @@ typedef struct disp_val {
         long long_val;
         float float_val;
         double double_val;
+        uint64_t x;
     };
     disp_flag_t flag;
 } disp_val ;

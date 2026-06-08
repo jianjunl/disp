@@ -24,7 +24,7 @@ int main() {
         // 这里用静态分配的临时字符串仅作演示，真实代码中需自行复制
         char *val = malloc(32);
         sprintf(val, "val_%llu", (unsigned long long)i);
-        btree_insert(tree, i, val);
+        btree_insert(tree, i, (bt_val_t)val);
     }
 
     // 查找测试
@@ -42,7 +42,7 @@ int main() {
     printf("Updating key 10 to 'updated_10'\n");
     char *new_val = malloc(32);
     strcpy(new_val, "updated_10");
-    bool ok = btree_update(tree, 10, new_val);
+    bool ok = btree_update(tree, 10, (bt_val_t)new_val);
     assert(ok);
     v = btree_search(tree, 10);
     printf("After update: %s\n", (char*)v);

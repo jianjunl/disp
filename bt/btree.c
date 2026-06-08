@@ -38,11 +38,7 @@ btree_t* btree_create(int t, bt_cmp_t cmp) {
     btree_t *tree = (btree_t*)BT_MALLOC(sizeof(btree_t));
     if (!tree) return NULL;
     tree->t = t;
-#if BTREE_DEFAULT
     tree->cmp = cmp ? cmp : default_cmp;
-#else  // BTREE_DEFAULT
-    tree->cmp = cmp;
-#endif // BTREE_DEFAULT
     // 创建根节点（初始为叶子）
     tree->root = bt_node_create(t, true);
     if (!tree->root) {
