@@ -28,7 +28,7 @@ LIBDIR := $(PREFIX)/lib
 INCLUDEDIR := $(PREFIX)/include/disp
 MODDIR := $(PREFIX)/share/disp/modules
 
-LIB_SRCS := disp.c literal.c io.c read.c parse.c eval.c load.c array.c name.c symbol.c env.c \
+LIB_SRCS := disp.c literal.c io.c read.c parse.c eval.c load.c flat/flat.c name.c symbol.c env.c \
             number.c str.c cons.c func.c letf.c file.c info.c repl.c args.c \
             tail/tail.c tail/flow.c tail/let.c tail/leta.c tail/letrec.c tail/letreca.c \
             bt/btree.c  bt/insert.c  bt/split.c bt/delete.c bt/merge.c \

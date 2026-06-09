@@ -40,8 +40,13 @@ void btree_destroy(btree_t *tree) {
 }
 
 // 创建B树
-btree_t* btree_create(bt_conf_t *c) {
-    if (!c) c = &default_conf;
+btree_t* btree_create(bt_conf_t *conf) {
+    bt_conf_t *c;
+    if (!conf) c = &default_conf;
+    else {
+        c = conf->malloc(sizeof(bt_conf_t));
+        memcpy(c, conf, sizeof(bt_conf_t));
+    }
     if (c->t < 2) c->t = 2;   // 最小度数至少为2
     if (!c->malloc) c->malloc = malloc;
     if (!c->calloc) c->calloc = calloc;
@@ -50,6 +55,7 @@ btree_t* btree_create(bt_conf_t *c) {
     btree_t *tree = (btree_t*)c->malloc(sizeof(btree_t));
     if (!tree) return NULL;
     tree->conf = c;
+    tree->size = 0;
     // 创建根节点（初始为叶子）
     tree->root = bt_node_create(tree, true);
     if (!tree->root) {
@@ -151,4 +157,8 @@ static size_t btree_count_node(const bt_node_t *node) {
 size_t btree_count(const btree_t *tree) {
     if (!tree || !tree->root) return 0;
     return btree_count_node(tree->root);
+}
+
+size_t btree_size(const btree_t *tree) {
+    return tree->size;
 }

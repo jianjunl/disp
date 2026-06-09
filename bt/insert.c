@@ -53,4 +53,5 @@ void btree_insert(btree_t *tree, bt_key_t key, bt_val_t value) {
     } else {
         btree_insert_nonfull(tree, root, key, value);
     }
+    tree->size++;   // 插入成功，总数加1
 }

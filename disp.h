@@ -5,6 +5,7 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdint.h>
 #include <stdarg.h>
 #include <ctype.h>
 #include <stdatomic.h>
@@ -17,7 +18,6 @@
 //#define DEBUG
 #endif
 #include "gc/gc.h"
-#include "array.h"
 
 void disp_init_env(void);
 

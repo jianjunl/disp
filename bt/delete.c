@@ -32,6 +32,7 @@ void btree_delete_node(btree_t *tree, bt_node_t *node, bt_key_t key) {
                 node->values[j] = node->values[j + 1];
             }
             node->n--;
+            tree->size--;   // <-- 添加这一行
         } else {
             // 内部节点：用前驱或后继替换
             bt_node_t *left_child = node->children[i];

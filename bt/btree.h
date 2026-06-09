@@ -31,6 +31,7 @@ typedef struct bt_node bt_node_t;
 typedef struct {
     bt_node_t *root;            // 根节点
     bt_conf_t *conf;
+    size_t size;
 } btree_t;
 
 // 创建B树：t 为最小度数（t >= 2），cmp 为比较函数（若为 NULL 则使用默认数值比较）
@@ -57,5 +58,7 @@ void btree_inorder(const btree_t *tree, btree_visit_t visit, void *userdata);
 
 // 获取节点数量（可选）
 size_t btree_count(const btree_t *tree);
+
+size_t btree_size(const btree_t *tree);
 
 #endif // BTREE_H
