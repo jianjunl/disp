@@ -17,7 +17,7 @@ static bt_key_t get_max_key(bt_node_t *node) {
 
 // 从节点中删除指定键（内部递归）
 void btree_delete_node(btree_t *tree, bt_node_t *node, bt_key_t key) {
-    int t = tree->conf->t;
+    int t = tree->conf->tier;
     int i = 0;
     // 找到第一个 >= key 的位置
     while (i < node->n && tree->conf->cmp(key, node->keys[i]) > 0)

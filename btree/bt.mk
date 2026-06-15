@@ -1,5 +1,5 @@
-# btree.mk - 构建 btree 库和测试程序
-# 用法: make -f btree.mk [all|clean|test|lib|shared]
+# btmk - 构建 btree 库和测试程序
+# 用法: make -f bt.mk [all|clean|test|lib|shared]
 
 CC = gcc
 CFLAGS = -Wall -Wextra -O2 -g -fPIC

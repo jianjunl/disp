@@ -4,7 +4,7 @@
 
 // 分裂父节点的第 idx 个子节点（该子节点已满）
 void btree_split_child(btree_t *tree, bt_node_t *parent, int idx) {
-    int t = tree->conf->t;
+    int t = tree->conf->tier;
     bt_node_t *child = parent->children[idx];
     bt_node_t *new_child = bt_node_create(tree, child->leaf);
     
@@ -17,7 +17,6 @@ void btree_split_child(btree_t *tree, bt_node_t *parent, int idx) {
     new_child->n = t - 1;
     for (int i = 0; i < t-1; i++) {
         new_child->keys[i] = child->keys[i + t];
-        new_child->values[i] = child->values[i + t];
     }
     // 如果不是叶子，还要复制子节点指针
     if (!child->leaf) {
@@ -38,9 +37,7 @@ void btree_split_child(btree_t *tree, bt_node_t *parent, int idx) {
     // 将 child 的中间键提升到父节点
     for (int i = parent->n-1; i >= idx; i--) {
         parent->keys[i+1] = parent->keys[i];
-        parent->values[i+1] = parent->values[i];
     }
     parent->keys[idx] = child->keys[t-1];
-    parent->values[idx] = child->values[t-1];
     parent->n++;
 }

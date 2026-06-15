@@ -15,7 +15,7 @@ static bt_conf_t default_conf = (struct bt_conf) {
     .calloc = calloc,
     .free   = free,
     .cmp    = default_cmp,
-    .t = 3
+    .tier   = 3
 }; 
 
 void bt_node_destroy(btree_t *tree, bt_node_t *node, int t) {
@@ -26,7 +26,6 @@ void bt_node_destroy(btree_t *tree, bt_node_t *node, int t) {
         }
     }
     tree->conf->free(node->keys);
-    tree->conf->free(node->values);
     tree->conf->free(node->children);
     tree->conf->free(node);
 }
@@ -35,8 +34,10 @@ void bt_node_destroy(btree_t *tree, bt_node_t *node, int t) {
 void btree_destroy(btree_t *tree) {
     if (!tree) return;
     if (tree->root)
-        bt_node_destroy(tree, tree->root, tree->conf->t);
-    tree->conf->free(tree);
+        bt_node_destroy(tree, tree->root, tree->conf->tier);
+    void (*f)(void *ptr) = tree->conf->free;
+    tree->conf->free(tree->conf);
+    f(tree);
 }
 
 // 创建B树
@@ -47,7 +48,7 @@ btree_t* btree_create(bt_conf_t *conf) {
         c = conf->malloc(sizeof(bt_conf_t));
         memcpy(c, conf, sizeof(bt_conf_t));
     }
-    if (c->t < 2) c->t = 2;   // 最小度数至少为2
+    if (c->tier < 2) c->tier = 2;   // 最小度数至少为2
     if (!c->malloc) c->malloc = malloc;
     if (!c->calloc) c->calloc = calloc;
     if (!c->free) c->free = free;
@@ -69,21 +70,19 @@ btree_t* btree_create(bt_conf_t *conf) {
 bt_node_t* bt_node_create(btree_t *tree, bool leaf) {
     bt_node_t *node = (bt_node_t*)tree->conf->malloc(sizeof(bt_node_t));
     if (!node) return NULL;
-    int t = tree->conf->t;
+    int t = tree->conf->tier;
     if (t < 2) t = 2;   // 最小度数至少为2
     node->n = 0;
     node->leaf = leaf;
     node->keys = (bt_key_t*)tree->conf->malloc((2*t - 1) * sizeof(bt_key_t));
-    node->values = (bt_val_t*)tree->conf->malloc((2*t - 1) * sizeof(bt_val_t));
     node->children = (bt_node_t**)tree->conf->malloc((2*t) * sizeof(bt_node_t*));
-    if (!node->keys || !node->values || !node->children) {
-        tree->conf->free(node->keys); tree->conf->free(node->values); tree->conf->free(node->children); tree->conf->free(node);
+    if (!node->keys || !node->children) {
+        tree->conf->free(node->keys); tree->conf->free(node->children); tree->conf->free(node);
         return NULL;
     }
     for (int i = 0; i < 2*t; i++) {
         if (i < 2*t-1) {
             node->keys[i] = KNULL;
-            node->values[i] = VNULL;
         }
         node->children[i] = NULL;
     }
@@ -91,39 +90,21 @@ bt_node_t* bt_node_create(btree_t *tree, bool leaf) {
 }
 
 // 查找键（非静态，供 delete.c 使用）
-bt_val_t btree_search_node(const bt_node_t *node, bt_key_t key, bt_cmp_t cmp, int t) {
+bool btree_search_node(const bt_node_t *node, bt_key_t key, bt_cmp_t cmp, int t) {
     int i = 0;
     while (i < node->n && cmp(key, node->keys[i]) > 0)
         i++;
     if (i < node->n && cmp(key, node->keys[i]) == 0)
-        return node->values[i];
+        return true;
     if (node->leaf)
-        return VNULL;
+        return false;
     return btree_search_node(node->children[i], key, cmp, t);
 }
 
-bt_val_t btree_search(const btree_t *tree, bt_key_t key) {
-    if (!tree || !tree->root) return VNULL;
-    bt_val_t value = btree_search_node(tree->root, key, tree->conf->cmp, tree->conf->t);
-    return value;
-}
-
-// 更新键对应的值
-bool btree_update(btree_t *tree, bt_key_t key, bt_val_t new_value) {
+bool btree_search(const btree_t *tree, bt_key_t key) {
     if (!tree || !tree->root) return false;
-    bt_node_t *node = tree->root;
-    while (node) {
-        int i = 0;
-        while (i < node->n && tree->conf->cmp(key, node->keys[i]) > 0)
-            i++;
-        if (i < node->n && tree->conf->cmp(key, node->keys[i]) == 0) {
-            node->values[i] = new_value;
-            return true;
-        }
-        if (node->leaf) break;
-        node = node->children[i];
-    }
-    return false;
+    bool ret = btree_search_node(tree->root, key, tree->conf->cmp, tree->conf->tier);
+    return ret;
 }
 
 // 中序遍历（递归）
@@ -132,7 +113,7 @@ static void btree_inorder_node(const bt_node_t *node, btree_visit_t visit, void 
     for (int i = 0; i < node->n; i++) {
         if (!node->leaf)
             btree_inorder_node(node->children[i], visit, userdata);
-        visit(node->keys[i], node->values[i], userdata);
+        visit(node->keys[i], userdata);
     }
     if (!node->leaf)
         btree_inorder_node(node->children[node->n], visit, userdata);

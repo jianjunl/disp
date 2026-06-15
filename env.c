@@ -18,7 +18,7 @@
 
 #ifndef DISP_ENV_HASHING
 
-#include "bt/btree.h"
+#include "btree/btree.h"
 
 static inline void* bt_malloc_gc(size_t size) {
     return gc_typed_malloc(size, &GC_TYPE_PTR_ARRAY);
@@ -39,7 +39,7 @@ static bt_conf_t bt_conf_gc = (bt_conf_t) {
     .calloc = bt_calloc_gc,
     .free   = bt_free_gc,
     .cmp    = bt_cmp,
-    .t      = 3                      // 最小度数（每个节点至少有 t-1 个键）
+    .tier   = 3              // 最小度数（每个节点至少有 t-1 个键）
 };
 
 struct disp_env {

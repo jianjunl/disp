@@ -5,7 +5,7 @@
 //#include "chuncked.h"
 #include "gc/gc.h"
 #include "flat/flat.h"
-#include "bt/btree.h"
+#include "btree/btree.h"
 
 static inline int bt_cmp(bt_key_t a, bt_key_t b) {
     return strcmp((char *)a, (char *)b);
@@ -16,7 +16,7 @@ static bt_conf_t bt_conf_nogc = {
     .calloc = calloc,
     .free   = free,
     .cmp    = bt_cmp,
-    .t      = 3 // 最小度数（每个节点至少有 t-1 个键）
+    .tier   = 3 // 最小度数（每个节点至少有 t-1 个键）
 };
 
 static flat_conf_t flat_conf = {

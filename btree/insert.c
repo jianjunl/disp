@@ -3,7 +3,7 @@
 
 // 在非满节点中插入键值对（辅助函数）
 void btree_insert_nonfull(btree_t *tree, bt_node_t *node, bt_key_t key, bt_val_t value) {
-    int t = tree->conf->t;
+    int t = tree->conf->tier;
     int i = node->n - 1;
     
     if (node->leaf) {
@@ -39,7 +39,7 @@ void btree_insert(btree_t *tree, bt_key_t key, bt_val_t value) {
     bt_node_t *root = tree->root;
     
     // 如果根节点已满，需要分裂并创建新根
-    if (root->n == 2*tree->conf->t - 1) {
+    if (root->n == 2*tree->conf->tier - 1) {
         bt_node_t *new_root = bt_node_create(tree, false);
         if (!new_root) return;
         new_root->children[0] = root;
