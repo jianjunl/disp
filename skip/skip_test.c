@@ -38,7 +38,7 @@ void test_int() {
     skip_list *sl = skip_create(NULL);
     int vals[] = {3,6,7,9,12,17,19,21,25,26};
     for (size_t i = 0; i < sizeof(vals)/sizeof(vals[0]); i++)
-        skip_insert(sl, vals[i]);
+        skip_update(sl, vals[i]);
 
     assert(skip_search(sl, 6) == true);
     assert(skip_search(sl, 100) == false);
@@ -79,11 +79,11 @@ void test_string() {
     printf("=== 字符串测试 ===\n");
     skip_list *sl = skip_create(&str_conf);
     char *s1 = "aaaaa", *s2 = "baaaa", *s3 = "acaaa", *s4 = "aaada", *s5 = "dddaaaaa";
-    skip_insert(sl, (uintptr_t)s1);
-    skip_insert(sl, (uintptr_t)s2);
-    skip_insert(sl, (uintptr_t)s3);
-    skip_insert(sl, (uintptr_t)s4);
-    skip_insert(sl, (uintptr_t)s5);
+    skip_update(sl, (uintptr_t)s1);
+    skip_update(sl, (uintptr_t)s2);
+    skip_update(sl, (uintptr_t)s3);
+    skip_update(sl, (uintptr_t)s4);
+    skip_update(sl, (uintptr_t)s5);
 
     dump_str(sl);
     assert(skip_search(sl, (uintptr_t)s1) == true);
@@ -161,7 +161,7 @@ void test_random_and_memory() {
         keys[j] = tmp;
     }
 
-    for (int i = 0; i < N; i++) skip_insert(sl, keys[i]);
+    for (int i = 0; i < N; i++) skip_update(sl, keys[i]);
     for (int i = 0; i < N; i++) assert(skip_search(sl, keys[i]) == true);
 
     // 删除前一半（随机顺序删除）

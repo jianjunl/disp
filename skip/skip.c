@@ -3,6 +3,10 @@
 #include <time.h>
 #include "skip.h"
 
+/* P_FACTOR 越大，层数越高，查找平均时间复杂度向 O(log n) 靠近，但内存占用增加。典型值 0.5 或 0.25。
+   最大层数 MAX_LEVEL 通常设为 log₂(N) 的上限，例如 N=10^6 时，MAX_LEVEL=20 足够
+   公式：MAX_LEVEL = ceil(log2(expected_max_elements)) + 1。
+*/
 #define MAX_LEVEL 16
 #define P_FACTOR  0.5
 
@@ -94,6 +98,37 @@ void skip_insert(skip_list *sl, uintptr_t value) {
         new_node->forward[i] = update[i]->forward[i];
         update[i]->forward[i] = new_node;
     }
+}
+
+bool skip_update(skip_list *sl, uintptr_t value) {
+    skip_node *update[MAX_LEVEL];
+    skip_node *curr = sl->head;
+
+    // 查找位置，同时记录 update 数组
+    for (int i = sl->level - 1; i >= 0; i--) {
+        while (curr->forward[i] && sl->conf->cmp(curr->forward[i]->value, value) < 0)
+            curr = curr->forward[i];
+        update[i] = curr;
+    }
+    curr = curr->forward[0];
+    if (curr && sl->conf->cmp(curr->value, value) == 0) {
+        // 存在：替换值（假设用户需要更新）
+        curr->value = value;
+        return true;
+    }
+    // 不存在：执行插入（复用插入逻辑）
+    int lvl = random_level();
+    if (lvl > sl->level) {
+        for (int i = sl->level; i < lvl; i++)
+            update[i] = sl->head;
+        sl->level = lvl;
+    }
+    skip_node *new_node = create_node(sl, value, lvl);
+    for (int i = 0; i < lvl; i++) {
+        new_node->forward[i] = update[i]->forward[i];
+        update[i]->forward[i] = new_node;
+    }
+    return false;  // 插入新节点
 }
 
 bool skip_delete(skip_list *sl, uintptr_t value) {
