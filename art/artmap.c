@@ -4,6 +4,26 @@
 #include <string.h>
 #include "artmap.h"
 
+typedef enum {
+    LEAF,
+    NODE4,
+    NODE16,
+    NODE48,
+    NODE256
+} AMAP_NODE;
+
+struct amap_node {
+    union {
+        struct { uint8_t keys[4]; struct amap_node *child[4]; } n4;
+        struct { uint8_t keys[16]; struct amap_node *child[16]; } n16;
+        struct { uint8_t index[256]; struct amap_node *child[48]; } n48;
+        struct { struct amap_node *child[256]; } n256;
+        struct { uint8_t key[AMAP_KLEN]; void *val; } leaf;
+    };
+    uint32_t children;
+    AMAP_NODE type;
+};
+
 static amap_conf default_conf = (amap_conf) {
     .malloc = malloc,
     .calloc = calloc,

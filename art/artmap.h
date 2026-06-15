@@ -12,25 +12,7 @@ typedef struct amap_conf {
     void  (*free)(void *ptr);
 } amap_conf;
 
-typedef enum {
-    LEAF,
-    NODE4,
-    NODE16,
-    NODE48,
-    NODE256
-} AMAP_NODE;
-
-typedef struct amap_node {
-    union {
-        struct { uint8_t keys[4]; struct amap_node *child[4]; } n4;
-        struct { uint8_t keys[16]; struct amap_node *child[16]; } n16;
-        struct { uint8_t index[256]; struct amap_node *child[48]; } n48;
-        struct { struct amap_node *child[256]; } n256;
-        struct { uint8_t key[AMAP_KLEN]; void *val; } leaf;
-    };
-    uint32_t children;
-    AMAP_NODE type;
-} amap_node;
+typedef struct amap_node amap_node;
 
 typedef struct {
     amap_node *root;

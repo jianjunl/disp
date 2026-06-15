@@ -12,25 +12,7 @@ typedef struct aset_conf {
     void  (*free)(void *ptr);
 } aset_conf;
 
-typedef enum {
-    LEAF,
-    NODE4,
-    NODE16,
-    NODE48,
-    NODE256
-} ASET_NODE;
-
-typedef struct aset_node {
-    union {
-        struct { uint8_t keys[4]; struct aset_node *child[4]; } n4;
-        struct { uint8_t keys[16]; struct aset_node *child[16]; } n16;
-        struct { uint8_t index[256]; struct aset_node *child[48]; } n48;
-        struct { struct aset_node *child[256]; } n256;
-        struct { uint8_t key[ASET_KLEN]; } leaf;
-    };
-    uint32_t children;
-    ASET_NODE type;
-} aset_node;
+typedef struct aset_node aset_node;
 
 typedef struct {
     aset_node *root;
