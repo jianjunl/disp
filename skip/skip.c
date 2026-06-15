@@ -75,7 +75,7 @@ bool skip_search(skip_list *sl, uintptr_t target) {
     return curr && sl->conf->cmp(curr->value, target) == 0;
 }
 
-void skip_insert(skip_list *sl, uintptr_t value) {
+void skip_insert_dup(skip_list *sl, uintptr_t value) {
     skip_node *update[MAX_LEVEL];
     skip_node *curr = sl->head;
 
@@ -100,6 +100,36 @@ void skip_insert(skip_list *sl, uintptr_t value) {
     }
 }
 
+bool skip_insert(skip_list *sl, uintptr_t value) {
+    skip_node *update[MAX_LEVEL];
+    skip_node *curr = sl->head;
+
+    // 查找位置，同时记录 update 数组
+    for (int i = sl->level - 1; i >= 0; i--) {
+        while (curr->forward[i] && sl->conf->cmp(curr->forward[i]->value, value) < 0)
+            curr = curr->forward[i];
+        update[i] = curr;
+    }
+    curr = curr->forward[0];
+    if (curr && sl->conf->cmp(curr->value, value) == 0) {
+        // 存在：不替换值
+        return true;
+    }
+    // 不存在：执行插入（复用插入逻辑）
+    int lvl = random_level();
+    if (lvl > sl->level) {
+        for (int i = sl->level; i < lvl; i++)
+            update[i] = sl->head;
+        sl->level = lvl;
+    }
+    skip_node *new_node = create_node(sl, value, lvl);
+    for (int i = 0; i < lvl; i++) {
+        new_node->forward[i] = update[i]->forward[i];
+        update[i]->forward[i] = new_node;
+    }
+    return false;  // 插入新节点
+}
+
 bool skip_update(skip_list *sl, uintptr_t value) {
     skip_node *update[MAX_LEVEL];
     skip_node *curr = sl->head;
@@ -112,7 +142,7 @@ bool skip_update(skip_list *sl, uintptr_t value) {
     }
     curr = curr->forward[0];
     if (curr && sl->conf->cmp(curr->value, value) == 0) {
-        // 存在：替换值（假设用户需要更新）
+        // 存在：替换值（用户需要更新）
         curr->value = value;
         return true;
     }
