@@ -115,7 +115,7 @@ void* gc_typed_malloc(size_t size, const gc_type_info_t *type_info) {
     gc_blocks      = blk;
     gc_allocated  += size;
     LOG_DEBUG("allocated block %p (user %p) size %zu, total allocated %zu", blk, user_ptr, size, gc_allocated);
-    gc_hash_insert(user_ptr, blk);
+    gc_block_insert(user_ptr, blk);
     return user_ptr;
 }
 
@@ -167,7 +167,7 @@ void gc_free(void *ptr) {
         return;
     }
 
-    gc_hash_remove(ptr);
+    gc_block_remove(ptr);
 
     gc_allocated -= blk->size;
 

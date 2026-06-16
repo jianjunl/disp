@@ -21,5 +21,5 @@ typedef struct gc_block {
 gc_block_t* gc_find_block(void *ptr);
 
 /* Internal hash‑table helpers – used by gc_malloc and gc_sweep */
-void gc_hash_insert(void *ptr, gc_block_t *blk);
-void gc_hash_remove(void *ptr);
+void gc_block_insert(void *ptr, gc_block_t *blk);
+void gc_block_remove(void *ptr);

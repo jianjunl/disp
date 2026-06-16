@@ -167,7 +167,7 @@ void gc_sweep(void) {
                 gc_clear_weak_refs_for_block(curr);
             }
             gc_os_free(curr->ptr, curr->size);
-            gc_hash_remove(curr->ptr);
+            gc_block_remove(curr->ptr);
             gc_allocated -= curr->size;
             freed += curr->size;
             freed_blocks++;
@@ -204,7 +204,7 @@ void gc_sweep(void) {
     while (curr) {
         if (!curr->marked) {
             gc_os_free(curr->ptr, curr->size);
-            gc_hash_remove(curr->ptr);
+            gc_block_remove(curr->ptr);
             gc_allocated -= curr->size;
             freed += curr->size;
             freed_blocks++;
