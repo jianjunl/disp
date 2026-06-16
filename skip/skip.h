@@ -36,13 +36,10 @@ skip_list *skip_create(skip_conf *conf);
 void skip_destroy(skip_list *sl);
 
 // 基本操作
-bool skip_search(skip_list *sl, uintptr_t target);
+bool skip_contains(skip_list *sl, uintptr_t target);
 // 可重复键插入
-void skip_insert_dup(skip_list *sl, uintptr_t value);
 // 实现“不存在则插入，存在则返回” 不使用skip_insert_dup保证“唯一键”
-bool skip_insert(skip_list *sl, uintptr_t value);
-// 实现“不存在则插入，存在则替换值” 不使用skip_insert_dup保证“唯一键”
-bool skip_update(skip_list *sl, uintptr_t value);
+bool skip_add(skip_list *sl, uintptr_t value, bool unique);
 bool skip_delete(skip_list *sl, uintptr_t value);
 
 // 遍历接口（基于第 0 层单向链表）
