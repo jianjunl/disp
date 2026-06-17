@@ -11,7 +11,7 @@
 static void dump_int(skip_list *sl) {
     printf("list: ");
     for (skip_node *n = skip_first(sl); n; n = skip_next(n))
-        printf("%ld ", (long)skip_node_value(n));
+        printf("%ld ", (long)skip_node_value(n).k);
     printf("\n");
 }
 
@@ -19,7 +19,7 @@ static void dump_int(skip_list *sl) {
 static void dump_str(skip_list *sl) {
     printf("list: ");
     for (skip_node *n = skip_first(sl); n; n = skip_next(n))
-        printf("\"%s\" ", (char *)skip_node_value(n));
+        printf("\"%s\" ", (char *)skip_node_value(n).k);
     printf("\n");
 }
 
@@ -27,7 +27,7 @@ static void dump_str(skip_list *sl) {
 static void validate(skip_list *sl, skip_cmp cmp) {
     skip_node *prev = NULL;
     for (skip_node *n = skip_first(sl); n; n = skip_next(n)) {
-        if (prev) assert(cmp(skip_node_value(prev), skip_node_value(n)) <= 0);
+        if (prev) assert(cmp(skip_node_value(prev).k, skip_node_value(n).k) <= 0);
         prev = n;
     }
 }
@@ -38,27 +38,27 @@ void test_int() {
     skip_list *sl = skip_create(NULL);
     int vals[] = {3,6,7,9,12,17,19,21,25,26};
     for (size_t i = 0; i < sizeof(vals)/sizeof(vals[0]); i++)
-        skip_add(sl, vals[i], true);
+        skip_add(sl, (skip_data){vals[i], i}, true);
 
-    assert(skip_contains(sl, 6) == true);
-    assert(skip_contains(sl, 100) == false);
+    assert(skip_search(sl, 6) != NULL);
+    assert(skip_search(sl, 100) == NULL);
     assert(skip_delete(sl, 19) == true);
-    assert(skip_contains(sl, 19) == false);
+    assert(skip_search(sl, 19) == NULL);
     assert(skip_delete(sl, 19) == false);
 
     // 重复插入 12
-    skip_add(sl, 12, false);
-    skip_add(sl, 12, false);
+    skip_add(sl, (skip_data){12, 12}, false);
+    skip_add(sl, (skip_data){12, 12}, false);
 
     int prev = -1, cnt12 = 0;
     for (skip_node *n = skip_first(sl); n; n = skip_next(n)) {
-        int v = (int)skip_node_value(n);
+        int v = (int)skip_node_value(n).k;
         assert(prev <= v);
         if (v == 12) cnt12++;
         prev = v;
     }
     assert(cnt12 == 3);  // 原有 1 个 + 新插 2 个 = 3 个
-    validate(sl, default_cmp);
+    validate(sl, skip_default_cmp);
     skip_destroy(sl);
     printf("整数测试通过\n\n");
 }
@@ -79,24 +79,24 @@ void test_string() {
     printf("=== 字符串测试 ===\n");
     skip_list *sl = skip_create(&str_conf);
     char *s1 = "aaaaa", *s2 = "baaaa", *s3 = "acaaa", *s4 = "aaada", *s5 = "dddaaaaa";
-    skip_add(sl, (uintptr_t)s1, true);
-    skip_add(sl, (uintptr_t)s2, true);
-    skip_add(sl, (uintptr_t)s3, true);
-    skip_add(sl, (uintptr_t)s4, true);
-    skip_add(sl, (uintptr_t)s5, true);
+    skip_add(sl, (skip_data){(uintptr_t)s1, (uintptr_t)s1}, true);
+    skip_add(sl, (skip_data){(uintptr_t)s2, (uintptr_t)s2}, true);
+    skip_add(sl, (skip_data){(uintptr_t)s3, (uintptr_t)s3}, true);
+    skip_add(sl, (skip_data){(uintptr_t)s4, (uintptr_t)s4}, true);
+    skip_add(sl, (skip_data){(uintptr_t)s5, (uintptr_t)s5}, true);
 
     dump_str(sl);
-    assert(skip_contains(sl, (uintptr_t)s1) == true);
-    assert(skip_contains(sl, (uintptr_t)s4) == true);
-    assert(skip_contains(sl, (uintptr_t)"notexist") == false);
+    assert(skip_search(sl, (uintptr_t)s1) != NULL);
+    assert(skip_search(sl, (uintptr_t)s4) != NULL);
+    assert(skip_search(sl, (uintptr_t)"notexist") == NULL);
     assert(skip_delete(sl, (uintptr_t)s4) == true);
-    assert(skip_contains(sl, (uintptr_t)s4) == false);
+    assert(skip_search(sl, (uintptr_t)s4) == NULL);
 
     char *expected[] = {"aaaaa", "acaaa", "baaaa", "dddaaaaa"};
     int idx = 0;
     for (skip_node *n = skip_first(sl); n; n = skip_next(n)) {
         assert(idx < 4);
-        assert(strcmp((char *)skip_node_value(n), expected[idx]) == 0);
+        assert(strcmp((char *)skip_node_value(n).k, expected[idx]) == 0);
         idx++;
     }
     validate(sl, str_cmp);
@@ -108,9 +108,9 @@ void test_string() {
 void test_duplicates() {
     printf("=== 重复键行为测试 ===\n");
     skip_list *sl = skip_create(NULL);
-    skip_add(sl, 5, false);
-    skip_add(sl, 5, false);
-    skip_add(sl, 5, false);
+    skip_add(sl, (skip_data){5, 5}, false);
+    skip_add(sl, (skip_data){5, 5}, false);
+    skip_add(sl, (skip_data){5, 5}, false);
     dump_int(sl);  // 应输出三个 5，顺序与插入相反（后插入的在前）
 
     int cnt = 0;
@@ -161,26 +161,26 @@ void test_random_and_memory() {
         keys[j] = tmp;
     }
 
-    for (int i = 0; i < N; i++) skip_add(sl, keys[i], true);
-    for (int i = 0; i < N; i++) assert(skip_contains(sl, keys[i]) == true);
+    for (int i = 0; i < N; i++) skip_add(sl, (skip_data){keys[i], i}, true);
+    for (int i = 0; i < N; i++) assert(skip_search(sl, keys[i]) != NULL);
 
     // 删除前一半（随机顺序删除）
     for (int i = 0; i < N / 2; i++) {
         assert(skip_delete(sl, keys[i]) == true);
     }
-    for (int i = 0; i < N / 2; i++) assert(skip_contains(sl, keys[i]) == false);
-    for (int i = N / 2; i < N; i++) assert(skip_contains(sl, keys[i]) == true);
+    for (int i = 0; i < N / 2; i++) assert(skip_search(sl, keys[i]) == NULL);
+    for (int i = N / 2; i < N; i++) assert(skip_search(sl, keys[i]) != NULL);
 
     // 验证有序性和元素个数
     int prev = -1, cnt = 0;
     for (skip_node *n = skip_first(sl); n; n = skip_next(n)) {
-        int v = (int)skip_node_value(n);
+        int v = (int)skip_node_value(n).k;
         assert(prev < v);   // 严格递增（因为键唯一）
         prev = v;
         cnt++;
     }
     assert(cnt == N - N/2);
-    validate(sl, default_cmp);
+    validate(sl, skip_default_cmp);
 
     skip_destroy(sl);
     free(keys);

@@ -43,9 +43,92 @@ void gc_set_validate_hook(gc_validate_fn fn) {
 // ---------- Global block list (still maintained) ---------- //
 gc_block_t *gc_blocks = NULL;
 
-/*
+static pthread_rwlock_t gc_block_rwlock = PTHREAD_RWLOCK_INITIALIZER;
+
+//#define GC_BLOCK_HASH
+
+#ifndef GC_BLOCK_HASH
+
+#ifndef GC_BLOCK_AMAP
+
+#include "robin/robin_table.h"
+
+static robin_table_t *rt = NULL;
+
+void gc_block_remove(void *ptr) {
+    pthread_rwlock_wrlock(&gc_block_rwlock);
+    uintptr_t key = (uintptr_t)ptr;
+    pthread_rwlock_wrlock(&gc_block_rwlock);
+    if (rt) {
+        robin_table_del(rt, &key, sizeof(key));
+    }
+    pthread_rwlock_unlock(&gc_block_rwlock);
+}
+
+void gc_block_insert(void *ptr, gc_block_t *blk) {
+    (void)ptr;
+    pthread_rwlock_wrlock(&gc_block_rwlock);
+    if (!rt) rt = robin_table_create(1024, robin_table_rapidhash, RT_RAPID_SEED);
+    if (rt) {
+        robin_table_put(rt, &(blk->ptr), sizeof(blk->ptr), blk);
+    }
+    pthread_rwlock_unlock(&gc_block_rwlock);
+}
+
+gc_block_t* gc_find_block(void *ptr) {
+    if (!ptr) return NULL;
+
+    // Apply user defined pointer validate hook (NaN boxing decode)
+    ptr = gc_validate_hook(ptr);
+    if (!ptr) return NULL;
+
+    uintptr_t key = (uintptr_t)ptr;
+    gc_block_t *blk = NULL;
+    pthread_rwlock_rdlock(&gc_block_rwlock);
+    if (rt) {
+        blk = robin_table_get(rt, &key, sizeof(key));
+    }
+    pthread_rwlock_unlock(&gc_block_rwlock);
+    return blk;
+}
+
+#else // GC_BLOCK_AMAP
+
+#include "art/artmap.h"
+
+static AMAP t = {.root = 0, .conf = &(amap_conf){malloc, calloc, free}};
+
+void gc_block_remove(void *ptr) {
+    pthread_rwlock_wrlock(&gc_block_rwlock);
+    amap_delete_with_shrink(&t, (uint64_t)ptr);
+    pthread_rwlock_unlock(&gc_block_rwlock);
+}
+
+void gc_block_insert(void *ptr, gc_block_t *blk) {
+    pthread_rwlock_wrlock(&gc_block_rwlock);
+    amap_insert(&t, (uint64_t)ptr, blk);
+    pthread_rwlock_unlock(&gc_block_rwlock);
+}
+
+gc_block_t* gc_find_block(void *ptr) {
+    if (!ptr) return NULL;
+
+    // Apply user defined pointer validate hook (NaN boxing decode)
+    ptr = gc_validate_hook(ptr);
+    if (!ptr) return NULL;
+
+    pthread_rwlock_rdlock(&gc_block_rwlock);
+    gc_block_t *blk = (gc_block_t *)amap_search(&t, (uint64_t)ptr);
+    pthread_rwlock_unlock(&gc_block_rwlock);
+    return blk;
+}
+
+#endif // GC_BLOCK_AMAP
+
+#else // GC_BLOCK_HASH
+
 // ---------- Hash table for fast user‑pointer → block lookup ---------- //
-#define GC_HASH_SIZE  1024               // must be a power of two
+#define GC_HASH_SIZE  1024*4             // must be a power of two
 #define GC_HASH_MASK  (GC_HASH_SIZE - 1)
 
 typedef struct gc_hash_entry {
@@ -55,7 +138,6 @@ typedef struct gc_hash_entry {
 } gc_hash_entry_t;
 
 static gc_hash_entry_t *gc_hash_table[GC_HASH_SIZE];
-static pthread_rwlock_t gc_block_rwlock = PTHREAD_RWLOCK_INITIALIZER;
 
 // Simple but reasonable hash for pointers
 static inline unsigned int gc_hash_ptr(void *ptr) {
@@ -120,35 +202,5 @@ gc_block_t* gc_find_block(void *ptr) {
     pthread_rwlock_unlock(&gc_block_rwlock);
     return NULL;
 }
-*/
 
-static pthread_rwlock_t gc_block_rwlock = PTHREAD_RWLOCK_INITIALIZER;
-
-#include "art/artmap.h"
-
-static AMAP t = {.root = 0, .conf = &(amap_conf){malloc, calloc, free}};
-
-void gc_block_remove(void *ptr) {
-    pthread_rwlock_wrlock(&gc_block_rwlock);
-    amap_delete_with_shrink(&t, (uint64_t)ptr);
-    pthread_rwlock_unlock(&gc_block_rwlock);
-}
-
-void gc_block_insert(void *ptr, gc_block_t *blk) {
-    pthread_rwlock_wrlock(&gc_block_rwlock);
-    amap_insert(&t, (uint64_t)ptr, blk);
-    pthread_rwlock_unlock(&gc_block_rwlock);
-}
-
-gc_block_t* gc_find_block(void *ptr) {
-    if (!ptr) return NULL;
-
-    // Apply user defined pointer validate hook (NaN boxing decode)
-    ptr = gc_validate_hook(ptr);
-    if (!ptr) return NULL;
-
-    pthread_rwlock_rdlock(&gc_block_rwlock);
-    gc_block_t *blk = (gc_block_t *)amap_search(&t, (uint64_t)ptr);
-    pthread_rwlock_unlock(&gc_block_rwlock);
-    return blk;
-}
+#endif // GC_BLOCK_HASH

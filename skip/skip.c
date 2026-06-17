@@ -16,8 +16,13 @@ struct skip_list {
     int level;          // 当前最大层数（1 ~ MAX_LEVEL）
 };
 
+struct skip_node {
+    struct skip_node **forward;  // 动态数组，长度等于该节点的层数
+    skip_data value;
+};
+
 // 创建节点（forward 数组长度为 level）
-static skip_node *create_node(skip_list *sl, uintptr_t value, int level) {
+static skip_node *create_node(skip_list *sl, skip_data value, int level) {
     skip_node *node = (skip_node *)sl->conf->malloc(sizeof(skip_node));
     node->value = value;
     node->forward = (skip_node **)sl->conf->malloc(sizeof(skip_node *) * level);
@@ -27,7 +32,7 @@ static skip_node *create_node(skip_list *sl, uintptr_t value, int level) {
 }
 
 static skip_conf default_conf = {
-    .cmp    = default_cmp,
+    .cmp    = skip_default_cmp,
     .malloc = malloc,
     .calloc = calloc,
     .free   = free
@@ -35,7 +40,7 @@ static skip_conf default_conf = {
 
 skip_list *skip_create(skip_conf *c) {
     if (!c) c = &default_conf;
-    if (!c->cmp)    c->cmp    = default_cmp;
+    if (!c->cmp)    c->cmp    = skip_default_cmp;
     if (!c->malloc) c->malloc = malloc;
     if (!c->calloc) c->calloc = calloc;
     if (!c->free)   c->free   = free;
@@ -44,7 +49,7 @@ skip_list *skip_create(skip_conf *c) {
     if (!sl) return NULL;
 
     sl->conf = c;
-    sl->head = create_node(sl, 0, MAX_LEVEL);  // head 的值永远不会被比较
+    sl->head = create_node(sl, (skip_data){0, 0}, MAX_LEVEL);  // head 的值永远不会被比较
     sl->level = 0;
 
     // 初始化随机数种子（仅一次）
@@ -65,30 +70,33 @@ static int random_level(void) {
     return level;
 }
 
-bool skip_contains(skip_list *sl, uintptr_t target) {
+skip_node *skip_search(skip_list *sl, uintptr_t key) {
     skip_node *curr = sl->head;
     for (int i = sl->level - 1; i >= 0; i--) {
-        while (curr->forward[i] && sl->conf->cmp(curr->forward[i]->value, target) < 0)
+        while (curr->forward[i] && sl->conf->cmp(curr->forward[i]->value.k, key) < 0)
             curr = curr->forward[i];
     }
     curr = curr->forward[0];
-    return curr && sl->conf->cmp(curr->value, target) == 0;
+    return curr && sl->conf->cmp(curr->value.k, key) == 0 ? curr : NULL;
 }
 
-bool skip_add(skip_list *sl, uintptr_t value, bool unique) {
+bool skip_add(skip_list *sl, skip_data value, bool unique) {
     skip_node *update[MAX_LEVEL];
     skip_node *curr = sl->head;
 
     // 查找位置，同时记录 update 数组
     for (int i = sl->level - 1; i >= 0; i--) {
-        while (curr->forward[i] && sl->conf->cmp(curr->forward[i]->value, value) < 0)
+        while (curr->forward[i] && sl->conf->cmp(curr->forward[i]->value.k, value.k) < 0)
             curr = curr->forward[i];
         update[i] = curr;
     }
 
     if (unique) {
         curr = curr->forward[0];
-        if (curr && sl->conf->cmp(curr->value, value) == 0) return true;
+        if (curr && sl->conf->cmp(curr->value.k, value.k) == 0) {
+            curr->value = value;
+            return true;
+        }
     }
 
     int lvl = random_level();
@@ -105,18 +113,18 @@ bool skip_add(skip_list *sl, uintptr_t value, bool unique) {
     return false;  // 插入新节点
 }
 
-bool skip_delete(skip_list *sl, uintptr_t value) {
+bool skip_delete(skip_list *sl, uintptr_t key) {
     skip_node *update[MAX_LEVEL];
     skip_node *curr = sl->head;
 
     for (int i = sl->level - 1; i >= 0; i--) {
-        while (curr->forward[i] && sl->conf->cmp(curr->forward[i]->value, value) < 0)
+        while (curr->forward[i] && sl->conf->cmp(curr->forward[i]->value.k, key) < 0)
             curr = curr->forward[i];
         update[i] = curr;
     }
 
     curr = curr->forward[0];
-    if (!curr || sl->conf->cmp(curr->value, value) != 0)
+    if (!curr || sl->conf->cmp(curr->value.k, key) != 0)
         return false;
 
     // 从各层链表中移除 curr
@@ -154,4 +162,8 @@ skip_node *skip_first(const skip_list *sl) {
 
 skip_node *skip_next(const skip_node *node) {
     return node->forward[0];
+}
+
+inline skip_data skip_node_value(const skip_node *node) {
+    return node->value;
 }
