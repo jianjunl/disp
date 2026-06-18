@@ -46,4 +46,6 @@ flat_val_t flat_array_get(const flat_array_t *arr, size_t idx);
 // 设置元素（不检查边界）
 void flat_array_set(flat_array_t *arr, size_t idx, flat_val_t val);
 
+void* flat_array_get_ptr(const flat_array_t *arr, size_t idx);
+
 #endif // FLAT_ARRAY_H

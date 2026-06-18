@@ -79,3 +79,8 @@ void flat_array_set(flat_array_t *arr, size_t idx, flat_val_t val) {
     assert(idx < arr->len);
     ((flat_val_t*)arr->data)[idx] = val;
 }
+
+void* flat_array_get_ptr(const flat_array_t *arr, size_t idx) {
+    assert(idx < arr->len);
+    return &((flat_val_t*)arr->data)[idx];
+}

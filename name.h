@@ -11,5 +11,6 @@
 void disp_init_name_table(void);
 uint64_t disp_get_id(const char *name);
 const char* disp_get_name(uint64_t id);
+void* disp_get_id_ptr(uint64_t id);
 
 #endif // NAME_H

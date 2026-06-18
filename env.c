@@ -15,9 +15,169 @@
 #include "disp.h"
 
 //#define DISP_ENV_BTREE
-#define DISP_ENV_HASHING
+//#define DISP_ENV_HASHING
+
 #ifndef DISP_ENV_HASHING
 #ifndef DISP_ENV_BTREE
+#ifndef DISP_ENV_AMAP
+
+#include "gc/robin/robin_table.h"
+
+static inline void* rt_malloc_gc(size_t size) {
+    return gc_typed_malloc(size, &GC_TYPE_PTR_ARRAY);
+}
+static inline void* rt_calloc_gc(size_t nmemb, size_t size) {
+    return gc_typed_calloc(nmemb, size, &GC_TYPE_PTR_ARRAY);
+}
+static inline void rt_free_gc(void *ptr) {
+    return gc_free(ptr);
+}
+
+static robin_alloc_conf rt_conf_gc = (robin_alloc_conf) {
+    .malloc = rt_malloc_gc,
+    .calloc = rt_calloc_gc,
+    .free   = rt_free_gc
+};
+
+struct disp_env {
+    gc_mutex_t *lock;
+    struct disp_env *parent;
+    robin_table_t *symbols;
+};
+
+GC_STRUCT_TI(disp_env,
+    GC_OFF(disp_env, lock),
+    GC_OFF(disp_env, parent),
+    GC_OFF(disp_env, symbols)
+);
+
+disp_env_t* disp_new_env(disp_env_t *parent) {
+    disp_env_t *env = gc_typed_malloc(sizeof(disp_env_t), &struct_disp_env_ti);
+    gc_pthread_mutex_init(&env->lock, NULL);
+    env->symbols = robin_table_create(1024, robin_table_rapidhash, RT_RAPID_SEED, &rt_conf_gc);
+    env->parent = parent;
+    return env;
+}
+
+disp_env_t *disp_global_env = NULL;
+
+static void env_lock(const disp_env_t *env) {
+    if(env) gc_pthread_mutex_lock(env->lock);
+    else gc_pthread_mutex_lock(disp_global_env->lock);
+}
+
+static void env_unlock(const disp_env_t *env) {
+    if(env) gc_pthread_mutex_unlock(env->lock);
+    else gc_pthread_mutex_unlock(disp_global_env->lock);
+}
+
+disp_env_t* disp_dup_env(disp_env_t *old) {
+    if (!old) return old;
+    disp_env_t *t = gc_typed_malloc(sizeof(struct disp_env), &struct_disp_env_ti);
+    t->lock    = old->lock;
+    t->symbols = old->symbols;
+    t->parent  = old->parent;
+    return t;
+}
+
+// 查找符号
+disp_val disp_find_symbol(const disp_env_t *env, disp_sid id) {
+    while (env) {
+        env_lock(env);
+#if DISP_BOXING
+        disp_val sym = (disp_val) { .x = (uint64_t)robin_table_get(env->symbols, disp_get_id_ptr(id.id), sizeof(void*)) };
+#else  // DISP_BOXING
+        disp_val sym = (disp_val) { .x = (uint64_t)robin_table_get(env->symbols, disp_get_id_ptr(id.id), sizeof(void*)), .flag = FLAG_SYMBOL };
+#endif // DISP_BOXING
+        env_unlock(env);
+        if (sym.x != 0) return sym;
+        env = env->parent;
+    }
+    return NIL;
+}
+
+// 定义符号
+disp_val disp_define_symbol(const disp_env_t *env, disp_sid id, disp_val value, int final) {
+    env_lock(env);
+#if DISP_BOXING
+    disp_val existing = (disp_val) { .x = (uint64_t)robin_table_get(env->symbols, disp_get_id_ptr(id.id), sizeof(void*)) };
+#else  // DISP_BOXING
+    disp_val existing = (disp_val) { .x = (uint64_t)robin_table_get(env->symbols, disp_get_id_ptr(id.id), sizeof(void*)), .flag = FLAG_SYMBOL };
+#endif // DISP_BOXING
+    if (existing.x != 0) {
+        // 符号已存在，更新其值（如果允许 final 等逻辑）
+        if (!final) {  // 假设 final 标志表示不可修改
+            disp_set_symbol_value_unlock(env, existing, value);
+        }
+        env_unlock(env);
+        return existing;
+    }
+    // 创建新符号
+    disp_val sym = disp_make_symbol(id);
+    robin_table_put(env->symbols, disp_get_id_ptr(id.id), sizeof(void*), (void*)sym.x);
+    disp_set_symbol_value_unlock(env, sym, value);
+    env_unlock(env);
+    return sym;
+}
+
+disp_val disp_intern_symbol(const disp_env_t *env, disp_sid id) {
+    env_lock(env);
+#if DISP_BOXING
+    disp_val existing = (disp_val) { .x = (uint64_t)robin_table_get(env->symbols, disp_get_id_ptr(id.id), sizeof(void*)) };
+#else  // DISP_BOXING
+    disp_val existing = (disp_val) { .x = (uint64_t)robin_table_get(env->symbols, disp_get_id_ptr(id.id), sizeof(void*)), .flag = FLAG_SYMBOL };
+#endif // DISP_BOXING
+    if (existing.x != 0) {
+        env_unlock(env);
+        return existing;
+    }
+    // 创建新符号
+    disp_val sym = disp_make_symbol(id);
+    robin_table_put(env->symbols, disp_get_id_ptr(id.id), sizeof(void*), (void*)sym.x);
+    disp_set_symbol_value_unlock(env, sym, NIL);
+    env_unlock(env);
+    return sym;
+}
+
+disp_val disp_find_symbol_by_name(const disp_env_t *env, const char *name) {
+    disp_sid id = disp_get_sid(name);
+    return disp_find_symbol(env, id);
+}
+
+disp_val disp_define_symbol_by_name(const disp_env_t *env, const char *name, disp_val value, int final) {
+    disp_sid id = disp_get_sid(name);
+    return disp_define_symbol(env, id, value, final);
+}
+
+disp_val disp_intern_symbol_by_name(const disp_env_t *env, const char *name) {
+    disp_sid id = disp_get_sid(name);
+    return disp_intern_symbol(env, id);
+}
+
+inline void disp_set_symbol_value(const disp_env_t *env, disp_val sym, disp_val value) {
+    env_lock(env);
+    disp_set_symbol_value_unlock(env, sym, value);
+    env_unlock(env);
+}
+
+inline bool disp_update_symbol(const disp_env_t *env, disp_val sym) {
+    void* ret = robin_table_get(env->symbols, disp_get_id_ptr(SYM_ID(sym).id), sizeof(void*));
+    robin_table_put(env->symbols, disp_get_id_ptr(SYM_ID(sym).id), sizeof(void*), (void*)sym.x);
+    return ret != NULL;
+}
+
+/* ======================== GC 初始化和全局常量 ======================== */
+
+void disp_init_env() {
+
+    disp_global_env = gc_typed_malloc(sizeof(disp_env_t), &struct_disp_env_ti);
+    gc_pthread_mutex_init(&disp_global_env->lock, NULL);
+    disp_global_env->symbols = robin_table_create(1024, robin_table_rapidhash, RT_RAPID_SEED, &rt_conf_gc);
+
+    gc_add_root(&disp_global_env);
+}
+
+#else // DISP_ENV_AMAP
 
 #include "art/artmap.h"
 
@@ -174,6 +334,8 @@ void disp_init_env() {
 
     gc_add_root(&disp_global_env);
 }
+
+#endif // DISP_ENV_AMAP
 
 #else // DISP_ENV_BTREE
 

@@ -46,6 +46,12 @@
 #define RT_LOAD_FACTOR_PCT_MAX    75U
 #define RT_LOAD_FACTOR_PCT_MIN    25U
 
+static robin_alloc_conf default_alloc_conf = (robin_alloc_conf) {
+    .malloc = malloc,
+    .calloc = calloc,
+    .free   = free
+}; 
+
 typedef struct {
     void* key;
     void* val;
@@ -64,6 +70,7 @@ struct robin_table_t {
     size_t shrink_at;
     uint64_t seed;
     uint64_t (*hash_func)(const void*, size_t, uint64_t);
+    robin_alloc_conf *conf;
 };
 
 typedef struct {
@@ -113,18 +120,25 @@ static inline size_t robin_table_calc_bucket_count(size_t count)
  */
 robin_table_t* robin_table_create(size_t count,
                                   uint64_t (*hash_func)(const void*, size_t, uint64_t),
-                                  uint64_t seed)
+                                  uint64_t seed, robin_alloc_conf *c)
 {
+    if (!c) c = &default_alloc_conf;
+    if (!c->malloc) c->malloc = malloc;
+    if (!c->calloc) c->calloc = calloc;
+    if (!c->free) c->free = free;
+
     robin_table_t* rt;
 
-    rt = malloc(sizeof(robin_table_t));
+    rt = c->malloc(sizeof(robin_table_t));
     if (!rt) {
         return NULL;
     }
+    rt->conf = c;
+
     rt->bucket_count = robin_table_calc_bucket_count(count);
-    rt->buckets = calloc(rt->bucket_count, sizeof(robin_bucket_t));
+    rt->buckets = rt->conf->calloc(rt->bucket_count, sizeof(robin_bucket_t));
     if (!rt->buckets) {
-        free(rt);
+        c->free(rt);
         return NULL;
     }
     rt->count = 0;
@@ -198,7 +212,7 @@ static bool robin_table_resize(robin_table_t* rt, size_t bucket_count)
     RT_ASSERT((bucket_count & (bucket_count - 1)) == 0);
     RT_ASSERT(bucket_count > rt->count);
 
-    new_buckets = calloc(bucket_count, sizeof(robin_bucket_t));
+    new_buckets = rt->conf->calloc(bucket_count, sizeof(robin_bucket_t));
     if (!new_buckets) {
         return false;
     }
@@ -216,7 +230,7 @@ static bool robin_table_resize(robin_table_t* rt, size_t bucket_count)
             robin_table_put0(rt, bucket->key, bucket->klen, bucket->val);
         }
     }
-    free(old_buckets);
+    rt->conf->free(old_buckets);
     return true;
 }
 
@@ -356,11 +370,11 @@ bool robin_table_clear(robin_table_t* rt, bool update_buckets)
     if (update_buckets) {
         robin_bucket_t* new_buckets;
 
-        new_buckets = malloc(rt->init_buckets * sizeof(robin_bucket_t));
+        new_buckets = rt->conf->malloc(rt->init_buckets * sizeof(robin_bucket_t));
         if (!new_buckets) {
             return false;
         }
-        free(rt->buckets);
+        rt->conf->free(rt->buckets);
         rt->buckets = new_buckets;
         rt->bucket_count = rt->init_buckets;
         rt->mask = rt->bucket_count - 1;
@@ -381,9 +395,10 @@ void robin_table_destroy(robin_table_t* rt)
         return;
     }
 
-    free(rt->buckets);
+    rt->conf->free(rt->buckets);
+    robin_alloc_conf *c = rt->conf;
     memset(rt, 0, sizeof(*rt));
-    free(rt);
+    c->free(rt);
 }
 
 /*
@@ -414,7 +429,7 @@ robin_table_iter_t* robin_table_iter_create(const robin_table_t* rt)
 {
     RT_ASSERT(rt != NULL);
 
-    robin_table_iter_impl_t* iter_impl = malloc(sizeof(robin_table_iter_impl_t));
+    robin_table_iter_impl_t* iter_impl = rt->conf->malloc(sizeof(robin_table_iter_impl_t));
     if (!iter_impl) {
         return NULL;
     }
@@ -462,7 +477,9 @@ void robin_table_iter_destroy(robin_table_iter_t* iter)
     }
 
     robin_table_iter_impl_t* iter_impl = (robin_table_iter_impl_t*)iter;
-    free(iter_impl);
+
+    robin_alloc_conf *c = iter_impl->rt->conf;
+    c->free(iter_impl);
 }
 
 /*

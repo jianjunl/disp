@@ -43,11 +43,17 @@ extern "C" {
  */
 #define RT_RAPID_SEED    0xbdd89aa982704029ULL
 
+typedef struct robin_alloc_conf {
+    void* (*malloc)(size_t size);
+    void* (*calloc)(size_t nmemb, size_t size);
+    void  (*free)(void *ptr);
+} robin_alloc_conf;
+
 typedef struct robin_table_t robin_table_t;
 
 robin_table_t* robin_table_create(size_t count,
                                   uint64_t (*hash_func)(const void*, size_t, uint64_t),
-                                  uint64_t seed);
+                                  uint64_t seed, robin_alloc_conf *c);
 void robin_table_destroy(robin_table_t* rt);
 
 void* robin_table_put(robin_table_t* rt, const void* key, size_t klen, void* val);

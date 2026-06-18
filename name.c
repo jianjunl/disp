@@ -26,7 +26,7 @@ static gc_mutex_t    *g_name_lock;
 
 // 初始化全局名称表
 void disp_init_name_table(void) {
-    g_name_to_id = robin_table_create(1024, robin_table_rapidhash, RT_RAPID_SEED);
+    g_name_to_id = robin_table_create(1024, robin_table_rapidhash, RT_RAPID_SEED, NULL);
     g_id_to_name = flat_array_create(&flat_conf);
     gc_pthread_mutex_init(&g_name_lock, NULL);
     gc_add_root(&g_name_lock);
@@ -59,6 +59,12 @@ const char* disp_get_name(uint64_t id) {
     if (id == 0 || id >= flat_array_length(g_id_to_name))
         return NULL;
     return (const char*)flat_array_get(g_id_to_name, id);
+}
+
+void* disp_get_id_ptr(uint64_t id) {
+    if (id == 0 || id >= flat_array_length(g_id_to_name))
+        return NULL;
+    return flat_array_get_ptr(g_id_to_name, id);
 }
 
 #else // DISP_NAME_SKIP
@@ -122,6 +128,12 @@ const char* disp_get_name(uint64_t id) {
     if (id == 0 || id >= flat_array_length(g_id_to_name))
         return NULL;
     return (const char*)flat_array_get(g_id_to_name, id);
+}
+
+void* disp_get_id_ptr(uint64_t id) {
+    if (id == 0 || id >= flat_array_length(g_id_to_name))
+        return NULL;
+    return flat_array_get_ptr(g_id_to_name, id);
 }
 
 #endif // DISP_NAME_SKIP
@@ -188,6 +200,12 @@ const char* disp_get_name(uint64_t id) {
     if (id == 0 || id >= flat_array_length(g_id_to_name))
         return NULL;
     return (const char*)flat_array_get(g_id_to_name, id);
+}
+
+void* disp_get_id_ptr(uint64_t id) {
+    if (id == 0 || id >= flat_array_length(g_id_to_name))
+        return NULL;
+    return flat_array_get_ptr(g_id_to_name, id);
 }
 
 #endif // DISP_NAME_BTREE

@@ -1,3 +1,5 @@
+// gcc -g -std=c11 -fPIC -Wall -Wextra -o t *.c
+
 /*
  * MIT License
  *
@@ -22,7 +24,6 @@
  * SOFTWARE.
  */
 
-// gcc -g -std=c11 -fPIC -Wall -Wextra -o t *.c
 #define _POSIX_C_SOURCE 200809L
 
 #include <stdlib.h>
@@ -123,7 +124,7 @@ TEST_ADD(test_put_str, char** keys, test_rt_options_t rt_opt)
     robin_table_t* rt;
     void* res;
 
-    rt = robin_table_create(rt_opt.count, rt_opt.hash_func, rt_opt.seed);
+    rt = robin_table_create(rt_opt.count, rt_opt.hash_func, rt_opt.seed, NULL);
     ASSERT(rt != NULL);
 
     TEST_TIMER_START();
@@ -144,7 +145,7 @@ TEST_ADD(test_put_int, uint64_t** keys, test_rt_options_t rt_opt)
     robin_table_t* rt;
     void* res;
 
-    rt = robin_table_create(rt_opt.count, rt_opt.hash_func, rt_opt.seed);
+    rt = robin_table_create(rt_opt.count, rt_opt.hash_func, rt_opt.seed, NULL);
     ASSERT(rt != NULL);
 
     TEST_TIMER_START();
@@ -165,7 +166,7 @@ TEST_ADD(test_get_str, char** keys, test_rt_options_t rt_opt)
     robin_table_t* rt;
     void* res;
 
-    rt = robin_table_create(rt_opt.count, rt_opt.hash_func, rt_opt.seed);
+    rt = robin_table_create(rt_opt.count, rt_opt.hash_func, rt_opt.seed, NULL);
     ASSERT(rt != NULL);
 
     TEST_LOOP_START(1);
@@ -192,7 +193,7 @@ TEST_ADD(test_get_int, uint64_t** keys, test_rt_options_t rt_opt)
     robin_table_t* rt;
     void* res;
 
-    rt = robin_table_create(rt_opt.count, rt_opt.hash_func, rt_opt.seed);
+    rt = robin_table_create(rt_opt.count, rt_opt.hash_func, rt_opt.seed, NULL);
     ASSERT(rt != NULL);
 
     TEST_LOOP_START(1);
@@ -219,7 +220,7 @@ TEST_ADD(test_del_str, char** keys, test_rt_options_t rt_opt)
     robin_table_t* rt;
     void* res;
 
-    rt = robin_table_create(rt_opt.count, rt_opt.hash_func, rt_opt.seed);
+    rt = robin_table_create(rt_opt.count, rt_opt.hash_func, rt_opt.seed, NULL);
     ASSERT(rt != NULL);
 
     TEST_LOOP_START(1);
@@ -249,7 +250,7 @@ TEST_ADD(test_del_int, uint64_t** keys, test_rt_options_t rt_opt)
     robin_table_t* rt;
     void* res;
 
-    rt = robin_table_create(rt_opt.count, rt_opt.hash_func, rt_opt.seed);
+    rt = robin_table_create(rt_opt.count, rt_opt.hash_func, rt_opt.seed, NULL);
     ASSERT(rt != NULL);
 
     TEST_LOOP_START(1);
@@ -281,7 +282,7 @@ TEST_ADD(test_iterate_str, char** keys, test_rt_options_t rt_opt)
     size_t iter_count;
     void* res;
 
-    rt = robin_table_create(rt_opt.count, rt_opt.hash_func, rt_opt.seed);
+    rt = robin_table_create(rt_opt.count, rt_opt.hash_func, rt_opt.seed, NULL);
     ASSERT(rt != NULL);
 
     TEST_LOOP_START(1);
@@ -319,7 +320,7 @@ TEST_ADD(test_iterate_int, uint64_t** keys, test_rt_options_t rt_opt)
     size_t iter_count;
     void* res;
 
-    rt = robin_table_create(rt_opt.count, rt_opt.hash_func, rt_opt.seed);
+    rt = robin_table_create(rt_opt.count, rt_opt.hash_func, rt_opt.seed, NULL);
     ASSERT(rt != NULL);
 
     TEST_LOOP_START(1);
@@ -356,7 +357,7 @@ TEST_ADD(test_consistency, uint64_t** keys, test_rt_options_t rt_opt)
     robin_table_t* rt;
     void* res;
 
-    rt = robin_table_create(rt_opt.count, rt_opt.hash_func, rt_opt.seed);
+    rt = robin_table_create(rt_opt.count, rt_opt.hash_func, rt_opt.seed, NULL);
     ASSERT(rt != NULL);
 
     TEST_TIMER_START();
@@ -421,7 +422,7 @@ TEST_ADD(test_clear, uint64_t** keys, test_rt_options_t rt_opt)
     robin_table_t* rt;
     void* res;
 
-    rt = robin_table_create(rt_opt.count, rt_opt.hash_func, rt_opt.seed);
+    rt = robin_table_create(rt_opt.count, rt_opt.hash_func, rt_opt.seed, NULL);
     ASSERT(rt != NULL);
 
     TEST_LOOP_START(1);

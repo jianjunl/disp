@@ -68,7 +68,7 @@ void gc_block_remove(void *ptr) {
 void gc_block_insert(void *ptr, gc_block_t *blk) {
     (void)ptr;
     pthread_rwlock_wrlock(&gc_block_rwlock);
-    if (!rt) rt = robin_table_create(1024, robin_table_rapidhash, RT_RAPID_SEED);
+    if (!rt) rt = robin_table_create(1024, robin_table_rapidhash, RT_RAPID_SEED, NULL);
     if (rt) {
         robin_table_put(rt, &(blk->ptr), sizeof(blk->ptr), blk);
     }
