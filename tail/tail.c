@@ -84,6 +84,8 @@ eval_result_t disp_eval_tail(disp_env_t *env, disp_val expr, disp_val current_cl
             return disp_eval_tail_flow(env, expr,  current_closure, is_tail);
         if (SYM_ID(op).id == DEFINE.id)
             return disp_eval_tail_flow(env, expr,  current_closure, is_tail);
+        if (SYM_ID(op).id == DEFUN.id)
+            return disp_eval_tail_flow(env, expr,  current_closure, is_tail);
         if (SYM_ID(op).id == LAMBDA.id)
             return disp_eval_tail_flow(env, expr,  current_closure, is_tail);
         if (SYM_ID(op).id == LET.id)

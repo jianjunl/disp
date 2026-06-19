@@ -68,7 +68,7 @@
 (define cnt 100)
 ;; 在 let 内部定义函数，退出后检查符号恢复
 (let ((cnt 999))
-  (define get-cnt () cnt)
+  (defun get-cnt () cnt)
   (assert-equal (get-cnt) 999 "closure inside let captures local"))
 ;; 恢复后函数仍引用符号 cnt，现已被恢复为 100
 (assert-equal cnt 100 "let: cnt restored")

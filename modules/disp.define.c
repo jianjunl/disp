@@ -1,3 +1,4 @@
+
 #define _POSIX_C_SOURCE 200809L
 #include <stdarg.h>
 #include <stdio.h>
@@ -26,9 +27,8 @@ static disp_val define_builtin(disp_env_t *env, disp_val expr) {
             ERET(NIL, "define: missing expression");
         
         disp_val expr_form = disp_car(rest);   // 表达式部分
-        disp_val body_rest = disp_cdr(rest);   // 后续表达式（仅用于函数简写）
-        
-        // 1. 处理 (define symbol (lambda params body...))
+        // 注意：我们删除了函数简写形式 (define symbol (params) body...)
+        // 但保留 (define symbol (lambda params body...)) 以支持尾递归优化
         if (T(expr_form) == FLAG_CONS) {
             disp_val head = disp_car(expr_form);
             if (T(head) == FLAG_SYMBOL) {
@@ -49,23 +49,13 @@ static disp_val define_builtin(disp_env_t *env, disp_val expr) {
             }
         }
         
-        // 2. 函数简写形式: (define symbol (params) body1 body2 ...)
-        //    注意：需要确保 body_rest 非空且为列表，并且 expr_form 是参数列表
-        if (NN(body_rest) && T(body_rest) == FLAG_CONS) {
-            // 此时 expr_form 应为参数列表
-            disp_val params = expr_form;
-            disp_val closure = disp_make_closure(env, params, body_rest, 1);
-            disp_define_symbol(env, SYM_ID(first_arg), closure, 0);
-            return first_arg;
-        }
-        
-        // 3. 普通 (define symbol expr)
+        // 普通 (define symbol expr)
         disp_val value = disp_eval(env, expr_form);
         disp_define_symbol(env, SYM_ID(first_arg), value, 0);
         return first_arg;
     } 
     else if (T(first_arg) == FLAG_CONS) {
-        // 原有 (define (name params) body ...) 语法
+        // 保留 (define (name params) body ...) 语法
         disp_val name_sym = disp_car(first_arg);
         if (T(name_sym) != FLAG_SYMBOL) 
             ERET(NIL, "define: function name must be a symbol");
@@ -82,7 +72,54 @@ static disp_val define_builtin(disp_env_t *env, disp_val expr) {
     }
 }
 
+// --- defun ---
+static disp_val defun_builtin(disp_env_t *env, disp_val expr) {
+    disp_val cadr = disp_cdr(expr);
+    if (N(cadr) || T(cadr) != FLAG_CONS)
+        ERET(NIL, "defun: missing function name or signature");
+    
+    disp_val name_or_sig = disp_car(cadr);
+    disp_val rest = disp_cdr(cadr);
+    
+    if (T(name_or_sig) == FLAG_SYMBOL) {
+        // (defun symbol (params) body1 body2 ...)
+        if (N(rest) || T(rest) != FLAG_CONS)
+            ERET(NIL, "defun: missing parameter list");
+        disp_val params = disp_car(rest);
+        disp_val body_rest = disp_cdr(rest);
+        if (N(body_rest))
+            ERET(NIL, "defun: missing body");
+        // 参数列表应为 cons 或 nil（允许无参）
+        if (T(params) != FLAG_CONS && NE(params, NIL))
+            ERET(NIL, "defun: parameter list must be a list");
+        // 创建闭包，body_rest 隐含 begin
+        disp_val closure = disp_make_closure(env, params, body_rest, 1);
+        disp_define_symbol(env, SYM_ID(name_or_sig), closure, 0);
+        return name_or_sig;
+    }
+    else if (T(name_or_sig) == FLAG_CONS) {
+        // (defun (name params) body1 body2 ...)
+        disp_val name_sym = disp_car(name_or_sig);
+        if (T(name_sym) != FLAG_SYMBOL)
+            ERET(NIL, "defun: function name must be a symbol");
+        disp_val params = disp_cdr(name_or_sig);
+        // 参数列表应为 cons 或 nil
+        if (T(params) != FLAG_CONS && NN(params))
+            ERET(NIL, "defun: parameter list must be a list");
+        if (N(rest))
+            ERET(NIL, "defun: missing body");
+        // rest 即为 body 列表
+        disp_val closure = disp_make_closure(env, params, rest, 1);
+        disp_define_symbol(env, SYM_ID(name_sym), closure, 0);
+        return name_sym;
+    }
+    else {
+        ERET(NIL, "defun: first argument must be symbol or list");
+    }
+}
+
 /* Initialisation function called when the shared library is loaded */
 void disp_init_module(void) {
     DEF("define"  , MKB(define_builtin , "<#define>" ), 1);
+    DEF("defun"   , MKB(defun_builtin  , "<#defun>"  ), 1);
 }

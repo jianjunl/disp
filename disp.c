@@ -24,7 +24,7 @@ disp_val MODPATH, ARGS, IT;
 disp_sid LAMBDA, MACRO, LET, LETA, LETREC, LETRECA, CONS, LIST;
 disp_sid QUOTE, QUASIQUOTE, UNQUOTE, UNQUOTE_SPLICING, APPEND;
 disp_sid IF, BEGIN, PROGN, COND, AND, OR;
-disp_sid SET, SETQ, DEFINE;
+disp_sid SET, SETQ, DEFINE, DEFUN;
 disp_sid DEFAULT, RECV, SEND, AFTER, DO, DOTIMES, DOLIST;
 
 /* ======================== Built‑in 'load' ======================== */
@@ -154,6 +154,7 @@ void disp_init() {
     SET              = disp_get_sid("set!");
     SETQ             = disp_get_sid("setq");
     DEFINE           = disp_get_sid("define");
+    DEFUN            = disp_get_sid("defun");
     DO               = disp_get_sid("do");
     DOTIMES          = disp_get_sid("dotimes");
     DOLIST           = disp_get_sid("dolist");
@@ -202,6 +203,7 @@ void disp_init() {
     disp_import("disp.letrec.so");
 
     disp_import("disp.define.so");
+    disp_import("disp.cast.so");
     disp_import("disp.flow.so");
     disp_import("disp.set.so");
     disp_import("disp.do.so");

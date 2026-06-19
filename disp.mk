@@ -44,7 +44,7 @@ MODULES := disp.data.so disp.quote.so \
            disp.flow.so disp.define.so disp.set.so \
            disp.do.so disp.dotimes.so disp.dolist.so \
            disp.let.so disp.letrec.so \
-           disp.math.so disp.string.so \
+           disp.cast.so disp.math.so disp.string.so \
            disp.file.so disp.os.so \
            disp.coro.so disp.coro.chan.so disp.coro.poll.so \
            disp.coro.nio.so disp.coro.net.so disp.thread.so
