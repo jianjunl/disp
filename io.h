@@ -9,7 +9,7 @@
 #include <ctype.h>
 
 /* --- I/O --- */
-disp_val disp_read(FILE *f);
+disp_val disp_read_lisp(FILE *f);
 char* disp_string(disp_val v);
 char* disp_str(disp_val v);
 void disp_write(disp_val v);

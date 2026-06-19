@@ -2,34 +2,6 @@
 #ifndef _GLOBAL_H
 #define _GLOBAL_H
 
-/*
-extern disp_val disp_builtin_roots[];
-
-#define NUM_BUILTIN_ROOTS 16
-
-enum disp_builtin_root_idx {
-    IDX_NIL = 0, IDX_TRUE, IDX_QUIT, IDX_ELSE,
-    IDX_BYTE, IDX_SHORT, IDX_INT, IDX_LONG, IDX_FLOAT, IDX_DOUBLE, IDX_PNTR,
-    IDX_MODPATH, IDX_ARGS, IDX_IT
-};
-
-#define NIL              disp_builtin_roots[IDX_NIL]
-#define TRUE             disp_builtin_roots[IDX_TRUE]
-#define QUIT             disp_builtin_roots[IDX_QUIT]
-#define ELSE             disp_builtin_roots[IDX_ELSE]
-#define BYTE             disp_builtin_roots[IDX_BYTE]
-#define SHORT            disp_builtin_roots[IDX_SHORT]
-#define INT              disp_builtin_roots[IDX_INT]
-#define LONG             disp_builtin_roots[IDX_LONG]
-#define FLOAT            disp_builtin_roots[IDX_FLOAT]
-#define LONG             disp_builtin_roots[IDX_LONG]
-#define DOUBLE           disp_builtin_roots[IDX_DOUBLE]
-#define PNTR             disp_builtin_roots[IDX_PNTR]
-#define MODPATH          disp_builtin_roots[IDX_MODPATH]
-#define ARGS             disp_builtin_roots[IDX_ARGS]
-#define IT               disp_builtin_roots[IDX_IT]
-*/
-
 extern disp_val NIL;
 extern disp_val TRUE;
 extern disp_val QUIT;

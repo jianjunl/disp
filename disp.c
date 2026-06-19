@@ -16,54 +16,16 @@
 #include "disp.h"
 
 //disp_val __attribute__((section("gc_roots"))) disp_builtin_roots[NUM_BUILTIN_ROOTS] = {};
-//disp_val disp_builtin_roots[NUM_BUILTIN_ROOTS] = {};
 
-disp_val NIL;
-disp_val TRUE;
-disp_val QUIT;
-disp_val ELSE;
-disp_val BYTE;
-disp_val SHORT;
-disp_val INT;
-disp_val LONG;
-disp_val FLOAT;
-disp_val LONG;
-disp_val DOUBLE;
-disp_val PNTR;
-disp_val MODPATH;
-disp_val ARGS;
-disp_val IT;
+disp_val NIL, TRUE, QUIT, ELSE;
+disp_val BYTE, SHORT, INT, LONG, FLOAT, LONG, DOUBLE, PNTR;
+disp_val MODPATH, ARGS, IT;
 
-disp_sid LAMBDA;
-disp_sid MACRO;
-disp_sid LET;
-disp_sid LETA;
-disp_sid LETREC;
-disp_sid LETRECA;
-disp_sid CONS;
-disp_sid LIST;
-disp_sid QUOTE;
-disp_sid QUASIQUOTE;
-disp_sid UNQUOTE;
-disp_sid UNQUOTE_SPLICING;
-disp_sid APPEND;
-disp_sid IF;
-disp_sid BEGIN;
-disp_sid PROGN;
-disp_sid COND;
-disp_sid AND;
-disp_sid OR;
-disp_sid SET;
-disp_sid SETQ;
-disp_sid DEFINE;
-
-disp_sid DEFAULT;
-disp_sid RECV;
-disp_sid SEND;
-disp_sid AFTER;
-disp_sid DO;
-disp_sid DOTIMES;
-disp_sid DOLIST;
+disp_sid LAMBDA, MACRO, LET, LETA, LETREC, LETRECA, CONS, LIST;
+disp_sid QUOTE, QUASIQUOTE, UNQUOTE, UNQUOTE_SPLICING, APPEND;
+disp_sid IF, BEGIN, PROGN, COND, AND, OR;
+disp_sid SET, SETQ, DEFINE;
+disp_sid DEFAULT, RECV, SEND, AFTER, DO, DOTIMES, DOLIST;
 
 /* ======================== Built‑in 'load' ======================== */
 static disp_val import_syscall(disp_val *args, int argc) {

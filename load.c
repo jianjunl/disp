@@ -28,10 +28,10 @@ static disp_val load_lisp(disp_env_t *env, const char *filename) {
     // 压入新文件信息
     disp_push_source(filename);
     disp_val last = NIL;
-    disp_val expr = disp_read(f);
+    disp_val expr = disp_read_lisp(f);
     while (NN(expr)) {
         last = disp_eval(env, expr);
-        expr = disp_read(f);
+        expr = disp_read_lisp(f);
     }
     fclose(f);
     // 弹栈恢复外层

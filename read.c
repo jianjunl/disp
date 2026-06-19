@@ -93,7 +93,7 @@ extern int parse_current_line;
 extern int parse_current_col;
 extern void disp_update_current_pos(int line, int col); // 更新栈顶位置
 
-disp_val disp_read(FILE *f) {
+disp_val disp_read_lisp(FILE *f) {
     int c = skip_and_get(f);
     if (c == EOF) return DNULL;
     // 记录当前表达式开始的位置（此时行列号已指向该字符的下一个位置）

@@ -38,7 +38,7 @@ void disp_repl2() {
         printf("> ");
         fflush(stdout);
 
-        disp_val expr = disp_read(stdin);
+        disp_val expr = disp_read_lisp(stdin);
         if (N(expr)) break;
         disp_val result = disp_eval(disp_global_env, expr);
         disp_print(result);
@@ -90,7 +90,7 @@ void disp_repl() {
         if (!mem) { free(line); continue; }
 
         repl_started = 1;
-        disp_val expr = disp_read(mem);
+        disp_val expr = disp_read_lisp(mem);
 
         if (NN(expr) && T(expr) == FLAG_SYMBOL && strcmp(SYM_NAME(expr), ":clh") == 0) {
             bestlineHistoryFree();
