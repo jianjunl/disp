@@ -135,7 +135,7 @@ inline disp_val disp_make_long(long l) {
 #endif // DISP_NAN_BOXING
 
 inline disp_val disp_make_float(float f) {
-    if (f != f) return BOX_BOX(FLAG_NAN, 0);
+    if (f != f) return NaN;
     uint32_t bits;
     memcpy(&bits, &f, sizeof(bits));
     return BOX_BOX(FLAG_FLOAT, bits);
@@ -144,7 +144,7 @@ inline disp_val disp_make_float(float f) {
 #if DISP_NAN_BOXING
 
 inline disp_val disp_make_double(double d) {
-    if (d != d) return BOX_BOX(FLAG_NAN, 0);
+    if (d != d) return NaN;
     disp_val v;
     memcpy(&v, &d, sizeof(v));
     return v;

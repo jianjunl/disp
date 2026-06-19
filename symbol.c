@@ -75,6 +75,7 @@ disp_val disp_get_symbol_value(disp_val v) {
 
 void disp_init_symbol() {
     NIL  = V(FLAG_VOID, 0, calloc(1, sizeof(disp_data)));
+    NaN  = V(FLAG_VOID, 0, calloc(1, sizeof(disp_data)));
     TRUE = V(FLAG_VOID, 0, calloc(1, sizeof(disp_data)));
     QUIT = V(FLAG_VOID, 0, calloc(1, sizeof(disp_data)));
     DEF("false", NIL,  1);

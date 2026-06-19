@@ -3,6 +3,7 @@
 #define _GLOBAL_H
 
 extern disp_val NIL;
+extern disp_val NaN;
 extern disp_val TRUE;
 extern disp_val QUIT;
 extern disp_val ELSE;

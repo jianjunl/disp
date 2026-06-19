@@ -17,7 +17,7 @@
 
 //disp_val __attribute__((section("gc_roots"))) disp_builtin_roots[NUM_BUILTIN_ROOTS] = {};
 
-disp_val NIL, TRUE, QUIT, ELSE;
+disp_val NIL, NaN, TRUE, QUIT, ELSE;
 disp_val BYTE, SHORT, INT, LONG, FLOAT, LONG, DOUBLE, PNTR;
 disp_val MODPATH, ARGS, IT;
 

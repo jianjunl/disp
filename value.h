@@ -44,7 +44,7 @@ typedef uint16_t disp_flag_t;
 
 // Flags of Primitives (0xFFFF - 0xFFF8)
 #define FLAG_VOID       (disp_flag_t)0xFFFF
-#define FLAG_NAN        (disp_flag_t)0xFFFE
+#define FLAG_SCOPE      (disp_flag_t)0xFFFE
 #define FLAG_BYTE       (disp_flag_t)0xFFFD
 #define FLAG_SHORT      (disp_flag_t)0xFFFC
 #define FLAG_INT        (disp_flag_t)0xFFFB
@@ -138,7 +138,7 @@ typedef uint8_t disp_flag_t;
 
 // Flags of Primitives (0x7FFF - 0x7FF8)
 #define FLAG_VOID       UINT8_C(0xFF)
-#define FLAG_NAN        UINT8_C(0xFE)
+#define FLAG_SCOPE      UINT8_C(0xFE)
 #define FLAG_BYTE       UINT8_C(0xFD)
 #define FLAG_SHORT      UINT8_C(0xFC)
 #define FLAG_INT        UINT8_C(0xFB)
