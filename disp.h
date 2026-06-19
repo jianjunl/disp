@@ -25,6 +25,7 @@ void disp_init_env(void);
 #include "args.h"
 #include "name.h"
 #include "env.h"
+#include "scope.h"
 #include "func.h"
 #include "closure.h"
 #include "apply.h"
