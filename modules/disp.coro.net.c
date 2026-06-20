@@ -252,12 +252,12 @@ static disp_val close_socket_syscall(disp_val *args, int count) {
 
 /* 模块初始化 */
 void disp_init_module(void) {
-    DEF("make-socket",   MKF(make_socket_syscall,   "<make-socket>"),   1);
-    DEF("bind-socket",   MKF(bind_socket_syscall,   "<bind-socket>"),   1);
-    DEF("listen-socket", MKF(listen_socket_syscall, "<listen-socket>"), 1);
-    DEF("accept-socket", MKF(accept_socket_syscall, "<accept-socket>"), 1);
-    DEF("connect-socket",MKF(connect_socket_syscall,"<connect-socket>"),1);
-    DEF("recv-socket",   MKF(recv_socket_syscall,   "<recv-socket>"),   1);
-    DEF("send-socket",   MKF(send_socket_syscall,   "<send-socket>"),   1);
-    DEF("close-socket",  MKF(close_socket_syscall,  "<close-socket>"),  1);
+    REG("make-socket",   MKF(make_socket_syscall,   "<make-socket>"),   1);
+    REG("bind-socket",   MKF(bind_socket_syscall,   "<bind-socket>"),   1);
+    REG("listen-socket", MKF(listen_socket_syscall, "<listen-socket>"), 1);
+    REG("accept-socket", MKF(accept_socket_syscall, "<accept-socket>"), 1);
+    REG("connect-socket",MKF(connect_socket_syscall,"<connect-socket>"),1);
+    REG("recv-socket",   MKF(recv_socket_syscall,   "<recv-socket>"),   1);
+    REG("send-socket",   MKF(send_socket_syscall,   "<send-socket>"),   1);
+    REG("close-socket",  MKF(close_socket_syscall,  "<close-socket>"),  1);
 }

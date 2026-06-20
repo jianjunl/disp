@@ -274,11 +274,11 @@ void disp_init_module(void) {
     gc_add_root(&current_coro);
     gc_add_root(&ready_head);
     gc_add_root(&ready_tail);
-    DEF("make-coroutine", MKF(make_coroutine_syscall, "<make-coroutine>"), 1);
-    DEF("yield"         , MKF(yield_syscall          , "<yield>"         ), 1);
-    DEF("resume"        , MKF(resume_syscall         , "<resume>"        ), 1);
-    DEF("current-coro"  , MKF(current_coro_syscall   , "<current-coro>"  ), 1);
-    DEF("event-loop"    , MKF(event_loop_run_syscall , "<event-loop>"    ), 1);
+    REG("make-coroutine", MKF(make_coroutine_syscall, "<make-coroutine>"), 1);
+    REG("yield"         , MKF(yield_syscall          , "<yield>"         ), 1);
+    REG("resume"        , MKF(resume_syscall         , "<resume>"        ), 1);
+    REG("current-coro"  , MKF(current_coro_syscall   , "<current-coro>"  ), 1);
+    REG("event-loop"    , MKF(event_loop_run_syscall , "<event-loop>"    ), 1);
     disp_import("disp.coro.chan.so");
     disp_import("disp.coro.poll.so");
     disp_import("disp.coro.nio.so");

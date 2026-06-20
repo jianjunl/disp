@@ -92,5 +92,5 @@ static disp_val dolist_builtin(disp_env_t *env, disp_val expr) {
 
 /* Initialisation function called when the shared library is loaded */
 void disp_init_module(void) {
-    DEF2(DOLIST , MKB(dolist_builtin , "<#dolist>" ), 1);
+    REGI(DOLIST , MKB(dolist_builtin , "<#dolist>" ), 1);
 }

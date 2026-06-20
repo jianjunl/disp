@@ -42,10 +42,10 @@ DEF_TYPE_BUILTIN(double, disp_convert_to_double, disp_make_double)
 
 /* Initialisation function called when the shared library is loaded */
 void disp_init_module(void) {
-    DEF("byte"    , MKB(byte_builtin   , "<#byte>"   ), 1);
-    DEF("short"   , MKB(short_builtin  , "<#short>"  ), 1);
-    DEF("int"     , MKB(int_builtin    , "<#int>"    ), 1);
-    DEF("long"    , MKB(long_builtin   , "<#long>"   ), 1);
-    DEF("float"   , MKB(float_builtin  , "<#float>"  ), 1);
-    DEF("double"  , MKB(double_builtin , "<#double>" ), 1);
+    REG("byte"    , MKB(byte_builtin   , "<#byte>"   ), 1);
+    REG("short"   , MKB(short_builtin  , "<#short>"  ), 1);
+    REG("int"     , MKB(int_builtin    , "<#int>"    ), 1);
+    REG("long"    , MKB(long_builtin   , "<#long>"   ), 1);
+    REG("float"   , MKB(float_builtin  , "<#float>"  ), 1);
+    REG("double"  , MKB(double_builtin , "<#double>" ), 1);
 }

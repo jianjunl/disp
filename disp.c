@@ -24,7 +24,7 @@ disp_sid LAMBDA, MACRO, LET, LETA, LETREC, LETRECA, CONS, LIST;
 disp_sid QUOTE, QUASIQUOTE, UNQUOTE, UNQUOTE_SPLICING, APPEND;
 disp_sid IF, BEGIN, PROGN, COND, AND, OR;
 disp_sid SET, SETQ, DEFINE, DEFUN;
-disp_sid DEFAULT, RECV, SEND, AFTER, DO, DOTIMES, DOLIST;
+disp_sid THIS, DEFAULT, RECV, SEND, AFTER, DO, DOTIMES, DOLIST;
 
 /* ======================== Built‑in 'load' ======================== */
 static disp_val import_syscall(disp_val *args, int argc) {
@@ -154,13 +154,14 @@ void disp_init() {
     SETQ             = disp_get_sid("setq");
     DEFINE           = disp_get_sid("define");
     DEFUN            = disp_get_sid("defun");
-    DO               = disp_get_sid("do");
-    DOTIMES          = disp_get_sid("dotimes");
-    DOLIST           = disp_get_sid("dolist");
+    THIS             = disp_get_sid("this");
     DEFAULT          = disp_get_sid("default");
     RECV             = disp_get_sid("recv");
     SEND             = disp_get_sid("send");
     AFTER            = disp_get_sid("after");
+    DO               = disp_get_sid("do");
+    DOTIMES          = disp_get_sid("dotimes");
+    DOLIST           = disp_get_sid("dolist");
       
     char p[PATH_MAX] = "\0";
     if (!readlink("/proc/self/exe", p, sizeof(p) - 1)) {
@@ -173,19 +174,19 @@ void disp_init() {
         disp_define_symbol_by_name(disp_global_env, ":path", MODPATH, 1);
     }
 
-    DEF("stdin"  , disp_make_file(stdin ,"r"), 1);
-    DEF("stdout" , disp_make_file(stdout,"w"), 1);
-    DEF("stderr" , disp_make_file(stderr,"w"), 1);
+    REG("stdin"  , disp_make_file(stdin ,"r"), 1);
+    REG("stdout" , disp_make_file(stdout,"w"), 1);
+    REG("stderr" , disp_make_file(stderr,"w"), 1);
 
-    DEF("import", MKF(import_syscall , "<import>"), 1);
-    DEF("load"  , MKB(load_builtin   , "<#load>" ), 1);
-    DEF("repl"  , MKF(repl_syscall   , "<repl>"  ), 1);
-    DEF("gc"    , MKF(gc_syscall     , "<gc>"    ), 1);
-    DEF("info"  , MKF(info_syscall   , "<info>"  ), 1);
-    DEF("trace" , MKF(trace_syscall  , "<trace>" ), 1);
+    REG("import", MKF(import_syscall , "<import>"), 1);
+    REG("load"  , MKB(load_builtin   , "<#load>" ), 1);
+    REG("repl"  , MKF(repl_syscall   , "<repl>"  ), 1);
+    REG("gc"    , MKF(gc_syscall     , "<gc>"    ), 1);
+    REG("info"  , MKF(info_syscall   , "<info>"  ), 1);
+    REG("trace" , MKF(trace_syscall  , "<trace>" ), 1);
 
     // make else evaluate to true (so cond's default clause works)
-    ELSE = DEF("else", TRUE, 1);
+    ELSE = REG("else", TRUE, 1);
 
     disp_import("disp.data.so");
     disp_import("disp.quote.so");

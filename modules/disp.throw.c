@@ -288,12 +288,12 @@ void disp_init_module(void) {
 #pragma GCC diagnostic pop
 
     /* 注册内置函数，final = 1 */
-    DEF("catch"         , MKB(catch_builtin         , "<#catch>"        ) , 1);
-    DEF("throw"         , MKF(throw_syscall         , "<throw>"         ) , 1);
-    DEF("error"         , MKF(error_syscall         , "<error>"         ) , 1);
-    DEF("raise"         , MKF(error_syscall         , "<raise>"         ) , 1);
-    DEF("block"         , MKB(block_builtin         , "<#block>"        ) , 1);
-    DEF("return-from"   , MKB(return_from_builtin   , "<#return-from>"  ) , 1);  // 改 MKB
-    DEF("return"        , MKB(return_builtin        , "<#return>"       ) , 1);  // 改 MKB
-    DEF("unwind-protect", MKB(unwind_protect_builtin, "<#unwind-protect>"), 1);
+    REG("catch"         , MKB(catch_builtin         , "<#catch>"        ) , 1);
+    REG("throw"         , MKF(throw_syscall         , "<throw>"         ) , 1);
+    REG("error"         , MKF(error_syscall         , "<error>"         ) , 1);
+    REG("raise"         , MKF(error_syscall         , "<raise>"         ) , 1);
+    REG("block"         , MKB(block_builtin         , "<#block>"        ) , 1);
+    REG("return-from"   , MKB(return_from_builtin   , "<#return-from>"  ) , 1);  // 改 MKB
+    REG("return"        , MKB(return_builtin        , "<#return>"       ) , 1);  // 改 MKB
+    REG("unwind-protect", MKB(unwind_protect_builtin, "<#unwind-protect>"), 1);
 }

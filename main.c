@@ -23,7 +23,7 @@ extern void disp_pop_source(void);
 int main(int argc, char **argv) {
 
     disp_init();
-    DEF(":args", disp_make_args(argc, argv), 1);
+    REG(":args", disp_make_args(argc, argv), 1);
     ARGS = SYMBOL_BY_NAME(disp_global_env, ":args");
 
     // 为 REPL 压入伪源文件

@@ -541,7 +541,7 @@ static disp_val select_builtin(disp_env_t *env, disp_val expr) {
 
 /* 模块初始化 */
 void disp_init_module(void) {
-    DEF("select", MKB(select_builtin, "<#select>"), 1);
+    REG("select", MKB(select_builtin, "<#select>"), 1);
 }
 
 #endif /* __MODULE_CORO_POLL_C */

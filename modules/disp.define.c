@@ -120,6 +120,6 @@ static disp_val defun_builtin(disp_env_t *env, disp_val expr) {
 
 /* Initialisation function called when the shared library is loaded */
 void disp_init_module(void) {
-    DEF("define"  , MKB(define_builtin , "<#define>" ), 1);
-    DEF("defun"   , MKB(defun_builtin  , "<#defun>"  ), 1);
+    REG("define"  , MKB(define_builtin , "<#define>" ), 1);
+    REG("defun"   , MKB(defun_builtin  , "<#defun>"  ), 1);
 }

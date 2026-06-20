@@ -33,6 +33,6 @@ static disp_val setq_builtin(disp_env_t *env, disp_val expr) {
 
 /* Initialisation function called when the shared library is loaded */
 void disp_init_module(void) {
-    DEF("set!"    , MKB(setq_builtin   , "<#set!>"   ), 1);
-    DEF("setq"    , MKB(setq_builtin   , "<#set!>"   ), 1);
+    REG("set!"    , MKB(setq_builtin   , "<#set!>"   ), 1);
+    REG("setq"    , MKB(setq_builtin   , "<#set!>"   ), 1);
 }

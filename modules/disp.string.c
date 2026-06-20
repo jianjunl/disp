@@ -350,23 +350,23 @@ static disp_val string_to_number_syscall(disp_val *args, int count) {
 
 /* ----- 模块初始化 ----- */
 void disp_init_module(void) {
-    DEF("make-string"      , MKF(make_string_syscall      , "<make-string>"), 1);
-    DEF("string"           , MKF(string_syscall           , "<string>")  , 1);
-    DEF("string-length"    , MKF(string_length_syscall    , "<string-length>"), 1);
-    DEF("string-ref"       , MKF(string_ref_syscall       , "<string-ref>"), 1);
-    DEF("string-set!"      , MKF(string_set_syscall       , "<string-set!>"), 1);
-    DEF("substring"        , MKF(substring_syscall        , "<substring>"), 1);
-    DEF("string-append"    , MKF(string_append_syscall    , "<string-append>"), 1);
-    DEF("string->list"     , MKF(string_to_list_syscall   , "<string->list>"), 1);
-    DEF("list->string"     , MKF(list_to_string_syscall   , "<list->string>"), 1);
-    DEF("string-copy"      , MKF(string_copy_syscall      , "<string-copy>"), 1);
-    DEF("string=?"         , MKF(string_eq_syscall        , "<string=?>"), 1);
-    DEF("string-ci=?"      , MKF(string_ci_eq_syscall     , "<string-ci=?>"), 1);
-    DEF("string<?"         , MKF(string_lt_syscall        , "<string<?>"), 1);
-    DEF("string>?"         , MKF(string_gt_syscall        , "<string>?>"), 1);
-    DEF("string-upcase"    , MKF(string_upcase_syscall    , "<string-upcase>"), 1);
-    DEF("string-downcase"  , MKF(string_downcase_syscall  , "<string-downcase>"), 1);
-    DEF("string-trim"      , MKF(string_trim_syscall      , "<string-trim>"), 1);
-    DEF("number->string"   , MKF(number_to_string_syscall , "<number->string>"), 1);
-    DEF("string->number"   , MKF(string_to_number_syscall , "<string->number>"), 1);
+    REG("make-string"      , MKF(make_string_syscall      , "<make-string>"), 1);
+    REG("string"           , MKF(string_syscall           , "<string>")  , 1);
+    REG("string-length"    , MKF(string_length_syscall    , "<string-length>"), 1);
+    REG("string-ref"       , MKF(string_ref_syscall       , "<string-ref>"), 1);
+    REG("string-set!"      , MKF(string_set_syscall       , "<string-set!>"), 1);
+    REG("substring"        , MKF(substring_syscall        , "<substring>"), 1);
+    REG("string-append"    , MKF(string_append_syscall    , "<string-append>"), 1);
+    REG("string->list"     , MKF(string_to_list_syscall   , "<string->list>"), 1);
+    REG("list->string"     , MKF(list_to_string_syscall   , "<list->string>"), 1);
+    REG("string-copy"      , MKF(string_copy_syscall      , "<string-copy>"), 1);
+    REG("string=?"         , MKF(string_eq_syscall        , "<string=?>"), 1);
+    REG("string-ci=?"      , MKF(string_ci_eq_syscall     , "<string-ci=?>"), 1);
+    REG("string<?"         , MKF(string_lt_syscall        , "<string<?>"), 1);
+    REG("string>?"         , MKF(string_gt_syscall        , "<string>?>"), 1);
+    REG("string-upcase"    , MKF(string_upcase_syscall    , "<string-upcase>"), 1);
+    REG("string-downcase"  , MKF(string_downcase_syscall  , "<string-downcase>"), 1);
+    REG("string-trim"      , MKF(string_trim_syscall      , "<string-trim>"), 1);
+    REG("number->string"   , MKF(number_to_string_syscall , "<number->string>"), 1);
+    REG("string->number"   , MKF(string_to_number_syscall , "<string->number>"), 1);
 }

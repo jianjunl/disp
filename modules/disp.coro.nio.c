@@ -128,8 +128,8 @@ static disp_val sleep_ms_syscall(disp_val *args, int count) {
 /* =============================== 模块初始化 =============================== */
 
 void disp_init_module(void) {
-    DEF("go-func"       , MKF(go_syscall             , "<go-func>"       ), 1);
-    DEF("sleep-ms"      , MKF(sleep_ms_syscall       , "<sleep-ms>"      ), 1);
-    DEF("fread-nb"      , MKF(fread_nb_syscall       , "<fread-nb>"      ), 1);
-    DEF("fwrite-nb"     , MKF(fwrite_nb_syscall      , "<fwrite-nb>"     ), 1);
+    REG("go-func"       , MKF(go_syscall             , "<go-func>"       ), 1);
+    REG("sleep-ms"      , MKF(sleep_ms_syscall       , "<sleep-ms>"      ), 1);
+    REG("fread-nb"      , MKF(fread_nb_syscall       , "<fread-nb>"      ), 1);
+    REG("fwrite-nb"     , MKF(fwrite_nb_syscall      , "<fwrite-nb>"     ), 1);
 }

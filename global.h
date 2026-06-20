@@ -35,6 +35,7 @@ extern disp_sid SETQ;
 extern disp_sid DEFINE;
 extern disp_sid DEFUN;
 
+extern disp_sid THIS;
 extern disp_sid DEFAULT;
 extern disp_sid RECV;
 extern disp_sid SEND;

@@ -65,5 +65,5 @@ static disp_val apply_syscall(disp_val *args, int count) {
 
 /* Initialisation function called when the shared library is loaded */
 void disp_init_module(void) {
-    DEF("apply"   , MKF(apply_syscall  , "<apply>"   ), 1);
+    REG("apply"   , MKF(apply_syscall  , "<apply>"   ), 1);
 }

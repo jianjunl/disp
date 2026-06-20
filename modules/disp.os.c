@@ -382,15 +382,15 @@ static disp_val pretty_print_syscall(disp_val *args, int count) {
 
 /* Initialisation function called when the shared library is loaded */
 void disp_init_module(void) {
-    DEF("write"  , MKF(write_syscall   , "<write>"  ), 1);
-    DEF("writeln", MKF(writeln_syscall , "<writeln>"), 1);
-    DEF("print"  , MKF(print_syscall   , "<print>"  ), 1);
-    DEF("println", MKF(println_syscall , "<println>"), 1);
-    DEF("printf" , MKF(printf_syscall  , "<printf>" ), 1);
-    DEF("fprintf", MKF(fprintf_syscall , "<fprintf>"), 1);
-    DEF("system" , MKF(system_syscall  , "<system>" ), 1);
-    DEF("sleep"  , MKF(sleep_syscall   , "<sleep>"  ), 1);
-    DEF("time"   , MKB(time_builtin    , "<#time>"  ), 1);
-    DEF("safe-fprintf", MKF(safe_fprintf_syscall, "<safe-fprintf>"), 1);
-    DEF("pretty-print", MKF(pretty_print_syscall, "<pretty-print>"), 1);
+    REG("write"  , MKF(write_syscall   , "<write>"  ), 1);
+    REG("writeln", MKF(writeln_syscall , "<writeln>"), 1);
+    REG("print"  , MKF(print_syscall   , "<print>"  ), 1);
+    REG("println", MKF(println_syscall , "<println>"), 1);
+    REG("printf" , MKF(printf_syscall  , "<printf>" ), 1);
+    REG("fprintf", MKF(fprintf_syscall , "<fprintf>"), 1);
+    REG("system" , MKF(system_syscall  , "<system>" ), 1);
+    REG("sleep"  , MKF(sleep_syscall   , "<sleep>"  ), 1);
+    REG("time"   , MKB(time_builtin    , "<#time>"  ), 1);
+    REG("safe-fprintf", MKF(safe_fprintf_syscall, "<safe-fprintf>"), 1);
+    REG("pretty-print", MKF(pretty_print_syscall, "<pretty-print>"), 1);
 }

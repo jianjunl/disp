@@ -78,9 +78,9 @@ void disp_init_symbol() {
     NaN  = V(FLAG_VOID, 0, calloc(1, sizeof(disp_data)));
     TRUE = V(FLAG_VOID, 0, calloc(1, sizeof(disp_data)));
     QUIT = V(FLAG_VOID, 0, calloc(1, sizeof(disp_data)));
-    DEF("false", NIL,  1);
-    DEF("true",  TRUE, 1);
-    DEF("quit",  QUIT, 1);
-    DEF("q",     QUIT, 1);
-    DEF(":q",    QUIT, 1);
+    REG("false", NIL,  1);
+    REG("true",  TRUE, 1);
+    REG("quit",  QUIT, 1);
+    REG("q",     QUIT, 1);
+    REG(":q",    QUIT, 1);
 }

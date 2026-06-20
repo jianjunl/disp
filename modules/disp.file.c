@@ -100,9 +100,9 @@ static disp_val feof_syscall(disp_val *args, int count) {
 
 /* Initialisation function called when the shared library is loaded */
 void disp_init_module(void) {
-    DEF("fopen" , MKF(fopen_syscall , "<fopen>" ), 1);
-    DEF("fclose", MKF(fclose_syscall, "<fclose>"), 1);
-    DEF("fread" , MKF(fread_syscall , "<fread>" ), 1);
-    DEF("fwrite", MKF(fwrite_syscall, "<fwrite>"), 1);
-    DEF("feof"  , MKF(feof_syscall  , "<feof>"  ), 1);
+    REG("fopen" , MKF(fopen_syscall , "<fopen>" ), 1);
+    REG("fclose", MKF(fclose_syscall, "<fclose>"), 1);
+    REG("fread" , MKF(fread_syscall , "<fread>" ), 1);
+    REG("fwrite", MKF(fwrite_syscall, "<fwrite>"), 1);
+    REG("feof"  , MKF(feof_syscall  , "<feof>"  ), 1);
 }

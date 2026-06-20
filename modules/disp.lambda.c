@@ -37,6 +37,6 @@ static disp_val macro_builtin(disp_env_t *env, disp_val expr) {
 
 /* Initialisation function called when the shared library is loaded */
 void disp_init_module(void) {
-    DEF("lambda"  , MKB(lambda_builtin , "<#lambda>" ), 1);
-    DEF("macro"   , MKB(macro_builtin  , "<#macro>"  ), 1);
+    REG("lambda"  , MKB(lambda_builtin , "<#lambda>" ), 1);
+    REG("macro"   , MKB(macro_builtin  , "<#macro>"  ), 1);
 }

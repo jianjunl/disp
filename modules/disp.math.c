@@ -259,8 +259,8 @@ static disp_val divide_syscall(disp_val *args, int count) {
 
 /* Initialisation function called when the shared library is loaded */
 void disp_init_module(void) {
-    DEF("+", MKF(plus_syscall  , "<plus>"  ), 1);
-    DEF("-", MKF(minus_syscall , "<minus>" ), 1);
-    DEF("*", MKF(times_syscall , "<times>" ), 1);
-    DEF("/", MKF(divide_syscall, "<divide>"), 1);
+    REG("+", MKF(plus_syscall  , "<plus>"  ), 1);
+    REG("-", MKF(minus_syscall , "<minus>" ), 1);
+    REG("*", MKF(times_syscall , "<times>" ), 1);
+    REG("/", MKF(divide_syscall, "<divide>"), 1);
 }

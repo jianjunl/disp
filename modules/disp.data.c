@@ -340,30 +340,30 @@ static disp_val equal_syscall(disp_val *args, int count) {
 /* Initialisation function called when the shared library is loaded */
 void disp_init_module(void) {
 
-    DEF("cons"    , MKF(cons_syscall   , "<cons>"    ), 1);
-    DEF("car"     , MKF(car_syscall    , "<car>"     ), 1);
-    DEF("cdr"     , MKF(cdr_syscall    , "<cdr>"     ), 1);
-    DEF("list"    , MKF(list_syscall   , "<list>"    ), 1);
-    DEF("not"     , MKF(not_syscall    , "<not>"     ), 1);
-    DEF("eq?"     , MKF(eqp_syscall    , "<eq?>"     ), 1);
-    DEF("<"       , MKF(lt_syscall     , "<lt>"      ), 1);
-    DEF(">"       , MKF(gt_syscall     , "<gt>"      ), 1);
-    DEF("="       , MKF(eq_syscall     , "<eq>"      ), 1);
-    DEF("eval"    , MKF(eval_syscall   , "<eval>"    ), 1);
-    DEF("null?"   , MKF(nullp_syscall  , "<null?>"   ), 1);
-    DEF("symbol?" , MKF(symbolp_syscall, "<symbol?>" ), 1);
-    DEF("string?" , MKF(stringp_syscall, "<string?>" ), 1);
-    DEF("byte?"   , MKF(bytep_syscall  , "<byte?>"   ), 1);
-    DEF("char?"   , MKF(bytep_syscall  , "<char?>"   ), 1);
-    DEF("short?"  , MKF(shortp_syscall , "<short?>"  ), 1);
-    DEF("int?"    , MKF(intp_syscall   , "<int?>"    ), 1);
-    DEF("long?"   , MKF(longp_syscall  , "<long?>"   ), 1);
-    DEF("float?"  , MKF(floatp_syscall , "<float?>"  ), 1);
-    DEF("double?" , MKF(doublep_syscall  , "<double?>"  ), 1);
-    DEF("integer?", MKF(integerp_syscall , "<integer?>" ), 1);
-    DEF("decimal?", MKF(decimalp_syscall , "<decimal?>" ), 1);
-    DEF("number?" , MKF(numberp_syscall  , "<number?>"  ), 1);
-    DEF("set-car!", MKF(set_car_syscall, "<set-car!>"), 1);
-    DEF("set-cdr!", MKF(set_cdr_syscall, "<set-cdr!>"), 1);
-    DEF("equal"   , MKF(equal_syscall  , "<equal>"   ), 1);
+    REG("cons"    , MKF(cons_syscall   , "<cons>"    ), 1);
+    REG("car"     , MKF(car_syscall    , "<car>"     ), 1);
+    REG("cdr"     , MKF(cdr_syscall    , "<cdr>"     ), 1);
+    REG("list"    , MKF(list_syscall   , "<list>"    ), 1);
+    REG("not"     , MKF(not_syscall    , "<not>"     ), 1);
+    REG("eq?"     , MKF(eqp_syscall    , "<eq?>"     ), 1);
+    REG("<"       , MKF(lt_syscall     , "<lt>"      ), 1);
+    REG(">"       , MKF(gt_syscall     , "<gt>"      ), 1);
+    REG("="       , MKF(eq_syscall     , "<eq>"      ), 1);
+    REG("eval"    , MKF(eval_syscall   , "<eval>"    ), 1);
+    REG("null?"   , MKF(nullp_syscall  , "<null?>"   ), 1);
+    REG("symbol?" , MKF(symbolp_syscall, "<symbol?>" ), 1);
+    REG("string?" , MKF(stringp_syscall, "<string?>" ), 1);
+    REG("byte?"   , MKF(bytep_syscall  , "<byte?>"   ), 1);
+    REG("char?"   , MKF(bytep_syscall  , "<char?>"   ), 1);
+    REG("short?"  , MKF(shortp_syscall , "<short?>"  ), 1);
+    REG("int?"    , MKF(intp_syscall   , "<int?>"    ), 1);
+    REG("long?"   , MKF(longp_syscall  , "<long?>"   ), 1);
+    REG("float?"  , MKF(floatp_syscall , "<float?>"  ), 1);
+    REG("double?" , MKF(doublep_syscall  , "<double?>"  ), 1);
+    REG("integer?", MKF(integerp_syscall , "<integer?>" ), 1);
+    REG("decimal?", MKF(decimalp_syscall , "<decimal?>" ), 1);
+    REG("number?" , MKF(numberp_syscall  , "<number?>"  ), 1);
+    REG("set-car!", MKF(set_car_syscall, "<set-car!>"), 1);
+    REG("set-cdr!", MKF(set_cdr_syscall, "<set-cdr!>"), 1);
+    REG("equal"   , MKF(equal_syscall  , "<equal>"   ), 1);
 }

@@ -261,11 +261,11 @@ static disp_val close_channel_syscall(disp_val *args, int count) {
 }
 
 void disp_init_module(void) {
-    DEF("make-channel"  , MKF(make_channel_syscall   , "<make-chan>"     ), 1);
-    DEF("send"          , MKF(channel_send_syscall   , "<send>"          ), 1);
-    DEF("recv"          , MKF(channel_recv_syscall   , "<recv>"          ), 1);
-    DEF("recv2"         , MKF(channel_recv2_syscall  , "<recv2>"         ), 1);
-    DEF("close-channel" , MKF(close_channel_syscall  , "<close-channel>" ), 1);
+    REG("make-channel"  , MKF(make_channel_syscall   , "<make-chan>"     ), 1);
+    REG("send"          , MKF(channel_send_syscall   , "<send>"          ), 1);
+    REG("recv"          , MKF(channel_recv_syscall   , "<recv>"          ), 1);
+    REG("recv2"         , MKF(channel_recv2_syscall  , "<recv2>"         ), 1);
+    REG("close-channel" , MKF(close_channel_syscall  , "<close-channel>" ), 1);
 }
 
 #endif /*  __MODULE_CORO_CHAN_C */

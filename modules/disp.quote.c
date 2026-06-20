@@ -231,10 +231,10 @@ void disp_init_module(void) {
 
     SPLICE_MARK = disp_intern_symbol_by_name(disp_global_env, "splice-mark");
 
-    DEF("append"  , MKF(append_syscall , "<append>"  ), 1);
-    DEF("append0" , MKB(append_builtin , "<#append>" ), 1);
-    DEF("quote"   , MKB(quote_builtin  , "<#quote>"  ), 1);
-    DEF("quasiquote"       , MKB(quasiquote_builtin        , "<#quasiquote>"      ), 1);
-    DEF("unquote"          , MKB(unquote_builtin           , "<#unquote>"         ), 1);
-    DEF("unquote-splicing" , MKB(unquote_splicing_builtin  , "<#unquote-splicing>"), 1);
+    REG("append"  , MKF(append_syscall , "<append>"  ), 1);
+    REG("append0" , MKB(append_builtin , "<#append>" ), 1);
+    REG("quote"   , MKB(quote_builtin  , "<#quote>"  ), 1);
+    REG("quasiquote"       , MKB(quasiquote_builtin        , "<#quasiquote>"      ), 1);
+    REG("unquote"          , MKB(unquote_builtin           , "<#unquote>"         ), 1);
+    REG("unquote-splicing" , MKB(unquote_splicing_builtin  , "<#unquote-splicing>"), 1);
 }

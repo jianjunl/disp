@@ -96,6 +96,6 @@ static disp_val let_builtin(disp_env_t *env, disp_val expr) {
 
 /* 模块初始化函数 */
 void disp_init_module(void) {
-    DEF("let"     , MKB(let_builtin    , "<#let>"    ), 1);
-    DEF("let*"    , MKB(let_builtin    , "<#let*>"   ), 1);
+    REG("let"     , MKB(let_builtin    , "<#let>"    ), 1);
+    REG("let*"    , MKB(let_builtin    , "<#let*>"   ), 1);
 }

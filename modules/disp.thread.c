@@ -218,16 +218,16 @@ static disp_val thread_sleep_syscall(disp_val *args, int count) {
 /* ======================== 模块初始化 ======================== */
 
 void disp_init_module(void) {
-    DEF("make-thread",        MKF(make_thread_syscall,        "<make-thread>"),        1);
-    DEF("thread-join",        MKF(thread_join_syscall,        "<thread-join>"),        1);
-    DEF("make-mutex",         MKF(make_mutex_syscall,         "<make-mutex>"),         1);
-    DEF("lock",               MKF(lock_mutex_syscall,         "<lock>"),               1);
-    DEF("unlock",             MKF(unlock_mutex_syscall,       "<unlock>"),             1);
-    DEF("make-condition",     MKF(make_condition_syscall,     "<make-condition>"),     1);
-    DEF("condition-wait",     MKF(condition_wait_syscall,     "<condition-wait>"),     1);
-    DEF("condition-signal",   MKF(condition_signal_syscall,   "<condition-signal>"),   1);
-    DEF("condition-broadcast",MKF(condition_broadcast_syscall,"<condition-broadcast>"),1);
-    DEF("thread-sleep",       MKF(thread_sleep_syscall,       "<thread-sleep>"),       1);
+    REG("make-thread",        MKF(make_thread_syscall,        "<make-thread>"),        1);
+    REG("thread-join",        MKF(thread_join_syscall,        "<thread-join>"),        1);
+    REG("make-mutex",         MKF(make_mutex_syscall,         "<make-mutex>"),         1);
+    REG("lock",               MKF(lock_mutex_syscall,         "<lock>"),               1);
+    REG("unlock",             MKF(unlock_mutex_syscall,       "<unlock>"),             1);
+    REG("make-condition",     MKF(make_condition_syscall,     "<make-condition>"),     1);
+    REG("condition-wait",     MKF(condition_wait_syscall,     "<condition-wait>"),     1);
+    REG("condition-signal",   MKF(condition_signal_syscall,   "<condition-signal>"),   1);
+    REG("condition-broadcast",MKF(condition_broadcast_syscall,"<condition-broadcast>"),1);
+    REG("thread-sleep",       MKF(thread_sleep_syscall,       "<thread-sleep>"),       1);
 }
 
 #endif /* __MODULE_THREAD_C */

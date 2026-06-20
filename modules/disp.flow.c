@@ -143,12 +143,12 @@ static disp_val repeat_builtin(disp_env_t *env, disp_val expr) {
 
 /* Initialisation function called when the shared library is loaded */
 void disp_init_module(void) {
-    DEF("if"      , MKB(if_builtin     , "<#if>"     ), 1);
-    DEF("cond"    , MKB(cond_builtin   , "<#cond>"   ), 1);
-    DEF("while"   , MKB(while_builtin  , "<#while>"  ), 1);
-    DEF("and"     , MKB(and_builtin    , "<#and>"    ), 1);
-    DEF("or"      , MKB(or_builtin     , "<#or>"     ), 1);
-    DEF("begin"   , MKB(begin_builtin  , "<#begin>"  ), 1);
-    DEF("progn"   , MKB(begin_builtin  , "<#progn>"  ), 1);
-    DEF("repeat"  , MKB(repeat_builtin , "<#repeat>" ), 1);
+    REG("if"      , MKB(if_builtin     , "<#if>"     ), 1);
+    REG("cond"    , MKB(cond_builtin   , "<#cond>"   ), 1);
+    REG("while"   , MKB(while_builtin  , "<#while>"  ), 1);
+    REG("and"     , MKB(and_builtin    , "<#and>"    ), 1);
+    REG("or"      , MKB(or_builtin     , "<#or>"     ), 1);
+    REG("begin"   , MKB(begin_builtin  , "<#begin>"  ), 1);
+    REG("progn"   , MKB(begin_builtin  , "<#progn>"  ), 1);
+    REG("repeat"  , MKB(repeat_builtin , "<#repeat>" ), 1);
 }

@@ -96,6 +96,6 @@ static disp_val letrec_builtin(disp_env_t *env, disp_val expr) {
 
 /* 模块初始化函数 */
 void disp_init_module(void) {
-    DEF("letrec"  , MKB(letrec_builtin , "<#letrec>" ), 1);
-    DEF("letrec*" , MKB(letrec_builtin , "<#letrec*>"), 1);
+    REG("letrec"  , MKB(letrec_builtin , "<#letrec>" ), 1);
+    REG("letrec*" , MKB(letrec_builtin , "<#letrec*>"), 1);
 }
