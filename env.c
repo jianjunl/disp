@@ -14,8 +14,13 @@
 #endif
 #include "disp.h"
 
+disp_env_t *disp_global_env = NULL;
+static void env_lock(const disp_env_t *env);
+static void env_unlock(const disp_env_t *env);
+
 //#define DISP_ENV_BTREE
 //#define DISP_ENV_HASHING
+//#define DISP_ENV_AMAP
 
 #ifndef DISP_ENV_HASHING
 #ifndef DISP_ENV_BTREE
@@ -57,27 +62,6 @@ disp_env_t* disp_new_env(disp_env_t *parent) {
     env->symbols = robin_table_create(1024, robin_table_rapidhash, RT_RAPID_SEED, &rt_conf_gc);
     env->parent = parent;
     return env;
-}
-
-disp_env_t *disp_global_env = NULL;
-
-static void env_lock(const disp_env_t *env) {
-    if(env) gc_pthread_mutex_lock(env->lock);
-    else gc_pthread_mutex_lock(disp_global_env->lock);
-}
-
-static void env_unlock(const disp_env_t *env) {
-    if(env) gc_pthread_mutex_unlock(env->lock);
-    else gc_pthread_mutex_unlock(disp_global_env->lock);
-}
-
-disp_env_t* disp_dup_env(disp_env_t *old) {
-    if (!old) return old;
-    disp_env_t *t = gc_typed_malloc(sizeof(struct disp_env), &struct_disp_env_ti);
-    t->lock    = old->lock;
-    t->symbols = old->symbols;
-    t->parent  = old->parent;
-    return t;
 }
 
 // 查找符号
@@ -139,27 +123,6 @@ disp_val disp_intern_symbol(const disp_env_t *env, disp_sid id) {
     return sym;
 }
 
-disp_val disp_find_symbol_by_name(const disp_env_t *env, const char *name) {
-    disp_sid id = disp_get_sid(name);
-    return disp_find_symbol(env, id);
-}
-
-disp_val disp_define_symbol_by_name(const disp_env_t *env, const char *name, disp_val value, int final) {
-    disp_sid id = disp_get_sid(name);
-    return disp_define_symbol(env, id, value, final);
-}
-
-disp_val disp_intern_symbol_by_name(const disp_env_t *env, const char *name) {
-    disp_sid id = disp_get_sid(name);
-    return disp_intern_symbol(env, id);
-}
-
-inline void disp_set_symbol_value(const disp_env_t *env, disp_val sym, disp_val value) {
-    env_lock(env);
-    disp_set_symbol_value_unlock(env, sym, value);
-    env_unlock(env);
-}
-
 inline bool disp_update_symbol(const disp_env_t *env, disp_val sym) {
     void* ret = robin_table_get(env->symbols, disp_get_id_ptr(SYM_ID(sym).id), sizeof(void*));
     robin_table_put(env->symbols, disp_get_id_ptr(SYM_ID(sym).id), sizeof(void*), (void*)sym.x);
@@ -215,27 +178,6 @@ disp_env_t* disp_new_env(disp_env_t *parent) {
     env->symbols = amap_create(&art_conf_gc);
     env->parent = parent;
     return env;
-}
-
-disp_env_t *disp_global_env = NULL;
-
-static void env_lock(const disp_env_t *env) {
-    if(env) gc_pthread_mutex_lock(env->lock);
-    else gc_pthread_mutex_lock(disp_global_env->lock);
-}
-
-static void env_unlock(const disp_env_t *env) {
-    if(env) gc_pthread_mutex_unlock(env->lock);
-    else gc_pthread_mutex_unlock(disp_global_env->lock);
-}
-
-disp_env_t* disp_dup_env(disp_env_t *old) {
-    if (!old) return old;
-    disp_env_t *t = gc_typed_malloc(sizeof(struct disp_env), &struct_disp_env_ti);
-    t->lock    = old->lock;
-    t->symbols = old->symbols;
-    t->parent  = old->parent;
-    return t;
 }
 
 // 查找符号
@@ -295,27 +237,6 @@ disp_val disp_intern_symbol(const disp_env_t *env, disp_sid id) {
     disp_set_symbol_value_unlock(env, sym, NIL);
     env_unlock(env);
     return sym;
-}
-
-disp_val disp_find_symbol_by_name(const disp_env_t *env, const char *name) {
-    disp_sid id = disp_get_sid(name);
-    return disp_find_symbol(env, id);
-}
-
-disp_val disp_define_symbol_by_name(const disp_env_t *env, const char *name, disp_val value, int final) {
-    disp_sid id = disp_get_sid(name);
-    return disp_define_symbol(env, id, value, final);
-}
-
-disp_val disp_intern_symbol_by_name(const disp_env_t *env, const char *name) {
-    disp_sid id = disp_get_sid(name);
-    return disp_intern_symbol(env, id);
-}
-
-inline void disp_set_symbol_value(const disp_env_t *env, disp_val sym, disp_val value) {
-    env_lock(env);
-    disp_set_symbol_value_unlock(env, sym, value);
-    env_unlock(env);
 }
 
 inline bool disp_update_symbol(const disp_env_t *env, disp_val sym) {
@@ -383,27 +304,6 @@ disp_env_t* disp_new_env(disp_env_t *parent) {
     return env;
 }
 
-disp_env_t *disp_global_env = NULL;
-
-static void env_lock(const disp_env_t *env) {
-    if(env) gc_pthread_mutex_lock(env->lock);
-    else gc_pthread_mutex_lock(disp_global_env->lock);
-}
-
-static void env_unlock(const disp_env_t *env) {
-    if(env) gc_pthread_mutex_unlock(env->lock);
-    else gc_pthread_mutex_unlock(disp_global_env->lock);
-}
-
-disp_env_t* disp_dup_env(disp_env_t *old) {
-    if (!old) return old;
-    disp_env_t *t = gc_typed_malloc(sizeof(struct disp_env), &struct_disp_env_ti);
-    t->lock    = old->lock;
-    t->symbols = old->symbols;
-    t->parent  = old->parent;
-    return t;
-}
-
 // 查找符号
 disp_val disp_find_symbol(const disp_env_t *env, disp_sid id) {
     while (env) {
@@ -463,27 +363,6 @@ disp_val disp_intern_symbol(const disp_env_t *env, disp_sid id) {
     return sym;
 }
 
-disp_val disp_find_symbol_by_name(const disp_env_t *env, const char *name) {
-    disp_sid id = disp_get_sid(name);
-    return disp_find_symbol(env, id);
-}
-
-disp_val disp_define_symbol_by_name(const disp_env_t *env, const char *name, disp_val value, int final) {
-    disp_sid id = disp_get_sid(name);
-    return disp_define_symbol(env, id, value, final);
-}
-
-disp_val disp_intern_symbol_by_name(const disp_env_t *env, const char *name) {
-    disp_sid id = disp_get_sid(name);
-    return disp_intern_symbol(env, id);
-}
-
-inline void disp_set_symbol_value(const disp_env_t *env, disp_val sym, disp_val value) {
-    env_lock(env);
-    disp_set_symbol_value_unlock(env, sym, value);
-    env_unlock(env);
-}
-
 inline bool disp_update_symbol(const disp_env_t *env, disp_val sym) {
     return btree_update(env->symbols, SYM_ID(sym).id, sym.x);
 }
@@ -529,32 +408,11 @@ GC_STRUCT_TI(disp_env,
     GC_OFF(disp_env, parent)
 );
 
-disp_env_t *disp_global_env = NULL;
-
-static void env_lock(const disp_env_t *env) {
-    if(env) gc_pthread_mutex_lock(env->lock);
-    else gc_pthread_mutex_lock(disp_global_env->lock);
-}
-
-static void env_unlock(const disp_env_t *env) {
-    if(env) gc_pthread_mutex_unlock(env->lock);
-    else gc_pthread_mutex_unlock(disp_global_env->lock);
-}
-
 disp_env_t* disp_new_env(disp_env_t *parent) {
     disp_env_t *t = gc_typed_malloc(sizeof(struct disp_env), &struct_disp_env_ti);
     gc_pthread_mutex_init(&t->lock, NULL);
     t->buckets = gc_typed_calloc(SYM_TABLE_SIZE, sizeof(void*), &GC_TYPE_PTR_ARRAY);;
     t->parent = parent;
-    return t;
-}
-
-disp_env_t* disp_dup_env(disp_env_t *old) {
-    if (!old) return old;
-    disp_env_t *t = gc_typed_malloc(sizeof(struct disp_env), &struct_disp_env_ti);
-    t->lock    = old->lock;
-    t->buckets = old->buckets;
-    t->parent  = old->parent;
     return t;
 }
 
@@ -635,6 +493,35 @@ disp_val disp_intern_symbol(const disp_env_t *env, disp_sid id) {
     return sym;
 }
 
+inline bool disp_update_symbol(const disp_env_t *env, disp_val sym) {
+    (void)env;(void)sym;
+    return true;
+}
+
+
+/* ======================== GC 初始化和全局常量 ======================== */
+
+void disp_init_env() {
+
+    disp_global_env = gc_typed_calloc(1, sizeof(struct disp_env), &struct_disp_env_ti);
+    gc_pthread_mutex_init(&disp_global_env->lock, NULL);
+    disp_global_env->buckets = gc_typed_calloc(SYM_TABLE_SIZE, sizeof(void*), &GC_TYPE_PTR_ARRAY);;
+
+    gc_add_root(&disp_global_env);
+}
+
+#endif // DISP_ENV_HASHING
+
+static void env_lock(const disp_env_t *env) {
+    if(env) gc_pthread_mutex_lock(env->lock);
+    else gc_pthread_mutex_lock(disp_global_env->lock);
+}
+
+static void env_unlock(const disp_env_t *env) {
+    if(env) gc_pthread_mutex_unlock(env->lock);
+    else gc_pthread_mutex_unlock(disp_global_env->lock);
+}
+
 disp_val disp_find_symbol_by_name(const disp_env_t *env, const char *name) {
     disp_sid id = disp_get_sid(name);
     return disp_find_symbol(env, id);
@@ -655,22 +542,3 @@ inline void disp_set_symbol_value(const disp_env_t *env, disp_val sym, disp_val 
     disp_set_symbol_value_unlock(env, sym, value);
     env_unlock(env);
 }
-
-inline bool disp_update_symbol(const disp_env_t *env, disp_val sym) {
-    (void)env;(void)sym;
-    return true;
-}
-
-
-/* ======================== GC 初始化和全局常量 ======================== */
-
-void disp_init_env() {
-
-    disp_global_env = gc_typed_calloc(1, sizeof(struct disp_env), &struct_disp_env_ti);
-    gc_pthread_mutex_init(&disp_global_env->lock, NULL);
-    disp_global_env->buckets = gc_typed_calloc(SYM_TABLE_SIZE, sizeof(void*), &GC_TYPE_PTR_ARRAY);;
-
-    gc_add_root(&disp_global_env);
-}
-
-#endif // DISP_ENV_HASHING
