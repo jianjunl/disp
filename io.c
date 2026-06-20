@@ -61,7 +61,6 @@ void disp_fprint(FILE *out, disp_val v) {
         case FLAG_DOUBLE: fprintf(out, "%g",         disp_get_double(v));        break;
         case FLAG_STRING: fprintf(out, "\"%s\"",     disp_get_str(v));           break;
         case FLAG_SYMBOL: fprintf(out, "%s",         SYM_NAME(v));                     break;
-        case TAG_TYPE:    fprintf(out, "%s",         disp_get_type_name(v));     break;
         case TAG_CORO:    fprintf(out, "#<coroutine>"); break;
         case TAG_CHAN:    fprintf(out, "#<channel>"); break;
         case TAG_FILE: {
@@ -89,7 +88,7 @@ void disp_fprint(FILE *out, disp_val v) {
             fputc(')', out);
             break;
         case FLAG_VOID: E(v, TRUE) ? fprintf(out, "true") : E(v, NaN) ? fprintf(out, "NaN") : fprintf(out, "nil"); break;
-        case FLAG_SCOPE:    fprintf(out, "#<namedscope>"); break;
+        case FLAG_TYPE:     fprintf(out, "#<type>"); break;
         case FLAG_BUILTIN:  fprintf(out, "#<builtin>"); break;
         case FLAG_SYSCALL:  fprintf(out, "#<function>"); break;
         case FLAG_CLOSURE:  fprintf(out, "#<closure>"); break;
@@ -119,7 +118,6 @@ void disp_fwrite(FILE *out, disp_val v) {
         case FLAG_DOUBLE: fprintf(out, "%g",         disp_get_double(v));        break;
         case FLAG_STRING: fprintf(out, "%s",         disp_get_str(v));           break;
         case FLAG_SYMBOL: fprintf(out, "%s",         SYM_NAME(v));                     break;
-        case TAG_TYPE:    fprintf(out, "%s",         disp_get_type_name(v));     break;
         case TAG_CORO:    fprintf(out, "#<coroutine>"); break;
         case TAG_CHAN:    fprintf(out, "#<channel>"); break;
         case TAG_FILE: {
@@ -147,7 +145,7 @@ void disp_fwrite(FILE *out, disp_val v) {
             fputc(')', out);
             break;
         case FLAG_VOID: E(v, TRUE) ? fprintf(out, "true") : E(v, NaN) ? fprintf(out, "NaN") : fprintf(out, "nil"); break;
-        case FLAG_SCOPE:    fprintf(out, "#<namedscope>"); break;
+        case FLAG_TYPE:    fprintf(out, "#<type>"); break;
         case FLAG_SYSCALL:  fprintf(out, "#<function>"); break;
         case FLAG_BUILTIN:  fprintf(out, "#<builtin>"); break;
         case FLAG_CLOSURE: fprintf(out, "#<closure>"); break;

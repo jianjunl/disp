@@ -8,8 +8,14 @@
 #include <stdarg.h>
 #include <ctype.h>
 
-disp_val disp_define_type(char *name, disp_val decl);
-char* disp_get_type_name(disp_val t);
-disp_val disp_get_type_decl(disp_val t);
+disp_val disp_convert_to_byte(disp_val v);
+disp_val disp_convert_to_short(disp_val v);
+disp_val disp_convert_to_int(disp_val v);
+disp_val disp_convert_to_long(disp_val v);
+disp_val disp_convert_to_float(disp_val v);
+disp_val disp_convert_to_double(disp_val v);
 
+disp_val disp_new_type(disp_val parent);
+
+disp_env_t* disp_get_type_env(disp_val v);
 #endif // _TYPE_H

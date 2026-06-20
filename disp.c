@@ -18,7 +18,6 @@
 //disp_val __attribute__((section("gc_roots"))) disp_builtin_roots[NUM_BUILTIN_ROOTS] = {};
 
 disp_val NIL, NaN, TRUE, QUIT, ELSE;
-disp_val BYTE, SHORT, INT, LONG, FLOAT, LONG, DOUBLE, PNTR;
 disp_val MODPATH, ARGS, IT;
 
 disp_sid LAMBDA, MACRO, LET, LETA, LETREC, LETRECA, CONS, LIST;
@@ -173,14 +172,6 @@ void disp_init() {
         MODPATH = MKS(p);
         disp_define_symbol_by_name(disp_global_env, ":path", MODPATH, 1);
     }
-
-    BYTE    = disp_define_type("byte"     , MKS(":byte"  ));
-    SHORT   = disp_define_type("short"    , MKS(":short" ));
-    INT     = disp_define_type("int"      , MKS(":int"   ));
-    LONG    = disp_define_type("long"     , MKS(":long"  ));
-    FLOAT   = disp_define_type("float"    , MKS(":float" ));
-    DOUBLE  = disp_define_type("double"   , MKS(":double"));
-    PNTR    = disp_define_type("pointer"  , MKS(":pntr"  ));
 
     DEF("stdin"  , disp_make_file(stdin ,"r"), 1);
     DEF("stdout" , disp_make_file(stdout,"w"), 1);

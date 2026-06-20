@@ -361,8 +361,8 @@ static void pretty_print_obj(disp_val v, int indent, int newline) {
         case FLAG_VOID:
             E(v, TRUE) ? printf("true") : E(v, NaN) ? printf("NaN") : printf("nil");
             break;
-        case FLAG_SCOPE:
-            printf("#<named scope>");
+        case FLAG_TYPE:
+            printf("#<type>");
             break;
         default:
             disp_print(v);

@@ -32,19 +32,18 @@ typedef uint16_t disp_flag_t;
 
 // Tags of DATA (Pointers with FLAG_EXTRA)
 #define TAG_ARGS        (disp_flag_t)1
-#define TAG_TYPE        (disp_flag_t)2
-#define TAG_LONG        (disp_flag_t)3
-#define TAG_FILE        (disp_flag_t)4
-#define TAG_CORO        (disp_flag_t)5
-#define TAG_CHAN        (disp_flag_t)6
-#define TAG_SOCKET      (disp_flag_t)7
-#define TAG_THREAD      (disp_flag_t)8
-#define TAG_MUTEX       (disp_flag_t)9
-#define TAG_COND        (disp_flag_t)10
+#define TAG_LONG        (disp_flag_t)2
+#define TAG_FILE        (disp_flag_t)3
+#define TAG_CORO        (disp_flag_t)4
+#define TAG_CHAN        (disp_flag_t)5
+#define TAG_SOCKET      (disp_flag_t)6
+#define TAG_THREAD      (disp_flag_t)7
+#define TAG_MUTEX       (disp_flag_t)8
+#define TAG_COND        (disp_flag_t)9
 
 // Flags of Primitives (0xFFFF - 0xFFF8)
 #define FLAG_VOID       (disp_flag_t)0xFFFF
-#define FLAG_SCOPE      (disp_flag_t)0xFFFE
+#define FLAG_TYPE       (disp_flag_t)0xFFFE
 #define FLAG_BYTE       (disp_flag_t)0xFFFD
 #define FLAG_SHORT      (disp_flag_t)0xFFFC
 #define FLAG_INT        (disp_flag_t)0xFFFB
@@ -126,19 +125,18 @@ typedef uint8_t disp_flag_t;
 
 // Tags of DATA (Pointers with FLAG_EXTRA)
 #define TAG_ARGS        UINT8_C(1)
-#define TAG_TYPE        UINT8_C(2)
-#define TAG_LONG        UINT8_C(3)
-#define TAG_FILE        UINT8_C(4)
-#define TAG_CORO        UINT8_C(5)
-#define TAG_CHAN        UINT8_C(6)
-#define TAG_SOCKET      UINT8_C(7)
-#define TAG_THREAD      UINT8_C(8)
-#define TAG_MUTEX       UINT8_C(9)
-#define TAG_COND        UINT8_C(10)
+#define TAG_LONG        UINT8_C(2)
+#define TAG_FILE        UINT8_C(3)
+#define TAG_CORO        UINT8_C(4)
+#define TAG_CHAN        UINT8_C(5)
+#define TAG_SOCKET      UINT8_C(6)
+#define TAG_THREAD      UINT8_C(7)
+#define TAG_MUTEX       UINT8_C(8)
+#define TAG_COND        UINT8_C(9)
 
 // Flags of Primitives (0x7FFF - 0x7FF8)
 #define FLAG_VOID       UINT8_C(0xFF)
-#define FLAG_SCOPE      UINT8_C(0xFE)
+#define FLAG_TYPE       UINT8_C(0xFE)
 #define FLAG_BYTE       UINT8_C(0xFD)
 #define FLAG_SHORT      UINT8_C(0xFC)
 #define FLAG_INT        UINT8_C(0xFB)
