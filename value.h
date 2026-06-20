@@ -121,38 +121,35 @@ static inline disp_val V(disp_flag_t f, disp_flag_t t, void *d) {
 
 typedef uint8_t disp_flag_t;
 
-#define FLAG_DOUBLE     UINT8_C(0x71)
+#define FLAG_DOUBLE     (disp_flag_t)0x71
 
-// Tags of DATA (Pointers with FLAG_EXTRA)
-#define TAG_ARGS        UINT8_C(1)
-#define TAG_LONG        UINT8_C(2)
-#define TAG_FILE        UINT8_C(3)
-#define TAG_CORO        UINT8_C(4)
-#define TAG_CHAN        UINT8_C(5)
-#define TAG_SOCKET      UINT8_C(6)
-#define TAG_THREAD      UINT8_C(7)
-#define TAG_MUTEX       UINT8_C(8)
-#define TAG_COND        UINT8_C(9)
+#define TAG_ARGS        (disp_flag_t)1
+#define TAG_LONG        (disp_flag_t)2
+#define TAG_FILE        (disp_flag_t)3
+#define TAG_CORO        (disp_flag_t)4
+#define TAG_CHAN        (disp_flag_t)5
+#define TAG_SOCKET      (disp_flag_t)6
+#define TAG_THREAD      (disp_flag_t)7
+#define TAG_MUTEX       (disp_flag_t)8
+#define TAG_COND        (disp_flag_t)9
 
-// Flags of Primitives (0x7FFF - 0x7FF8)
-#define FLAG_VOID       UINT8_C(0xFF)
-#define FLAG_TYPE       UINT8_C(0xFE)
-#define FLAG_BYTE       UINT8_C(0xFD)
-#define FLAG_SHORT      UINT8_C(0xFC)
-#define FLAG_INT        UINT8_C(0xFB)
-#define FLAG_FLOAT      UINT8_C(0xFA)
-#define FLAG_LONG       UINT8_C(0x78)
+#define FLAG_VOID       (disp_flag_t)0xFF
+#define FLAG_TYPE       (disp_flag_t)0xFE
+#define FLAG_BYTE       (disp_flag_t)0xFD
+#define FLAG_SHORT      (disp_flag_t)0xFC
+#define FLAG_INT        (disp_flag_t)0xFB
+#define FLAG_FLOAT      (disp_flag_t)0xFA
+#define FLAG_LONG       (disp_flag_t)0x78
 
-// Flags of Pointers (0xFFFF - 0xFFF8)
-#define FLAG_SYMBOL     UINT8_C(0x7F)
-#define FLAG_STRING     UINT8_C(0x7E)
-#define FLAG_CONS       UINT8_C(0x7D)
-#define FLAG_CLOSURE    UINT8_C(0x7C)
-#define FLAG_MACRO      UINT8_C(0x7B)
-#define FLAG_BUILTIN    UINT8_C(0x7A)
-#define FLAG_SYSCALL    UINT8_C(0x79)
+#define FLAG_SYMBOL     (disp_flag_t)0x7F
+#define FLAG_STRING     (disp_flag_t)0x7E
+#define FLAG_CONS       (disp_flag_t)0x7D
+#define FLAG_CLOSURE    (disp_flag_t)0x7C
+#define FLAG_MACRO      (disp_flag_t)0x7B
+#define FLAG_BUILTIN    (disp_flag_t)0x7A
+#define FLAG_SYSCALL    (disp_flag_t)0x79
 
-#define FLAG_EXTRA      UINT8_C(0x78)
+#define FLAG_EXTRA      (disp_flag_t)0x78
 
 #if DISP_BOXING
 
