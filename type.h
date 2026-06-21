@@ -18,4 +18,5 @@ disp_val disp_convert_to_double(disp_val v);
 disp_val disp_new_type(disp_val parent);
 
 disp_env_t* disp_get_type_env(disp_val v);
+
 #endif // _TYPE_H

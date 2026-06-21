@@ -208,6 +208,15 @@ static disp_val writeln_syscall(disp_val *args, int count) {
     return (count > 0) ? args[count-1] : NIL;
 }
 
+static disp_val newline_syscall(disp_val *args, int count) {
+    (void)args;
+    if (count != 0) {
+        ERET(NIL, "newline: expects no arguments");
+    }
+    printf("\n");
+    return TRUE;
+}
+
 // --- print --- (prints the evaluated argument, returns it)
 static disp_val print_syscall(disp_val *args, int count) {
     if (count < 1) {
@@ -382,6 +391,8 @@ static disp_val pretty_print_syscall(disp_val *args, int count) {
 
 /* Initialisation function called when the shared library is loaded */
 void disp_init_module(void) {
+    REG("newline", MKF(newline_syscall , "<newline>"), 1);
+    REG("display", MKF(write_syscall   , "<write>"  ), 1);
     REG("write"  , MKF(write_syscall   , "<write>"  ), 1);
     REG("writeln", MKF(writeln_syscall , "<writeln>"), 1);
     REG("print"  , MKF(print_syscall   , "<print>"  ), 1);

@@ -25,12 +25,12 @@ disp_val disp_intern_symbol_by_name(const disp_env_t *env, const char *name);
 void disp_set_symbol_value(const disp_env_t *env, disp_val sym, disp_val value);
 bool disp_update_symbol(const disp_env_t *env, disp_val sym);
 
-#define SYMBOL_BY_NAME(env, name) disp_find_symbol_by_name(env, name)
-#define SYMBOL(env, sid) disp_find_symbol(env, sid)
-#define SET_THIS(env, type) disp_define_symbol(env, THIS, type, 1)
-#define GET_THIS(env) disp_find_symbol(e, THIS)
-#define GLOBAL(sid) disp_find_symbol(disp_global_env, sid)
-#define REG(name, value, ro) disp_define_symbol_by_name(disp_global_env, name, value, ro)
+#define GSYM(sid) disp_find_symbol(disp_global_env, sid)
+
 #define REGI(sid, value, ro) disp_define_symbol(disp_global_env, sid, value, ro)
+#define REG(name, value, ro) REGI(disp_get_sid(name), value, ro)
+
+#define SET_THIS(env, type) disp_define_symbol(env, THIS, type, 1)
+#define GET_THIS(env) disp_find_symbol(env, THIS)
  
 #endif //SCOPE_H

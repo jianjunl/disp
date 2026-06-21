@@ -24,7 +24,9 @@ disp_sid LAMBDA, MACRO, LET, LETA, LETREC, LETRECA, CONS, LIST;
 disp_sid QUOTE, QUASIQUOTE, UNQUOTE, UNQUOTE_SPLICING, APPEND;
 disp_sid IF, BEGIN, PROGN, COND, AND, OR;
 disp_sid SET, SETQ, DEFINE, DEFUN;
-disp_sid THIS, DEFAULT, RECV, SEND, AFTER, DO, DOTIMES, DOLIST;
+disp_sid DEFAULT, RECV, SEND, AFTER, DO, DOTIMES, DOLIST;
+disp_sid PROTO, THIS;
+disp_val TYPE;
 
 /* ======================== Built‑in 'load' ======================== */
 static disp_val import_syscall(disp_val *args, int argc) {
@@ -154,7 +156,7 @@ void disp_init() {
     SETQ             = disp_get_sid("setq");
     DEFINE           = disp_get_sid("define");
     DEFUN            = disp_get_sid("defun");
-    THIS             = disp_get_sid("this");
+
     DEFAULT          = disp_get_sid("default");
     RECV             = disp_get_sid("recv");
     SEND             = disp_get_sid("send");
@@ -187,6 +189,13 @@ void disp_init() {
 
     // make else evaluate to true (so cond's default clause works)
     ELSE = REG("else", TRUE, 1);
+
+    TYPE             = disp_make_symbol_by_name("type");
+    PROTO            = disp_get_sid("proto");
+    THIS             = disp_get_sid("this");
+    disp_val proto = disp_new_type(DNULL);
+    REGI(PROTO, proto, 1);
+    REGI(THIS , proto, 1);
 
     disp_import("disp.data.so");
     disp_import("disp.quote.so");

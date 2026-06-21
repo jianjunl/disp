@@ -35,7 +35,6 @@ extern disp_sid SETQ;
 extern disp_sid DEFINE;
 extern disp_sid DEFUN;
 
-extern disp_sid THIS;
 extern disp_sid DEFAULT;
 extern disp_sid RECV;
 extern disp_sid SEND;
@@ -43,5 +42,9 @@ extern disp_sid AFTER;
 extern disp_sid DO;
 extern disp_sid DOTIMES;
 extern disp_sid DOLIST;
+
+extern disp_sid PROTO;
+extern disp_sid THIS;
+extern disp_val TYPE;
 
 #endif /* _GLOBAL_H */

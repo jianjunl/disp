@@ -134,6 +134,97 @@ static disp_val parse_string(FILE *f) {
     return disp_make_str(buf);
 }
 
+// 在 parse_atom 前面添加
+static disp_val convert_dotted_symbol(const char *s) {
+    if (strcmp(s, ".") == 0) {
+        // 单独的点不转换，保留为符号
+        return disp_intern_symbol_by_name(disp_global_env, s);
+    }
+    char *p = strchr(s, '.');
+    if (!p) return NIL; // 无点
+
+    // 复制一份用于修改
+    char buf[256];
+    strncpy(buf, s, sizeof(buf)-1);
+    buf[sizeof(buf)-1] = '\0';
+
+    // 压缩连续的点（多个点替换为一个）
+    char compressed[256];
+    int j = 0;
+    int last_dot = 0;
+    for (int i = 0; buf[i]; i++) {
+        if (buf[i] == '.') {
+            if (!last_dot) {
+                compressed[j++] = '.';
+                last_dot = 1;
+            }
+        } else {
+            compressed[j++] = buf[i];
+            last_dot = 0;
+        }
+    }
+    compressed[j] = '\0';
+
+    // 去掉末尾点
+    int len = strlen(compressed);
+    if (len > 0 && compressed[len-1] == '.')
+        compressed[len-1] = '\0';
+
+    // 分割点
+    char *tokens[64];
+    int count = 0;
+    char *saveptr;
+    char *token = strtok_r(compressed, ".", &saveptr);
+    while (token && count < 64) {
+        tokens[count++] = token;
+        token = strtok_r(NULL, ".", &saveptr);
+    }
+
+    if (count == 0) {
+        // 只有点（例如 "." 或 "...") 但之前已经处理了单独的点
+        return disp_intern_symbol_by_name(disp_global_env, s);
+    }
+
+    // 构造列表 (type elem1 elem2 ...)
+    // 如果第一个 token 为空字符串（以点开头），则插入 THIS
+    int start = 0;
+    if (strlen(tokens[0]) == 0) {
+        // 以点开头，则第一个元素为 THIS
+        start = 1; // 跳过空 token
+        // 构建列表：先放 THIS
+        disp_val list = disp_make_cons(disp_make_symbol(THIS), NIL);
+        disp_val tail = list;
+        // 然后添加后续 tokens
+        for (int i = start; i < count; i++) {
+            disp_val sym = disp_intern_symbol_by_name(disp_global_env, tokens[i]);
+            disp_val new_cons = disp_make_cons(sym, NIL);
+            disp_set_cdr(tail, new_cons);
+            tail = new_cons;
+        }
+        // 最后在列表头部插入 TYPE
+        disp_val result = disp_make_cons(TYPE, list);
+        return result;
+    } else {
+        // 普通情况：第一个 token 作为第一个元素
+        disp_val list = NIL;
+        disp_val tail = NIL;
+        for (int i = 0; i < count; i++) {
+            disp_val sym = disp_intern_symbol_by_name(disp_global_env, tokens[i]);
+            disp_val new_cons = disp_make_cons(sym, NIL);
+            if (E(list, NIL)) {
+                list = new_cons;
+                tail = new_cons;
+            } else {
+                disp_set_cdr(tail, new_cons);
+                tail = new_cons;
+            }
+        }
+        disp_val result = disp_make_cons(TYPE, list);
+        return result;
+    }
+}
+
+// 在 parse_atom 函数中，在数字解析和布尔处理后，添加：
 static disp_val parse_atom(int first, FILE *f) {
     char buf[256];
     int i = 0;
@@ -148,17 +239,23 @@ static disp_val parse_atom(int first, FILE *f) {
     }
     if (c != EOF) ungetc(c, f);
     buf[i] = '\0';
+
     disp_val num = disp_parse_number(buf);
     if (NN(num)) return num;
 
-    // 处理 #t 和 #f 布尔常量
     if (buf[0] == '#') {
         if (strcmp(buf, "#t") == 0) return TRUE;
         if (strcmp(buf, "#f") == 0) return NIL;
-        // 其他以 # 开头的字符串继续作为普通符号
     }
-    disp_val sym = disp_intern_symbol_by_name(disp_global_env, buf);
-    return sym;
+
+    // 检查是否包含点并且不是单独的点
+    if (strchr(buf, '.') != NULL) {
+        disp_val dotted = convert_dotted_symbol(buf);
+        if (NN(dotted)) return dotted;
+        // 如果转换失败（如单独点），则继续作为普通符号
+    }
+
+    return disp_intern_symbol_by_name(disp_global_env, buf);
 }
 
 disp_val parse_sexpr(int first, FILE *f) {
@@ -166,7 +263,7 @@ disp_val parse_sexpr(int first, FILE *f) {
         return parse_list(f, ')', 0);
     } else if (first == '{') {
         // 保持不变：逗号分隔的 begin 语法
-        disp_val sym = GLOBAL(BEGIN);
+        disp_val sym = GSYM(BEGIN);
         if(N(sym) || E(sym, NIL)) ERET(NIL, "'begin' not found");
         disp_val sub_lists = parse_list(f, '}', 1);
         disp_val result = disp_make_cons(sym, NIL);
@@ -179,7 +276,7 @@ disp_val parse_sexpr(int first, FILE *f) {
         }
         return result;
     } else if (first == '[') {
-        disp_val sym = GLOBAL(LIST);
+        disp_val sym = GSYM(LIST);
         if(N(sym) || E(sym, NIL)) ERET(NIL, "'list' not found");
         return disp_make_cons(sym, parse_list(f, ']', 0));
     } else if (first == '"') {
@@ -190,7 +287,7 @@ disp_val parse_sexpr(int first, FILE *f) {
         if (next_c == EOF) ERET(NIL, "unexpected EOF after quote");
         disp_val quoted = parse_sexpr(next_c, f);
         if (N(quoted)) return NIL;
-        disp_val quote_sym = GLOBAL(QUOTE);
+        disp_val quote_sym = GSYM(QUOTE);
         return disp_make_cons(quote_sym, disp_make_cons(quoted, NIL));
     } else if (first == '`') {
         // 反引号 -> quasiquote
@@ -198,7 +295,7 @@ disp_val parse_sexpr(int first, FILE *f) {
         if (next_c == EOF) ERET(NIL, "unexpected EOF after quasiquote");
         disp_val quasiquoted = parse_sexpr(next_c, f);
         if (N(quasiquoted)) return NIL;
-        disp_val qq_sym = GLOBAL(QUASIQUOTE);
+        disp_val qq_sym = GSYM(QUASIQUOTE);
         return disp_make_cons(qq_sym, disp_make_cons(quasiquoted, NIL));
     } else if (first == ',') {
         // 逗号 -> unquote 或 unquote-splicing
@@ -210,13 +307,13 @@ disp_val parse_sexpr(int first, FILE *f) {
             if (expr_c == EOF) ERET(NIL, "unexpected EOF after ,@");
             disp_val spliced = parse_sexpr(expr_c, f);
             if (N(spliced)) return NIL;
-            disp_val us_sym = GLOBAL(UNQUOTE_SPLICING);
+            disp_val us_sym = GSYM(UNQUOTE_SPLICING);
             return disp_make_cons(us_sym, disp_make_cons(spliced, NIL));
         } else {
             // , -> unquote
             disp_val unquoted = parse_sexpr(next_c, f);
             if (N(unquoted)) return NIL;
-            disp_val uq_sym = GLOBAL(UNQUOTE);
+            disp_val uq_sym = GSYM(UNQUOTE);
             return disp_make_cons(uq_sym, disp_make_cons(unquoted, NIL));
         }
     } else if (first == ')') {

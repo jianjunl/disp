@@ -24,7 +24,7 @@ int main(int argc, char **argv) {
 
     disp_init();
     REG(":args", disp_make_args(argc, argv), 1);
-    ARGS = SYMBOL_BY_NAME(disp_global_env, ":args");
+    ARGS = GSYM(disp_get_sid(":args"));
 
     // 为 REPL 压入伪源文件
     disp_push_source("<stdin>");
