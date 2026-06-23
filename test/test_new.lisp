@@ -37,8 +37,9 @@
 
 ;; 测试连续点和末尾点
 ;; a..b..c. 应转换为 (type a b c)
-;(define a..b..c.  (type this a b c))   ; 这里 just for syntax test
-;(display "a..b..c. = ") (display a..b..c.) (newline)
+(define a (new proto (define .b (new proto (define this.c 5.555)))))
+(define a..b..c.  (type this a b c))   ; 这里 just for syntax test
+(display "a..b..c. = ") (display a..b..c.) (newline)
 
 ;; 6. 测试 new 的 body 多表达式
 (define Multi (new proto
