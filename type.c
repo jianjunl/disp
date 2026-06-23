@@ -101,6 +101,7 @@ inline disp_val disp_new_type(disp_val parent) {
     if (E(parent, NIL)) return  GSYM(PROTO);
     disp_env_t *e = N(parent) ? NULL : disp_get_type_env(parent);
     e = disp_new_env(e);
+    disp_define_symbol(e, SUPER, parent, 1);
     return BOX_BOX(FLAG_TYPE, e);
 }
 
@@ -119,6 +120,7 @@ inline disp_val disp_new_type(disp_val parent) {
     if (E(parent, NIL)) return  GSYM(PROTO);
     disp_env_t *e = N(parent) ? NULL : disp_get_type_env(parent);
     e = disp_new_env(e);
+    disp_define_symbol(e, SUPER, parent, 1);
     return (disp_val){.flag = FLAG_TYPE, .x = (uint64_t)e};
 }
 

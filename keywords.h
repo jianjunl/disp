@@ -16,6 +16,7 @@
 "info",
 "trace",
 "this",
+"super",
 "proto",
 
 "apply",

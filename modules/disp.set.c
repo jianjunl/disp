@@ -71,11 +71,7 @@ static disp_val setq_builtin(disp_env_t *env, disp_val expr) {
                 ERET(NIL, "set!: missing expression");
             disp_val new_value = disp_eval(env, disp_car(rest));
 
-            // 查找字段是否存在
-            disp_val found = disp_find_symbol(tenv, field_id);
-            if (N(found))
-                ERET(NIL, "set!: field '%s' not defined in type", disp_get_name(field_id.id));
-            disp_set_symbol_value_unlock(tenv, found, new_value);
+            disp_define_symbol(tenv, field_id, new_value, 0);
             return new_value;
         }
     }

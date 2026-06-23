@@ -25,7 +25,7 @@ disp_sid QUOTE, QUASIQUOTE, UNQUOTE, UNQUOTE_SPLICING, APPEND;
 disp_sid IF, BEGIN, PROGN, COND, AND, OR;
 disp_sid SET, SETQ, DEFINE, DEFUN;
 disp_sid DEFAULT, RECV, SEND, AFTER, DO, DOTIMES, DOLIST;
-disp_sid PROTO, THIS, DOT;
+disp_sid PROTO, THIS, SUPER, DOT;
 disp_val TYPE;
 
 /* ======================== Built‑in 'load' ======================== */
@@ -194,6 +194,7 @@ void disp_init() {
     DOT              = disp_get_sid(".");
     PROTO            = disp_get_sid("proto");
     THIS             = disp_get_sid("this");
+    SUPER            = disp_get_sid("super");
     REGI(PROTO, disp_new_type(DNULL), 1);
     REGI(THIS , disp_new_type(DNULL), 1);
 

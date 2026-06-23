@@ -35,5 +35,6 @@ syntax keyword lispFunc load
 syntax keyword lispFunc info
 syntax keyword lispFunc trace
 syntax keyword lispFunc this
+syntax keyword lispFunc super
 syntax keyword lispFunc proto
 

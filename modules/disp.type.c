@@ -93,7 +93,6 @@ static disp_val new_builtin(disp_env_t *env, disp_val expr) {
     // --- 创建新的执行环境（继承当前环境），绑定 THIS ---
     disp_env_t *new_env = disp_new_env(env);
     if (!new_env) ERET(NIL, "new: out of memory");
-    //disp_val this_sym = disp_make_symbol(THIS);
     disp_val this_sym = disp_intern_symbol(new_env, THIS);
     disp_set_symbol_value_unlock(new_env, this_sym, new_type); // 绑定 THIS
 

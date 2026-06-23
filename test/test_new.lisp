@@ -13,9 +13,14 @@
 (define p (new Point
             (set! .x 10)
             (set! .y 20)))
+            ;(define .x 10)
+            ;(define .y 20)))
 
 (display "p.x = ") (display (type p x)) (newline)
 (display "p.y = ") (display (type p y)) (newline)
+
+(display "Point.x = ") (display (type Point x)) (newline)
+(display "Point.y = ") (display (type Point y)) (newline)
 
 ;; 4. 嵌套类型访问（通过点语法）
 ;; 定义类型 A，包含 B，B 包含 C

@@ -45,6 +45,7 @@ extern disp_sid DOLIST;
 
 extern disp_sid PROTO;
 extern disp_sid THIS;
+extern disp_sid SUPER;
 extern disp_sid DOT;
 extern disp_val TYPE;
 
