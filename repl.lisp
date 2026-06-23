@@ -1,2 +1,3 @@
-(time (load "init.lisp"))
+;(time (load "init.lisp"))
+(load "init.lisp")
 (repl)

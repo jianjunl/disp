@@ -20,6 +20,65 @@ static disp_val define_builtin(disp_env_t *env, disp_val expr) {
         ERET(NIL, "define: missing first argument");
     
     disp_val first_arg = disp_car(cadr);
+
+    // --- 处理 (type ...) 路径 ---
+    if (T(first_arg) == FLAG_CONS) {
+        disp_val head = disp_car(first_arg);
+        if (T(head) == FLAG_SYMBOL && SYM_ID(head).id == SYM_ID(TYPE).id) {
+            disp_val path = disp_cdr(first_arg);
+            if (N(path) || T(path) != FLAG_CONS)
+                ERET(NIL, "define: (type ...) needs at least two symbols");
+            int count = 0;
+            disp_val syms[64];
+            disp_val p = path;
+            while (NE(p, NIL) && T(p) == FLAG_CONS) {
+                disp_val sym = disp_car(p);
+                if (T(sym) != FLAG_SYMBOL)
+                    ERET(NIL, "define: path elements must be symbols");
+                syms[count++] = sym;
+                p = disp_cdr(p);
+            }
+            if (NE(p, NIL))
+                ERET(NIL, "define: malformed (type ...) path");
+            if (count < 2)
+                ERET(NIL, "define: (type ...) needs at least two symbols (type and field)");
+
+            // 提取最后一个符号作为要定义的字段名
+            disp_sid field_id = SYM_ID(syms[count-1]);
+
+            // 构造前缀列表 (type t1 ... tn-1)
+            disp_val prefix = NIL;
+            disp_val tail = NIL;
+            for (int i = 0; i < count - 1; i++) {
+                disp_val new_cons = disp_make_cons(syms[i], NIL);
+                if (E(prefix, NIL)) {
+                    prefix = new_cons;
+                    tail = new_cons;
+                } else {
+                    disp_set_cdr(tail, new_cons);
+                    tail = new_cons;
+                }
+            }
+            disp_val prefix_expr = disp_make_cons(TYPE, prefix);
+
+            // 求值前缀得到类型对象
+            disp_val pt = disp_eval(env, prefix_expr);
+            if (N(pt) || T(pt) != FLAG_TYPE)
+                ERET(NIL, "define: prefix expression must evaluate to a type");
+
+            disp_env_t *tenv = disp_get_type_env(pt);
+            if (!tenv) ERET(NIL, "define: type has no environment");
+
+            // 计算要赋的值
+            disp_val rest = disp_cdr(cadr);
+            if (N(rest) || T(rest) != FLAG_CONS)
+                ERET(NIL, "define: missing expression for (type ...)");
+            disp_val value = disp_eval(env, disp_car(rest));
+
+            disp_define_symbol(tenv, field_id, value, 0);
+            return syms[count-1];  // 返回字段符号
+        }
+    }
     
     if (T(first_arg) == FLAG_SYMBOL) {
         disp_val rest = disp_cdr(cadr);
@@ -80,6 +139,14 @@ static disp_val defun_builtin(disp_env_t *env, disp_val expr) {
     
     disp_val name_or_sig = disp_car(cadr);
     disp_val rest = disp_cdr(cadr);
+
+    // 拒绝 (type ...) 形式
+    if (T(name_or_sig) == FLAG_CONS) {
+        disp_val head = disp_car(name_or_sig);
+        if (T(head) == FLAG_SYMBOL && SYM_ID(head).id == SYM_ID(TYPE).id) {
+            ERET(NIL, "defun: cannot use (type ...) as function name");
+        }
+    }
     
     if (T(name_or_sig) == FLAG_SYMBOL) {
         // (defun symbol (params) body1 body2 ...)

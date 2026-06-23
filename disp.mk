@@ -39,7 +39,7 @@ MAIN_SRC := main.c
 MAIN_OBJ := main.o
 
 MODULES0 := 
-MODULES := disp.data.so disp.quote.so \
+MODULES := disp.data.so disp.quote.so disp.type.so \
            disp.lambda.so disp.apply.so disp.throw.so \
            disp.flow.so disp.define.so disp.set.so \
            disp.do.so disp.dotimes.so disp.dolist.so \

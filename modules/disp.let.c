@@ -50,7 +50,17 @@ static disp_val let_builtin(disp_env_t *env, disp_val expr) {
             gc_free(var_syms);
             ERET(NIL, "let: malformed binding (var expr)");
         }
-        var_syms[idx] = disp_car(pair);
+        disp_val var = disp_car(pair);
+        // 检查变量名是否为 (type ...) 形式，禁止绑定
+        if (T(var) == FLAG_CONS) {
+            disp_val h = disp_car(var);
+            if (T(h) == FLAG_SYMBOL && SYM_ID(h).id == SYM_ID(TYPE).id) {
+                gc_free(init_exprs);
+                gc_free(var_syms);
+                ERET(NIL, "let: variable name cannot be (type ...)");
+            }
+        }
+        var_syms[idx] = var;
         init_exprs[idx] = disp_car(disp_cdr(pair));
         idx++;
         b = disp_cdr(b);

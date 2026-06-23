@@ -137,11 +137,11 @@ static disp_val parse_string(FILE *f) {
 // 在 parse_atom 前面添加
 static disp_val convert_dotted_symbol(const char *s) {
     if (strcmp(s, ".") == 0) {
-        // 单独的点不转换，保留为符号
-        return disp_intern_symbol_by_name(disp_global_env, s);
+        // 单独的点保留为符号 "."
+        return disp_make_symbol(DOT);
     }
     char *p = strchr(s, '.');
-    if (!p) return NIL; // 无点
+    if (!p) return NIL; // 无点，不转换
 
     // 复制一份用于修改
     char buf[256];
@@ -165,7 +165,7 @@ static disp_val convert_dotted_symbol(const char *s) {
     }
     compressed[j] = '\0';
 
-    // 去掉末尾点
+    // 去掉末尾的点
     int len = strlen(compressed);
     if (len > 0 && compressed[len-1] == '.')
         compressed[len-1] = '\0';
@@ -181,47 +181,42 @@ static disp_val convert_dotted_symbol(const char *s) {
     }
 
     if (count == 0) {
-        // 只有点（例如 "." 或 "...") 但之前已经处理了单独的点
-        return disp_intern_symbol_by_name(disp_global_env, s);
+        // 只有点（但之前已处理单独点），保留原符号
+        return disp_make_symbol(DOT);
     }
 
-    // 构造列表 (type elem1 elem2 ...)
-    // 如果第一个 token 为空字符串（以点开头），则插入 THIS
-    int start = 0;
-    if (strlen(tokens[0]) == 0) {
-        // 以点开头，则第一个元素为 THIS
-        start = 1; // 跳过空 token
-        // 构建列表：先放 THIS
-        disp_val list = disp_make_cons(disp_make_symbol(THIS), NIL);
-        disp_val tail = list;
-        // 然后添加后续 tokens
-        for (int i = start; i < count; i++) {
-            disp_val sym = disp_intern_symbol_by_name(disp_global_env, tokens[i]);
-            disp_val new_cons = disp_make_cons(sym, NIL);
+    // 检查原始字符串是否以点开头（直接看 s[0]）
+    int starts_with_dot = (s[0] == '.');
+
+    // 构造列表，先放第一个元素
+    disp_val list = NIL;
+    disp_val tail = NIL;
+
+    if (starts_with_dot) {
+        // 以点开头，第一个元素为 THIS
+        disp_val this_sym = disp_make_symbol(THIS);
+        disp_val new_cons = disp_make_cons(this_sym, NIL);
+        list = new_cons;
+        tail = new_cons;
+    }
+
+    // 添加所有 token（跳过可能的空 token，但 strtok_r 不会产生空 token）
+    for (int i = 0; i < count; i++) {
+        if (strlen(tokens[i]) == 0) continue; // 保险
+        disp_val sym = disp_intern_symbol_by_name(disp_global_env, tokens[i]);
+        disp_val new_cons = disp_make_cons(sym, NIL);
+        if (E(list, NIL)) {
+            list = new_cons;
+            tail = new_cons;
+        } else {
             disp_set_cdr(tail, new_cons);
             tail = new_cons;
         }
-        // 最后在列表头部插入 TYPE
-        disp_val result = disp_make_cons(TYPE, list);
-        return result;
-    } else {
-        // 普通情况：第一个 token 作为第一个元素
-        disp_val list = NIL;
-        disp_val tail = NIL;
-        for (int i = 0; i < count; i++) {
-            disp_val sym = disp_intern_symbol_by_name(disp_global_env, tokens[i]);
-            disp_val new_cons = disp_make_cons(sym, NIL);
-            if (E(list, NIL)) {
-                list = new_cons;
-                tail = new_cons;
-            } else {
-                disp_set_cdr(tail, new_cons);
-                tail = new_cons;
-            }
-        }
-        disp_val result = disp_make_cons(TYPE, list);
-        return result;
     }
+
+    // 在列表头部插入 TYPE 符号
+    disp_val result = disp_make_cons(TYPE, list);
+    return result;
 }
 
 // 在 parse_atom 函数中，在数字解析和布尔处理后，添加：

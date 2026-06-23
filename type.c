@@ -98,11 +98,24 @@ inline disp_env_t* disp_get_type_env(disp_val v) {
 }
 
 inline disp_val disp_new_type(disp_val parent) {
+    if (E(parent, NIL) || N(parent)) {
+        // 创建根类型，环境无父级
+        disp_env_t *e = disp_new_env(NULL);
+        return BOX_BOX(FLAG_TYPE, e);
+    }
+    disp_env_t *e = disp_get_type_env(parent);
+    if (!e) e = disp_global_env; // 安全回退
+    e = disp_new_env(e);
+    return BOX_BOX(FLAG_TYPE, e);
+}
+/*
+inline disp_val disp_new_type(disp_val parent) {
     if (E(parent, NIL)) return  GSYM(PROTO);
     disp_env_t *e = N(parent) ? disp_global_env : disp_get_type_env(parent);
     e = disp_new_env(e);
     return BOX_BOX(FLAG_TYPE, e);
 }
+*/
 
 #else // DISP_BOXING
 
@@ -116,10 +129,24 @@ inline disp_env_t* disp_get_type_env(disp_val v) {
 }
 
 inline disp_val disp_new_type(disp_val parent) {
+    if (E(parent, NIL) || N(parent)) {
+        // 创建根类型，环境无父级
+        disp_env_t *e = disp_new_env(NULL);
+        return BOX_BOX(FLAG_TYPE, e);
+    }
+    disp_env_t *e = disp_get_type_env(parent);
+    if (!e) e = disp_global_env; // 安全回退
+    e = disp_new_env(e);
+    return (disp_val){.flag = FLAG_TYPE, .x = (uint64_t)e};
+}
+
+/*
+inline disp_val disp_new_type(disp_val parent) {
     if (E(parent, NIL)) return  GSYM(PROTO);
     disp_env_t *e = N(parent) ? disp_global_env : disp_get_type_env(parent);
     e = disp_new_env(e);
     return (disp_val){.flag = FLAG_TYPE, .x = (uint64_t)e};
 }
+*/
 
 #endif // DISP_BOXING
