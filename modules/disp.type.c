@@ -24,11 +24,11 @@ static disp_val type_builtin(disp_env_t *env, disp_val expr) {
         ERET(NIL, "type: arguments must be symbols");
 
     disp_val v = disp_eval(env, sym);
-    if (N(v))
+    if (E(v, NIL))
         ERET(NIL, "type: symbol '%s' not found", SYM_NAME(sym));
 
     args = disp_cdr(args);
-    while (NN(args) && T(args) == FLAG_CONS) {
+    while (NE(v, NIL) && NN(args) && NE(args, NIL) && T(args) == FLAG_CONS) {
         if (T(v) != FLAG_TYPE)
             ERET(NIL, "type: cannot continue, current value is not a type");
         disp_env_t *tenv = disp_get_type_env(v);
@@ -45,7 +45,7 @@ static disp_val type_builtin(disp_env_t *env, disp_val expr) {
 
         args = disp_cdr(args);
     }
-    if (NE(args, NIL))   // 使用 NE 代替 NN，确保 args 确实是 NIL
+    if (NE(args, NIL))
         ERET(NIL, "type: extra arguments");
 
     return v;

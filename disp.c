@@ -196,7 +196,7 @@ void disp_init() {
     THIS             = disp_get_sid("this");
     SUPER            = disp_get_sid("super");
     REGI(PROTO, disp_new_type(DNULL), 1);
-    REGI(THIS , disp_new_type(DNULL), 1);
+    REGI(THIS , disp_new_type(NIL), 1);
 
 
     disp_import("disp.data.so");

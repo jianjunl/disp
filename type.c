@@ -98,7 +98,7 @@ inline disp_env_t* disp_get_type_env(disp_val v) {
 }
 
 inline disp_val disp_new_type(disp_val parent) {
-    if (E(parent, NIL)) return  GSYM(PROTO);
+    if (E(parent, NIL)) parent = disp_get_symbol_value(GSYM(PROTO));
     disp_env_t *e = N(parent) ? NULL : disp_get_type_env(parent);
     e = disp_new_env(e);
     disp_define_symbol(e, SUPER, parent, 1);
@@ -117,7 +117,7 @@ inline disp_env_t* disp_get_type_env(disp_val v) {
 }
 
 inline disp_val disp_new_type(disp_val parent) {
-    if (E(parent, NIL)) return  GSYM(PROTO);
+    if (E(parent, NIL)) parent = disp_get_symbol_value(GSYM(PROTO));
     disp_env_t *e = N(parent) ? NULL : disp_get_type_env(parent);
     e = disp_new_env(e);
     disp_define_symbol(e, SUPER, parent, 1);

@@ -38,7 +38,7 @@
 
 ;; 以点开头的表达式：.this 应转换为 (type THIS)
 (define this (type this))  ; 但 THIS 是关键字，此处仅演示
-(display ".this = ") (display this) (newline)
+(display "this = ") (display this) (newline)
 
 ;; 测试连续点和末尾点
 ;; a..b..c. 应转换为 (type a b c)

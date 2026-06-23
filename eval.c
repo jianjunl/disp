@@ -73,7 +73,8 @@ disp_val disp_eval(disp_env_t *env, disp_val expr) {
             }
             disp_val val = disp_find_symbol(env, SYM_ID(expr));
             if (N(val) || E(val, NIL)) {
-                ERET(NIL, "undefined symbol: %s", SYM_NAME(expr));
+                //ERET(NIL, "undefined symbol: %s", SYM_NAME(expr));
+                return NIL;
             }
             disp_val value = SYM_VALUE(val);   // 注意：需要查找后取其 value
             return value;
