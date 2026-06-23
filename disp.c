@@ -194,9 +194,8 @@ void disp_init() {
     DOT              = disp_get_sid(".");
     PROTO            = disp_get_sid("proto");
     THIS             = disp_get_sid("this");
-    disp_val proto = disp_new_type(DNULL);
-    REGI(PROTO, proto, 1);
-    REGI(THIS , proto, 1);
+    REGI(PROTO, disp_new_type(DNULL), 1);
+    REGI(THIS , disp_new_type(DNULL), 1);
 
 
     disp_import("disp.data.so");
